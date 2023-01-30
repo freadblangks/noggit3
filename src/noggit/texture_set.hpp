@@ -76,10 +76,10 @@ public:
   std::vector<uint8_t> lod_texture_map();
 
   bool apply_alpha_changes();
-  
+
   void create_temporary_alphamaps_if_needed();
   size_t nTextures;
-  boost::optional<tmp_edit_alpha_values> tmp_edit_values;
+  std::unique_ptr<tmp_edit_alpha_values> tmp_edit_values;
 private:
   int get_texture_index_or_add (scoped_blp_texture_reference texture, float target);
 
@@ -91,7 +91,7 @@ private:
   void update_lod_texture_map();
 
   std::vector<scoped_blp_texture_reference> textures;
-  std::array<boost::optional<Alphamap>, 3> alphamaps;
+  std::array<std::unique_ptr<Alphamap>, 3> alphamaps;
   opengl::texture amap_gl_tex;
   bool _need_amap_update = true;
 
