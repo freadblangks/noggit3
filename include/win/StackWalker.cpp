@@ -1085,10 +1085,10 @@ void StackWalker::OnCallstackEntry(CallstackEntryType eType, CallstackEntry &ent
       strcpy_s(entry.lineFileName, "(filename not available)");
       if (entry.moduleName[0] == 0)
         strcpy_s(entry.moduleName, "(module-name not available)");
-      _snprintf_s(buffer, STACKWALK_MAX_NAMELEN, "%p (%s): %s: %s\n", (LPVOID) entry.offset, entry.moduleName, entry.lineFileName, entry.name);
+      _snprintf_s(buffer, STACKWALK_MAX_NAMELEN, "%p (%s): %s: %s", (LPVOID) entry.offset, entry.moduleName, entry.lineFileName, entry.name);
     }
     else
-      _snprintf_s(buffer, STACKWALK_MAX_NAMELEN, "%s (%d): %s\n", entry.lineFileName, entry.lineNumber, entry.name);
+      _snprintf_s(buffer, STACKWALK_MAX_NAMELEN, "%s (%d): %s", entry.lineFileName, entry.lineNumber, entry.name);
     OnOutput(buffer);
   }
 }
