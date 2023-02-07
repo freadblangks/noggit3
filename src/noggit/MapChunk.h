@@ -28,7 +28,7 @@ namespace math
 class Brush;
 class ChunkWater;
 
-using StripType = uint16_t;
+using StripType = uint8_t;
 static const int mapbufsize = 9 * 9 + 8 * 8; // chunk size
 
 struct chunk_shadow
@@ -52,9 +52,10 @@ private:
 
   std::unique_ptr<chunk_shadow> _chunk_shadow;
 
-  std::vector<StripType> strip_with_holes;
-  std::vector<StripType> strip_without_holes;
-  std::map<int, std::vector<StripType>> strip_lods;
+  static std::vector<StripType> strip_without_holes; // it's always the same, no need to recreate it each time
+
+  std::map<int, std::vector<StripType>> _indice_strips;
+  std::map<int, int> _indices_count_per_lod_level;
 
   std::vector<uint8_t> compressed_shadow_map() const;
   bool shadow_map_is_empty() const;
@@ -68,7 +69,7 @@ private:
 
   void update_intersect_points();
 
-  boost::optional<int> get_lod_level( math::vector_3d const& camera_pos
+  int get_lod_level( math::vector_3d const& camera_pos
                                     , display_mode display
                                     ) const;
 
@@ -83,12 +84,15 @@ private:
 
   opengl::scoped::deferred_upload_vertex_arrays<1> _vertex_array;
   GLuint const& _vao = _vertex_array[0];
-  opengl::scoped::deferred_upload_buffers<4> _buffers;
+  opengl::scoped::deferred_upload_buffers<3> _buffers;
   GLuint const& _vertices_vbo = _buffers[0];
   GLuint const& _normals_vbo = _buffers[1];
-  GLuint const& _indices_buffer = _buffers[2];
-  GLuint const& _mccv_vbo = _buffers[3];
-  opengl::scoped::deferred_upload_buffers<4> lod_indices;
+  GLuint const& _mccv_vbo = _buffers[2];
+
+  static constexpr int lod_count = 2;
+  static constexpr int indice_buffer_count = lod_count + 1;
+
+  opengl::scoped::deferred_upload_buffers<indice_buffer_count> _indice_buffers;
 
 public:
   MapChunk(MapTile* mt, MPQFile* f, bool bigAlpha, tile_mode mode);
@@ -124,8 +128,8 @@ private:
 
   bool _is_visible = true; // visible by default
   bool _need_visibility_update = true;
-  boost::optional<int> _lod_level = boost::none; // none = no lod
-  size_t _lod_level_indice_count = 0;
+  int _lod_level = 0;
+
 public:
 
   void draw ( math::frustum const& frustum

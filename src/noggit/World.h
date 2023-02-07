@@ -41,8 +41,6 @@ static const float highresdistance = 384.0f;
 static const float modeldrawdistance = 384.0f;
 static const float doodaddrawdistance = 64.0f;
 
-using StripType = uint16_t;
-
 class World
 {
 private:

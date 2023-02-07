@@ -254,7 +254,7 @@ void MapChunk::upload()
 
   _vertex_array.upload();
   _buffers.upload();
-  lod_indices.upload();
+  _indice_buffers.upload();
 
   update_shadows();
 
@@ -269,21 +269,19 @@ void MapChunk::upload()
 
 void MapChunk::update_indices_buffer()
 {
+  for (int lod_level = 0; lod_level < indice_buffer_count; ++lod_level)
   {
-    opengl::scoped::buffer_binder<GL_ELEMENT_ARRAY_BUFFER> const _ (_indices_buffer);
-    gl.bufferData (GL_ELEMENT_ARRAY_BUFFER, strip_with_holes.size() * sizeof (StripType), strip_with_holes.data(), GL_STATIC_DRAW);
+    opengl::scoped::buffer_binder<GL_ELEMENT_ARRAY_BUFFER> const _ (_indice_buffers[lod_level]);
+    gl.bufferData (GL_ELEMENT_ARRAY_BUFFER, _indice_strips[lod_level].size() * sizeof (StripType), _indice_strips[lod_level].data(), GL_STATIC_DRAW);
   }
 
-  for (int lod_level = 0; lod_level < 4; ++lod_level)
-  {
-    opengl::scoped::buffer_binder<GL_ELEMENT_ARRAY_BUFFER> const _ (lod_indices[lod_level]);
-    gl.bufferData (GL_ELEMENT_ARRAY_BUFFER, strip_lods[lod_level].size() * sizeof (StripType), strip_lods[lod_level].data(), GL_STATIC_DRAW);
-  }
+  // data no longer needed
+  _indice_strips.clear();
 
   _need_indice_buffer_update = false;
 }
 
-boost::optional<int> MapChunk::get_lod_level(math::vector_3d const& camera_pos, display_mode display) const
+int MapChunk::get_lod_level(math::vector_3d const& camera_pos, display_mode display) const
 {
   float dist = display == display_mode::in_2D
              ? std::abs(camera_pos.y - vcenter.y)
@@ -291,23 +289,12 @@ boost::optional<int> MapChunk::get_lod_level(math::vector_3d const& camera_pos, 
 
   if (dist < 500.f)
   {
-    return boost::none;
-  }
-  else if (dist < 1000.f)
-  {
     return 0;
-  }
-  else if (dist < 2000.f)
-  {
-    return 1;
-  }
-  else if (dist < 4000.f)
-  {
-    return 2;
   }
   else
   {
-    return 3;
+    // todo improve
+    return 1 + std::min(lod_count - 1, static_cast<int>(dist / 1000.f));
   }
 }
 
@@ -347,61 +334,72 @@ bool MapChunk::shadow_map_is_empty() const
   return true;
 }
 
+std::vector<StripType> MapChunk::strip_without_holes = {};
+
 void MapChunk::initStrip()
 {
-  strip_with_holes.clear();
-  strip_without_holes.clear();
-  strip_lods.clear();
+  bool init_strip_without_holes = strip_without_holes.size() == 0;
+
+  _indice_strips.clear();
 
   for (int x = 0; x<8; ++x)
   {
     for (int y = 0; y<8; ++y)
     {
-      strip_without_holes.emplace_back (indexLoD(y, x)); //9
-      strip_without_holes.emplace_back (indexNoLoD(y, x)); //0
-      strip_without_holes.emplace_back (indexNoLoD(y + 1, x)); //17
-      strip_without_holes.emplace_back (indexLoD(y, x)); //9
-      strip_without_holes.emplace_back (indexNoLoD(y + 1, x)); //17
-      strip_without_holes.emplace_back (indexNoLoD(y + 1, x + 1)); //18
-      strip_without_holes.emplace_back (indexLoD(y, x)); //9
-      strip_without_holes.emplace_back (indexNoLoD(y + 1, x + 1)); //18
-      strip_without_holes.emplace_back (indexNoLoD(y, x + 1)); //1
-      strip_without_holes.emplace_back (indexLoD(y, x)); //9
-      strip_without_holes.emplace_back (indexNoLoD(y, x + 1)); //1
-      strip_without_holes.emplace_back (indexNoLoD(y, x)); //0
+      if (init_strip_without_holes)
+      {
+        strip_without_holes.emplace_back(indexLoD(y, x)); //9
+        strip_without_holes.emplace_back(indexNoLoD(y, x)); //0
+        strip_without_holes.emplace_back(indexNoLoD(y + 1, x)); //17
+        strip_without_holes.emplace_back(indexLoD(y, x)); //9
+        strip_without_holes.emplace_back(indexNoLoD(y + 1, x)); //17
+        strip_without_holes.emplace_back(indexNoLoD(y + 1, x + 1)); //18
+        strip_without_holes.emplace_back(indexLoD(y, x)); //9
+        strip_without_holes.emplace_back(indexNoLoD(y + 1, x + 1)); //18
+        strip_without_holes.emplace_back(indexNoLoD(y, x + 1)); //1
+        strip_without_holes.emplace_back(indexLoD(y, x)); //9
+        strip_without_holes.emplace_back(indexNoLoD(y, x + 1)); //1
+        strip_without_holes.emplace_back(indexNoLoD(y, x)); //0
+      }
 
       if (isHole(x / 2, y / 2))
         continue;
 
       // todo: better hole check ?
-      for (int lod_level = 0; lod_level < 4; ++lod_level)
+      for (int lod_level = 1; lod_level < indice_buffer_count; ++lod_level)
       {
-        int n = 1 << lod_level;
+        int n = 1 << (lod_level-1);
         if ((x % n) == 0 && (y % n) == 0)
         {
-          strip_lods[lod_level].emplace_back (indexNoLoD(y, x)); //0
-          strip_lods[lod_level].emplace_back (indexNoLoD(y + n, x)); //17
-          strip_lods[lod_level].emplace_back (indexNoLoD(y + n, x + n)); //18
-          strip_lods[lod_level].emplace_back (indexNoLoD(y + n, x + n)); //18
-          strip_lods[lod_level].emplace_back (indexNoLoD(y, x + n)); //1
-          strip_lods[lod_level].emplace_back (indexNoLoD(y, x)); //0
+          _indice_strips[lod_level].emplace_back (indexNoLoD(y, x)); //0
+          _indice_strips[lod_level].emplace_back (indexNoLoD(y + n, x)); //17
+          _indice_strips[lod_level].emplace_back (indexNoLoD(y + n, x + n)); //18
+          _indice_strips[lod_level].emplace_back (indexNoLoD(y + n, x + n)); //18
+          _indice_strips[lod_level].emplace_back (indexNoLoD(y, x + n)); //1
+          _indice_strips[lod_level].emplace_back (indexNoLoD(y, x)); //0
         }
       }
 
-      strip_with_holes.emplace_back (indexLoD(y, x)); //9
-      strip_with_holes.emplace_back (indexNoLoD(y, x)); //0
-      strip_with_holes.emplace_back (indexNoLoD(y + 1, x)); //17
-      strip_with_holes.emplace_back (indexLoD(y, x)); //9
-      strip_with_holes.emplace_back (indexNoLoD(y + 1, x)); //17
-      strip_with_holes.emplace_back (indexNoLoD(y + 1, x + 1)); //18
-      strip_with_holes.emplace_back (indexLoD(y, x)); //9
-      strip_with_holes.emplace_back (indexNoLoD(y + 1, x + 1)); //18
-      strip_with_holes.emplace_back (indexNoLoD(y, x + 1)); //1
-      strip_with_holes.emplace_back (indexLoD(y, x)); //9
-      strip_with_holes.emplace_back (indexNoLoD(y, x + 1)); //1
-      strip_with_holes.emplace_back (indexNoLoD(y, x)); //0
+      _indice_strips[0].emplace_back (indexLoD(y, x)); //9
+      _indice_strips[0].emplace_back (indexNoLoD(y, x)); //0
+      _indice_strips[0].emplace_back (indexNoLoD(y + 1, x)); //17
+      _indice_strips[0].emplace_back (indexLoD(y, x)); //9
+      _indice_strips[0].emplace_back (indexNoLoD(y + 1, x)); //17
+      _indice_strips[0].emplace_back (indexNoLoD(y + 1, x + 1)); //18
+      _indice_strips[0].emplace_back (indexLoD(y, x)); //9
+      _indice_strips[0].emplace_back (indexNoLoD(y + 1, x + 1)); //18
+      _indice_strips[0].emplace_back (indexNoLoD(y, x + 1)); //1
+      _indice_strips[0].emplace_back (indexLoD(y, x)); //9
+      _indice_strips[0].emplace_back (indexNoLoD(y, x + 1)); //1
+      _indice_strips[0].emplace_back (indexNoLoD(y, x)); //0
     }
   }
+
+  for (int lod_level = 0; lod_level < indice_buffer_count; ++lod_level)
+  {
+    _indices_count_per_lod_level[lod_level] = _indice_strips[lod_level].size();
+  }
+
 
   _need_indice_buffer_update = true;
 }
@@ -633,7 +631,7 @@ void MapChunk::draw ( math::frustum const& frustum
 
   if (show_unpaintable_chunks && draw_paintability_overlay)
   {
-    bool cant_paint = texture_count == 4 
+    bool cant_paint = texture_count == 4
       && noggit::ui::selected_texture::get()
       && !canPaintTexture(*noggit::ui::selected_texture::get());
 
@@ -641,7 +639,7 @@ void MapChunk::draw ( math::frustum const& frustum
     {
       mcnk_shader.uniform("cant_paint", (int)cant_paint);
       previous_chunk_could_be_painted = !cant_paint;
-    }    
+    }
   }
 
   if (draw_chunk_flag_overlay)
@@ -666,12 +664,11 @@ void MapChunk::draw ( math::frustum const& frustum
 
   if (_need_lod_update)
   {
-    gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, !_lod_level ? _indices_buffer : lod_indices[*_lod_level]);
-    _lod_level_indice_count = !_lod_level ? strip_with_holes.size() : strip_lods[*_lod_level].size();
+    gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER,  _indice_buffers[_lod_level]);
     _need_lod_update = false;
   }
 
-  gl.drawElements(GL_TRIANGLES, _lod_level_indice_count, GL_UNSIGNED_SHORT, opengl::index_buffer_is_already_bound{});
+  gl.drawElements(GL_TRIANGLES, _indices_count_per_lod_level[_lod_level], GL_UNSIGNED_BYTE, opengl::index_buffer_is_already_bound{});
 
 
   for (int i = 0; i < texture_count; ++i)
