@@ -1083,7 +1083,8 @@ void World::draw ( math::matrix_4x4 const& model_view
     std::vector<int> textures_bound = { -1, -1, -1, -1 };
 
     // start true so the first chunk update the shadow texture regardless of whether it has shadows or not
-    bool previous_chunk_had_shadows = true;    
+    bool previous_chunk_had_shadows = true;
+    mcnk_shader.uniform("has_shadows", 1);
 
     for (MapTile* tile : mapIndex.loaded_tiles())
     {

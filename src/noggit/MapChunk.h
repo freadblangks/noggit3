@@ -31,6 +31,12 @@ class ChunkWater;
 using StripType = uint16_t;
 static const int mapbufsize = 9 * 9 + 8 * 8; // chunk size
 
+struct chunk_shadow
+{
+  uint8_t _shadow_map[64 * 64];
+  opengl::texture shadow;
+};
+
 class MapChunk
 {
 private:
@@ -44,9 +50,7 @@ private:
 
   void update_shadows();
 
-  bool _has_shadow;
-  uint8_t _shadow_map[64 * 64];
-  opengl::texture shadow;
+  std::unique_ptr<chunk_shadow> _chunk_shadow;
 
   std::vector<StripType> strip_with_holes;
   std::vector<StripType> strip_without_holes;

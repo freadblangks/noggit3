@@ -132,8 +132,10 @@ MapChunk::MapChunk(MapTile *maintile, MPQFile *f, bool bigAlpha, tile_mode mode)
     f->read(compressed_shadow_map, 0x200);
     f->seekRelative(-0x200);
 
+    _chunk_shadow = std::make_unique<chunk_shadow>();
+
     uint8_t *p, *c;
-    p = _shadow_map;
+    p = _chunk_shadow->_shadow_map;
     c = compressed_shadow_map;
     for (int i = 0; i<64 * 8; ++i)
     {
@@ -148,21 +150,19 @@ MapChunk::MapChunk(MapTile *maintile, MPQFile *f, bool bigAlpha, tile_mode mode)
     {
       for (std::size_t i(0); i < 64; ++i)
       {
-        _shadow_map[i * 64 + 63] = _shadow_map[i * 64 + 62];
-        _shadow_map[63 * 64 + i] = _shadow_map[62 * 64 + i];
+        _chunk_shadow->_shadow_map[i * 64 + 63] = _chunk_shadow->_shadow_map[i * 64 + 62];
+        _chunk_shadow->_shadow_map[63 * 64 + i] = _chunk_shadow->_shadow_map[62 * 64 + i];
       }
-      _shadow_map[63 * 64 + 63] = _shadow_map[62 * 64 + 62];
+      _chunk_shadow->_shadow_map[63 * 64 + 63] = _chunk_shadow->_shadow_map[62 * 64 + 62];
     }
 
-    _has_shadow = true;
+    // no need to use an empty shadowmap
+    if (shadow_map_is_empty())
+    {
+      clear_shadows();
+    }
   }
-  else
-  {
-    /** We have no shadow map (MCSH), so we got no shadows at all!  **
-    ** This results in everything being black.. Yay. Lets fake it! **/
-    memset(_shadow_map, 0, 64 * 64);
-    _has_shadow = false;
-  }
+
   // - MCCV ----------------------------------------------
   if(header.ofsMCCV)
   {
@@ -315,11 +315,14 @@ std::vector<uint8_t> MapChunk::compressed_shadow_map() const
 {
   std::vector<uint8_t> shadow_map(64 * 64 / 8);
 
-  for (int i = 0; i < 64 * 64; ++i)
+  if (_chunk_shadow)
   {
-    if (_shadow_map[i])
+    for (int i = 0; i < 64 * 64; ++i)
     {
-      shadow_map[i / 8] |= 1 << i % 8;
+      if (_chunk_shadow->_shadow_map[i])
+      {
+        shadow_map[i / 8] |= 1 << i % 8;
+      }
     }
   }
 
@@ -328,15 +331,20 @@ std::vector<uint8_t> MapChunk::compressed_shadow_map() const
 
 bool MapChunk::shadow_map_is_empty() const
 {
+  if (!_chunk_shadow)
+  {
+    return true;
+  }
+
   for (int i = 0; i < 64 * 64; ++i)
   {
-    if (_shadow_map[i])
+    if (_chunk_shadow->_shadow_map[i])
     {
-      return true;
+      return false;
     }
   }
 
-  return false;
+  return true;
 }
 
 void MapChunk::initStrip()
@@ -600,13 +608,22 @@ void MapChunk::draw ( math::frustum const& frustum
   }
 
   // only update the shadow texture if there's a shadow map used
-  // OR if the last chunk had a shadow and this one doesn't (bind the default all 0 texture)
-  if (_has_shadow || previous_chunk_had_shadows)
+  if (_chunk_shadow)
   {
     opengl::texture::set_active_texture(5);
-    shadow.bind();
+    _chunk_shadow->shadow.bind();
+
+    if (!previous_chunk_had_shadows)
+    {
+      mcnk_shader.uniform("has_shadows", 1);
+    }
   }
-  previous_chunk_had_shadows = _has_shadow;
+  else if (previous_chunk_had_shadows)
+  {
+    mcnk_shader.uniform("has_shadows", 0);
+  }
+
+  previous_chunk_had_shadows = !!_chunk_shadow;
 
   if (is_textured != previous_chunk_was_textured)
   {
@@ -1097,23 +1114,20 @@ bool MapChunk::canPaintTexture(scoped_blp_texture_reference texture)
 
 void MapChunk::update_shadows()
 {
-  shadow.bind();
-  gl.texImage2D(GL_TEXTURE_2D, 0, GL_RED, 64, 64, 0, GL_RED, GL_UNSIGNED_BYTE, _shadow_map);
-  gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  if (_chunk_shadow)
+  {
+    _chunk_shadow->shadow.bind();
+    gl.texImage2D(GL_TEXTURE_2D, 0, GL_RED, 64, 64, 0, GL_RED, GL_UNSIGNED_BYTE, _chunk_shadow->_shadow_map);
+    gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  }
 }
 
 void MapChunk::clear_shadows()
 {
-  _has_shadow = false;
-  memset(_shadow_map, 0, 64 * 64);
-
-  if (_uploaded)
-  {
-    update_shadows();
-  }
+  _chunk_shadow.reset();
 }
 
 bool MapChunk::isHole(int i, int j)
@@ -1390,7 +1404,7 @@ void MapChunk::save(util::sExtendableArray &lADTFile, int &lCurrentPosition, int
   //        }
 
   // MCSH
-  if (shadow_map_is_empty())
+  if (!shadow_map_is_empty())
   {
     header_flags.flags.has_mcsh = 1;
 

@@ -14,6 +14,7 @@ uniform vec2 tex_anim_2;
 uniform vec2 tex_anim_3;
 
 uniform bool is_textured;
+uniform bool has_shadows;
 uniform bool has_mccv;
 uniform bool cant_paint;
 uniform bool draw_areaid_overlay;
@@ -125,9 +126,10 @@ void main()
     out_color.rgb = mix(vec3(1.0), out_color.rgb, 0.5);
   }
 
-  float shadow_alpha = texture(shadow_map, vary_texcoord / 8.0).r;
-
-  out_color = vec4 (out_color.rgb * (1.0 - shadow_alpha), 1.0);
+  if(has_shadows)
+  {
+    out_color = vec4 (out_color.rgb * (1.0 - texture(shadow_map, vary_texcoord / 8.0).r), 1.0);
+  }  
 
   if (draw_terrain_height_contour)
   {
