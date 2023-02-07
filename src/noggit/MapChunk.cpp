@@ -586,7 +586,7 @@ void MapChunk::draw ( math::frustum const& frustum
 
   if (is_textured)
   {
-    texture_set->bind_alpha(0);
+    texture_set->update_adt_alphamap_if_necessary(px, py);
 
     for (int i = 0; i < texture_count; ++i)
     {
@@ -636,6 +636,8 @@ void MapChunk::draw ( math::frustum const& frustum
   {
     mcnk_shader.uniform("areaid_color", (math::vector_4d)area_id_colors[areaID]);
   }
+
+  mcnk_shader.uniform("chunk_id", py * 16 + px);
 
   gl.bindVertexArray(_vao);
 
@@ -1584,4 +1586,9 @@ bool MapChunk::isBorderChunk(std::set<math::vector_3d*>& selected)
 ChunkWater* MapChunk::liquid_chunk() const
 {
   return mt->Water.getChunk(px, py);
+}
+
+void MapChunk::update_alphamap()
+{
+  texture_set->update_adt_alphamap_if_necessary(px, py);
 }

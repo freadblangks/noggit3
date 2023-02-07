@@ -295,6 +295,21 @@ namespace opengl
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
     return _current_context->functions()->glTexImage2D (target, level, internal_format, width, height, border, format, type, data);
   }
+  void context::texImage3D (GLenum target, GLint level, GLint internal_format, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, GLvoid const* data)
+  {
+    verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
+    return _3_3_core_func->glTexImage3D (target, level, internal_format, width, height, depth, border, format, type, data);
+  }
+  void context::texSubImage2D(GLenum target, GLint level, GLint x_offset, GLint y_offset, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid const* data)
+  {
+    verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
+    return _current_context->functions()->glTexSubImage2D (target, level, x_offset, y_offset, width, height, format, type, data);
+  }
+  void context::texSubImage3D(GLenum target, GLint level, GLint x_offset, GLint y_offset, GLint z_offset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, GLvoid const* data)
+  {
+    verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
+    return _3_3_core_func->glTexSubImage3D(target, level, x_offset, y_offset, z_offset, width, height, depth, format, type, data);
+  }
   void context::compressedTexImage2D (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, GLvoid const* data)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);

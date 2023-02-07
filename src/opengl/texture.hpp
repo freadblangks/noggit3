@@ -26,4 +26,10 @@ namespace opengl
 
     internal_type _id;
   };
+
+  class texture_array : texture
+  {
+  public:
+    virtual void bind() override;
+  };
 }

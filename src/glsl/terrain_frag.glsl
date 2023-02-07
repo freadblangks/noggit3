@@ -1,6 +1,8 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
 #version 330 core
 
+// todo: move to opengl 4.1+ to be able to use the layout qualifier to be able to validate the program on creation
+uniform sampler2DArray alphamap;
 uniform sampler2D shadow_map;
 uniform sampler2D tex0;
 uniform sampler2D tex1;
@@ -10,7 +12,7 @@ uniform vec2 tex_anim_0;
 uniform vec2 tex_anim_1;
 uniform vec2 tex_anim_2;
 uniform vec2 tex_anim_3;
-uniform sampler2D alphamap;
+
 uniform bool is_textured;
 uniform bool has_mccv;
 uniform bool cant_paint;
@@ -44,6 +46,8 @@ uniform vec3 light_dir;
 uniform vec3 diffuse_color;
 uniform vec3 ambient_color;
 
+uniform int chunk_id;
+
 in vec3 vary_position;
 in vec2 vary_texcoord;
 in vec3 vary_normal;
@@ -61,7 +65,8 @@ vec4 texture_blend()
   if(!is_textured)
     return vec4 (1.0, 1.0, 1.0, 1.0);
 
-  vec3 alpha = texture(alphamap, vary_texcoord / 8.0).rgb;
+  vec3 alpha = texture(alphamap, vec3(vary_texcoord / 8., chunk_id + 0.1)).rgb;
+
   float a0 = alpha.r;  
   float a1 = alpha.g;
   float a2 = alpha.b;

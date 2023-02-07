@@ -205,4 +205,6 @@ public:
   bool fixGapAbove(const MapChunk* chunk);
 
   void selectVertex(math::vector_3d const& minPos, math::vector_3d const& maxPos, std::set<math::vector_3d*>& vertices);
+
+  void update_alphamap();
 };

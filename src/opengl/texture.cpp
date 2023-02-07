@@ -10,7 +10,7 @@ namespace opengl
   texture::texture()
     : _id (0)
   {
-    
+
   }
 
   texture::~texture()
@@ -45,5 +45,14 @@ namespace opengl
   void texture::set_active_texture (size_t num)
   {
     gl.activeTexture (GL_TEXTURE0 + num);
+  }
+
+  void texture_array::bind()
+  {
+    if (_id == 0)
+    {
+      gl.genTextures(1, &_id);
+    }
+    gl.bindTexture(GL_TEXTURE_2D_ARRAY, _id);
   }
 }

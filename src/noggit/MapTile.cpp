@@ -366,6 +366,14 @@ void MapTile::draw ( math::frustum const& frustum
     return;
   }
 
+  if (!_alphamap_created)
+  {
+    create_alphamap();
+  }
+
+  opengl::texture::set_active_texture(0);
+  _adt_alphamap.bind();
+
   for (int j = 0; j<16; ++j)
   {
     for (int i = 0; i<16; ++i)
@@ -955,4 +963,27 @@ void MapTile::add_model(uint32_t uid)
   {
     uids.push_back(uid);
   }
+}
+
+void MapTile::create_alphamap()
+{
+  opengl::texture::set_active_texture(0);
+  _adt_alphamap.bind();
+
+  gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB, 64, 64, 256, 0, GL_RGB, GL_FLOAT, NULL);
+  gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+  for (size_t i = 0; i < 16; i++)
+  {
+    for (size_t j = 0; j < 16; j++)
+    {
+      mChunks[i][j]->update_alphamap();
+    }
+  }
+
+  _alphamap_created = true;
 }

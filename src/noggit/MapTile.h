@@ -130,6 +130,10 @@ public:
   bool tile_is_being_reloaded() const { return _tile_is_being_reloaded; }
 
 private:
+  opengl::texture_array _adt_alphamap;
+  bool _alphamap_created = false;
+  void create_alphamap();
+private:
   tile_mode _mode;
   bool _tile_is_being_reloaded;
 

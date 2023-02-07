@@ -890,64 +890,6 @@ bool TextureSet::removeDuplicate()
   return changed;
 }
 
-void TextureSet::bind_alpha(std::size_t id)
-{
-  opengl::texture::set_active_texture(id);
-  amap_gl_tex.bind();
-
-  if (_need_amap_update)
-  {
-    if (nTextures)
-    {
-      if (tmp_edit_values)
-      {
-        std::vector<float> amap(3 * 64 * 64);
-        auto& tmp_amaps = *tmp_edit_values.get();
-
-        for (int i = 0; i < 64 * 64; ++i)
-        {
-          for (int alpha_id = 0; alpha_id < 3; ++alpha_id)
-          {
-            amap[i * 3 + alpha_id] = tmp_amaps[alpha_id + 1][i] / 255.f;
-          }
-        }
-
-        gl.texImage2D(GL_TEXTURE_2D, 0, GL_RGB, 64, 64, 0, GL_RGB, GL_FLOAT, amap.data());
-      }
-      else
-      {
-        std::vector<uint8_t> amap(3 * 64 * 64);
-        uint8_t const* alpha_ptr[3];
-
-        for (int i = 0; i < nTextures - 1; ++i)
-        {
-          alpha_ptr[i] = alphamaps[i]->getAlpha();
-        }
-
-        for (int i = 0; i < 64 * 64; ++i)
-        {
-          for (int alpha_id = 0; alpha_id < 3; ++alpha_id)
-          {
-            amap[i * 3 + alpha_id] = (alpha_id < nTextures - 1)
-                                   ? *(alpha_ptr[alpha_id]++)
-                                   : 0
-                                   ;
-          }
-        }
-
-        gl.texImage2D(GL_TEXTURE_2D, 0, GL_RGB, 64, 64, 0, GL_RGB, GL_UNSIGNED_BYTE, amap.data());
-      }
-    }
-
-    gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    _need_amap_update = false;
-  }
-}
-
 namespace
 {
   misc::max_capacity_stack_vector<std::size_t, 4> current_layer_values
@@ -1088,5 +1030,57 @@ void TextureSet::create_temporary_alphamaps_if_needed()
     }
 
     values[0][i] = base_alpha;
+  }
+}
+
+void TextureSet::update_adt_alphamap_if_necessary(int chunk_x, int chunk_y)
+{
+  if (_need_amap_update)
+  {
+    opengl::texture::set_active_texture(0);
+
+    if (nTextures)
+    {
+      if (tmp_edit_values)
+      {
+        std::vector<float> amap(3 * 64 * 64);
+        auto& tmp_amaps = *tmp_edit_values.get();
+
+        for (int i = 0; i < 64 * 64; ++i)
+        {
+          for (int alpha_id = 0; alpha_id < 3; ++alpha_id)
+          {
+            amap[i * 3 + alpha_id] = tmp_amaps[alpha_id + 1][i] / 255.f;
+          }
+        }
+
+        gl.texSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, chunk_x + 16 * chunk_y, 64, 64, 1, GL_RGB, GL_FLOAT, amap.data());
+      }
+      else
+      {
+        std::vector<uint8_t> amap(3 * 64 * 64);
+        uint8_t const* alpha_ptr[3];
+
+        for (int i = 0; i < nTextures - 1; ++i)
+        {
+          alpha_ptr[i] = alphamaps[i]->getAlpha();
+        }
+
+        for (int i = 0; i < 64 * 64; ++i)
+        {
+          for (int alpha_id = 0; alpha_id < 3; ++alpha_id)
+          {
+            amap[i * 3 + alpha_id] = (alpha_id < nTextures - 1)
+              ? *(alpha_ptr[alpha_id]++)
+              : 0
+              ;
+          }
+        }
+
+        gl.texSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, chunk_x + 16 * chunk_y, 64, 64, 1, GL_RGB, GL_UNSIGNED_BYTE, amap.data());
+      }
+    }
+
+    _need_amap_update = false;
   }
 }
