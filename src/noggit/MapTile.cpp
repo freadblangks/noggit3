@@ -16,8 +16,6 @@
 #include <opengl/shader.hpp>
 #include <util/sExtendableArray.hpp>
 
-#include <QtCore/QSettings>
-
 #include <algorithm>
 #include <cassert>
 #include <list>

@@ -3,11 +3,12 @@
 #include <noggit/DBC.h>
 #include <noggit/DBCFile.h>
 #include <noggit/Log.h>
+#include <noggit/MapView.h>
+#include <noggit/settings.hpp>
 #include <noggit/World.h>
 #include <noggit/ui/About.h>
-#include <noggit/MapView.h>
-#include <noggit/ui/SettingsPanel.h>
 #include <noggit/ui/minimap_widget.hpp>
+#include <noggit/ui/SettingsPanel.h>
 #include <noggit/ui/uid_fix_window.hpp>
 #include <noggit/uid_storage.hpp>
 
@@ -26,8 +27,6 @@
 
 #ifdef USE_MYSQL_UID_STORAGE
   #include <mysql/mysql.h>
-
-  #include <QtCore/QSettings>
 #endif
 
 #include "revision.h"
@@ -92,9 +91,8 @@ namespace noggit
                         , bool from_bookmark
                         )
     {
-      QSettings settings;
 #ifdef USE_MYSQL_UID_STORAGE
-      bool use_mysql = settings.value("project/mysql/enabled", false).toBool();
+      bool use_mysql = NoggitSettings.value("project/mysql/enabled", false).toBool();
 
       if ((use_myqsl && mysql::hasMaxUIDStoredDB(_world->getMapID()))
         || uid_storage::hasMaxUIDStored(_world->getMapID())
@@ -106,7 +104,7 @@ namespace noggit
 #else
       if (uid_storage::hasMaxUIDStored(_world->getMapID()))
       {
-        if (settings.value("uid_startup_check", true).toBool())
+        if (NoggitSettings.value("uid_startup_check", true).toBool())
         {
           enterMapAt(pos, camera_pitch, camera_yaw, uid_fix_mode::max_uid, from_bookmark);
         }

@@ -4,7 +4,6 @@
 
 #include <qt-color-widgets/color_selector.hpp>
 
-#include <QtCore/QSettings>
 #include <QtWidgets/QButtonGroup>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDialog>
@@ -73,7 +72,6 @@ namespace noggit
       QCheckBox* _anti_aliasing_cb;
       QCheckBox* _fullscreen_cb;
 
-      QSettings* _settings;
     public:
       settings(QWidget* parent = nullptr);
       void discard_changes();

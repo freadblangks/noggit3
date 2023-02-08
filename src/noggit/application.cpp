@@ -11,6 +11,7 @@
 #include <noggit/WMO.h> // WMOManager::report()
 #include <noggit/errorHandling.h>
 #include <noggit/liquid_layer.hpp>
+#include <noggit/settings.hpp>
 #include <noggit/ui/main_window.hpp>
 #include <opengl/context.hpp>
 #include <util/exception_to_string.hpp>
@@ -26,7 +27,6 @@
 #include <list>
 #include <string>
 #include <vector>
-#include <QtCore/QSettings>
 #include <QtCore/QTimer>
 #include <QtGui/QOffscreenSurface>
 #include <QtOpenGL/QGLFormat>
@@ -213,14 +213,12 @@ Noggit::Noggit(int argc, char *argv[])
 
   NOGGIT_LOG << "Noggit Studio - " << STRPRODUCTVER << std::endl;
 
-
-  QSettings settings;
-  doAntiAliasing = settings.value("antialiasing", false).toBool();
-  fullscreen = settings.value("fullscreen", false).toBool();
+  doAntiAliasing = NoggitSettings.value("antialiasing", false).toBool();
+  fullscreen = NoggitSettings.value("fullscreen", false).toBool();
 
 
   srand(::time(nullptr));
-  QDir path (settings.value ("project/game_path").toString());
+  QDir path (NoggitSettings.value ("project/game_path").toString());
 
   while (!is_valid_game_path (path))
   {
@@ -238,13 +236,13 @@ Noggit::Noggit(int argc, char *argv[])
 
   NOGGIT_LOG << "Game path: " << wowpath << std::endl;
 
-  std::string project_path = settings.value ("project/path", path.absolutePath()).toString().toStdString();
-  settings.setValue ("project/path", QString::fromStdString (project_path));
+  std::string project_path = NoggitSettings.value ("project/path", path.absolutePath()).toString().toStdString();
+  NoggitSettings.set_value ("project/path", QString::fromStdString (project_path));
 
   NOGGIT_LOG << "Project path: " << project_path << std::endl;
 
-  settings.setValue ("project/game_path", path.absolutePath());
-  settings.setValue ("project/path", QString::fromStdString(project_path));
+  NoggitSettings.set_value ("project/game_path", path.absolutePath());
+  NoggitSettings.set_value ("project/path", QString::fromStdString(project_path));
 
   loadMPQs(); // listfiles are not available straight away! They are async! Do not rely on anything at this point!
   OpenDBs();
@@ -261,7 +259,7 @@ Noggit::Noggit(int argc, char *argv[])
   format.setProfile(QSurfaceFormat::CoreProfile);
 
   format.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
-  format.setSwapInterval(settings.value ("vsync", 0).toInt());
+  format.setSwapInterval(NoggitSettings.value ("vsync", 0).toInt());
 
   if (doAntiAliasing)
   {

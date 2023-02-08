@@ -2,6 +2,7 @@
 
 #include <noggit/ui/SettingsPanel.h>
 
+#include <noggit/settings.hpp>
 #include <noggit/TextureManager.h>
 #include <util/qt/overload.hpp>
 
@@ -58,7 +59,6 @@ namespace noggit
   {
     settings::settings(QWidget* parent)
       : QDialog (parent)
-      , _settings (new QSettings (this))
     {
       setWindowIcon (QIcon (":/icon"));
       setWindowTitle ("Settings");
@@ -75,7 +75,7 @@ namespace noggit
             connect ( (*line)->actual, &QLineEdit::textChanged
                     , [&, key] (QString value)
                       {
-                        _settings->setValue (key, value);
+                        NoggitSettings.set_value (key, value);
                       }
                     );
           }
@@ -85,7 +85,7 @@ namespace noggit
       browse_row (&gamePathField, "Game Path", "project/game_path", util::file_line_edit::directories);
       browse_row (&projectPathField, "Project Path", "project/path", util::file_line_edit::directories);
       browse_row (&importPathField, "Import Path", "project/import_file", util::file_line_edit::files);
-      browse_row (&wmvLogPathField, "WMV Log Path", "project/wmv_log_file", util::file_line_edit::files);      
+      browse_row (&wmvLogPathField, "WMV Log Path", "project/wmv_log_file", util::file_line_edit::files);
 
       _mysql_box = new QGroupBox ("MySQL (uid storage)", this);
       _mysql_box->setToolTip ("Store the maps' max model unique id (uid) in a mysql database to sync your uids with different computers/users to avoid duplications");
@@ -94,10 +94,10 @@ namespace noggit
 #ifdef USE_MYSQL_UID_STORAGE
       mysql_box->setCheckable (true);
 
-      _mysql_server_field = new QLineEdit(_settings->value("project/mysql/server").toString(), this);
-      _mysql_user_field = new QLineEdit(_settings->value("project/mysql/user").toString(), this);
-      _mysql_pwd_field = new QLineEdit(_settings->value("project/mysql/pwd").toString(), this);
-      _mysql_db_field = new QLineEdit(_settings->value("project/mysql/db").toString(), this);
+      _mysql_server_field = new QLineEdit(NoggitSettings.value("project/mysql/server").toString(), this);
+      _mysql_user_field = new QLineEdit(NoggitSettings.value("project/mysql/user").toString(), this);
+      _mysql_pwd_field = new QLineEdit(NoggitSettings.value("project/mysql/pwd").toString(), this);
+      _mysql_db_field = new QLineEdit(NoggitSettings.value("project/mysql/db").toString(), this);
 
       mysql_layout->addRow("Server", _mysql_server_field);
       mysql_layout->addRow("User", _mysql_user_field);
@@ -118,7 +118,7 @@ namespace noggit
       auto radio_wire_cursor (new QRadioButton ("Around cursor"));
 
       _wireframe_type_group->addButton (radio_wire_full, 0);
-      _wireframe_type_group->addButton (radio_wire_cursor, 1);     
+      _wireframe_type_group->addButton (radio_wire_cursor, 1);
 
       wireframe_layout->addRow (new QLabel ("Type:"));
       wireframe_layout->addRow (radio_wire_full);
@@ -138,7 +138,7 @@ namespace noggit
       wireframe_layout->addRow ("Color", _wireframe_color = new color_widgets::ColorSelector (wireframe_box));
       layout->addRow (wireframe_box);
 
-      
+
       layout->addRow ("VSync", _vsync_cb = new QCheckBox (this));
       layout->addRow ("Anti Aliasing", _anti_aliasing_cb = new QCheckBox(this));
       layout->addRow ("Fullscreen", _fullscreen_cb = new QCheckBox(this));
@@ -149,7 +149,7 @@ namespace noggit
       layout->addRow ( "View Distance"
                      , viewDistanceField = new QDoubleSpinBox
                      );
-      viewDistanceField->setRange (0.f, 1048576.f);      
+      viewDistanceField->setRange (0.f, 1048576.f);
 
       layout->addRow ( "FarZ"
                      , farZField = new QDoubleSpinBox
@@ -214,76 +214,76 @@ namespace noggit
 
     void settings::discard_changes()
     {
-      gamePathField->actual->setText (_settings->value ("project/game_path").toString());
-      projectPathField->actual->setText (_settings->value ("project/path").toString());
-      importPathField->actual->setText (_settings->value ("project/import_file").toString());
-      wmvLogPathField->actual->setText (_settings->value ("project/wmv_log_file").toString());
-      viewDistanceField->setValue (_settings->value ("view_distance", 1000.f).toFloat());
-      farZField->setValue (_settings->value ("farZ", 2048.f).toFloat());
-      tabletModeCheck->setChecked (_settings->value ("tablet/enabled", false).toBool());
-      _undock_tool_properties->setChecked (_settings->value ("undock_tool_properties/enabled", true).toBool());
-      _undock_small_texture_palette->setChecked (_settings->value ("undock_small_texture_palette/enabled", true).toBool());
-      _vsync_cb->setChecked (_settings->value ("vsync", false).toBool());
-      _anti_aliasing_cb->setChecked (_settings->value ("anti_aliasing", false).toBool());
-      _fullscreen_cb->setChecked (_settings->value ("fullscreen", false).toBool());
-      _adt_unload_dist->setValue(_settings->value("unload_dist", 5).toInt());
-      _adt_unload_check_interval->setValue(_settings->value("unload_interval", 5).toInt());
-      _uid_cb->setChecked(_settings->value("uid_startup_check", true).toBool());
-      _additional_file_loading_log->setChecked(_settings->value("additional_file_loading_log", false).toBool());
+      gamePathField->actual->setText (NoggitSettings.value ("project/game_path").toString());
+      projectPathField->actual->setText (NoggitSettings.value ("project/path").toString());
+      importPathField->actual->setText (NoggitSettings.value ("project/import_file").toString());
+      wmvLogPathField->actual->setText (NoggitSettings.value ("project/wmv_log_file").toString());
+      viewDistanceField->setValue (NoggitSettings.value ("view_distance", 1000.f).toFloat());
+      farZField->setValue (NoggitSettings.value ("farZ", 2048.f).toFloat());
+      tabletModeCheck->setChecked (NoggitSettings.value ("tablet/enabled", false).toBool());
+      _undock_tool_properties->setChecked (NoggitSettings.value ("undock_tool_properties/enabled", true).toBool());
+      _undock_small_texture_palette->setChecked (NoggitSettings.value ("undock_small_texture_palette/enabled", true).toBool());
+      _vsync_cb->setChecked (NoggitSettings.value ("vsync", false).toBool());
+      _anti_aliasing_cb->setChecked (NoggitSettings.value ("anti_aliasing", false).toBool());
+      _fullscreen_cb->setChecked (NoggitSettings.value ("fullscreen", false).toBool());
+      _adt_unload_dist->setValue(NoggitSettings.value("unload_dist", 5).toInt());
+      _adt_unload_check_interval->setValue(NoggitSettings.value("unload_interval", 5).toInt());
+      _uid_cb->setChecked(NoggitSettings.value("uid_startup_check", true).toBool());
+      _additional_file_loading_log->setChecked(NoggitSettings.value("additional_file_loading_log", false).toBool());
 #ifdef NOGGIT_HAS_SCRIPTING
-      _allow_scripts_write_any_file->setChecked(_settings->value("allow_scripts_write_any_file",false).toBool());
+      _allow_scripts_write_any_file->setChecked(NoggitSettings.value("allow_scripts_write_any_file",false).toBool());
 #endif
 #ifdef USE_MYSQL_UID_STORAGE
-      _mysql_box->setChecked (_settings->value ("project/mysql/enabled").toBool());
-      _mysql_server_field->setText (_settings->value ("project/mysql/server").toString());
-      _mysql_user_field->setText(_settings->value ("project/mysql/user").toString());
-      _mysql_pwd_field->setText (_settings->value ("project/mysql/pwd").toString());
-      _mysql_db_field->setText (_settings->value ("project/mysql/db").toString());
+      _mysql_box->setChecked (NoggitSettings.value ("project/mysql/enabled").toBool());
+      _mysql_server_field->setText (NoggitSettings.value ("project/mysql/server").toString());
+      _mysql_user_field->setText(NoggitSettings.value ("project/mysql/user").toString());
+      _mysql_pwd_field->setText (NoggitSettings.value ("project/mysql/pwd").toString());
+      _mysql_db_field->setText (NoggitSettings.value ("project/mysql/db").toString());
 #endif
 
-      _wireframe_type_group->button (_settings->value ("wireframe/type", 0).toInt())->toggle();
-      _wireframe_radius->setValue (_settings->value ("wireframe/radius", 1.5f).toFloat());
-      _wireframe_width->setValue (_settings->value ("wireframe/width", 1.f).toFloat());
-      _wireframe_color->setColor(_settings->value("wireframe/color").value<QColor>());      
+      _wireframe_type_group->button (NoggitSettings.value ("wireframe/type", 0).toInt())->toggle();
+      _wireframe_radius->setValue (NoggitSettings.value ("wireframe/radius", 1.5f).toFloat());
+      _wireframe_width->setValue (NoggitSettings.value ("wireframe/width", 1.f).toFloat());
+      _wireframe_color->setColor(NoggitSettings.value("wireframe/color").value<QColor>());
     }
 
     void settings::save_changes()
     {
-      _settings->setValue ("project/game_path", gamePathField->actual->text());
-      _settings->setValue ("project/path", projectPathField->actual->text());
-      _settings->setValue ("project/import_file", importPathField->actual->text());
-      _settings->setValue ("project/wmv_log_file", wmvLogPathField->actual->text());
-      _settings->setValue ("farZ", farZField->value());
-      _settings->setValue ("view_distance", viewDistanceField->value());
-      _settings->setValue ("tablet/enabled", tabletModeCheck->isChecked());
-      _settings->setValue ("undock_tool_properties/enabled", _undock_tool_properties->isChecked());
-      _settings->setValue ("undock_small_texture_palette/enabled", _undock_small_texture_palette->isChecked());
-      _settings->setValue ("vsync", _vsync_cb->isChecked());
-      _settings->setValue ("anti_aliasing", _anti_aliasing_cb->isChecked());
-      _settings->setValue ("fullscreen", _fullscreen_cb->isChecked());
-      _settings->setValue ("unload_dist", _adt_unload_dist->value());
-      _settings->setValue ("unload_interval", _adt_unload_check_interval->value());
-      _settings->setValue ("uid_startup_check", _uid_cb->isChecked());
-      _settings->setValue ("additional_file_loading_log", _additional_file_loading_log->isChecked());
+      NoggitSettings.set_value ("project/game_path", gamePathField->actual->text());
+      NoggitSettings.set_value ("project/path", projectPathField->actual->text());
+      NoggitSettings.set_value ("project/import_file", importPathField->actual->text());
+      NoggitSettings.set_value ("project/wmv_log_file", wmvLogPathField->actual->text());
+      NoggitSettings.set_value ("farZ", farZField->value());
+      NoggitSettings.set_value ("view_distance", viewDistanceField->value());
+      NoggitSettings.set_value ("tablet/enabled", tabletModeCheck->isChecked());
+      NoggitSettings.set_value ("undock_tool_properties/enabled", _undock_tool_properties->isChecked());
+      NoggitSettings.set_value ("undock_small_texture_palette/enabled", _undock_small_texture_palette->isChecked());
+      NoggitSettings.set_value ("vsync", _vsync_cb->isChecked());
+      NoggitSettings.set_value ("anti_aliasing", _anti_aliasing_cb->isChecked());
+      NoggitSettings.set_value ("fullscreen", _fullscreen_cb->isChecked());
+      NoggitSettings.set_value ("unload_dist", _adt_unload_dist->value());
+      NoggitSettings.set_value ("unload_interval", _adt_unload_check_interval->value());
+      NoggitSettings.set_value ("uid_startup_check", _uid_cb->isChecked());
+      NoggitSettings.set_value ("additional_file_loading_log", _additional_file_loading_log->isChecked());
 
 #ifdef NOGGIT_HAS_SCRIPTING
-      _settings->setValue ("allow_scripts_write_any_file", _allow_scripts_write_any_file->isChecked());
+      NoggitSettings.set_value ("allow_scripts_write_any_file", _allow_scripts_write_any_file->isChecked());
 #endif
 
 #ifdef USE_MYSQL_UID_STORAGE
-      _settings->setValue ("project/mysql/enabled", _mysql_box->isChecked());
-      _settings->setValue ("project/mysql/server", _mysql_server_field->text());
-      _settings->setValue ("project/mysql/user", _mysql_user_field->text());
-      _settings->setValue ("project/mysql/pwd", _mysql_pwd_field->text());
-      _settings->setValue ("project/mysql/db", _mysql_db_field->text());
+      NoggitSettings.set_value ("project/mysql/enabled", _mysql_box->isChecked());
+      NoggitSettings.set_value ("project/mysql/server", _mysql_server_field->text());
+      NoggitSettings.set_value ("project/mysql/user", _mysql_user_field->text());
+      NoggitSettings.set_value ("project/mysql/pwd", _mysql_pwd_field->text());
+      NoggitSettings.set_value ("project/mysql/db", _mysql_db_field->text());
 #endif
 
-      _settings->setValue ("wireframe/type", _wireframe_type_group->checkedId());
-      _settings->setValue ("wireframe/radius", _wireframe_radius->value());
-      _settings->setValue ("wireframe/width", _wireframe_width->value());
-      _settings->setValue ("wireframe/color", _wireframe_color->color());      
+      NoggitSettings.set_value ("wireframe/type", _wireframe_type_group->checkedId());
+      NoggitSettings.set_value ("wireframe/radius", _wireframe_radius->value());
+      NoggitSettings.set_value ("wireframe/width", _wireframe_width->value());
+      NoggitSettings.set_value ("wireframe/color", _wireframe_color->color());
 
-	  _settings->sync();
+      NoggitSettings.sync();
     }
   }
 }

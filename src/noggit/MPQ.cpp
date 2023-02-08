@@ -3,12 +3,11 @@
 #include <noggit/AsyncLoader.h> // AsyncLoader
 #include <noggit/Log.h>
 #include <noggit/MPQ.h>
+#include <noggit/settings.hpp>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/thread.hpp>
-
-#include <QtCore/QSettings>
 
 #include <algorithm>
 #include <cstdint>
@@ -162,8 +161,7 @@ namespace
 {
   boost::filesystem::path getDiskPath (std::string const& pFilename)
   {
-    QSettings settings;
-    return boost::filesystem::path (settings.value ("project/path").toString().toStdString())
+    return boost::filesystem::path (NoggitSettings.project_path())
       / noggit::mpq::normalized_filename (pFilename);
   }
 

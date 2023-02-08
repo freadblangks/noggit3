@@ -9,6 +9,7 @@
 #include <noggit/MapView.h>
 #include <noggit/Misc.h>
 #include <noggit/ModelManager.h> // ModelManager
+#include <noggit/settings.hpp>
 #include <noggit/TextureManager.h> // TextureManager, Texture
 #include <noggit/WMOInstance.h> // WMOInstance
 #include <noggit/World.h>
@@ -412,7 +413,7 @@ void MapView::createGUI()
     );
   }
 
-  if (_settings->value("undock_tool_properties/enabled", 1).toBool())
+  if (NoggitSettings.value("undock_tool_properties/enabled", 1).toBool())
   {
     for (auto dock : _tool_properties_docks)
     {
@@ -435,7 +436,7 @@ void MapView::createGUI()
 
   _main_window->addDockWidget(Qt::BottomDockWidgetArea, _texture_palette_dock);
 
-  if (_settings->value("undock_small_texture_palette/enabled", 1).toBool())
+  if (NoggitSettings.value("undock_small_texture_palette/enabled", 1).toBool())
   {
     _texture_palette_dock->setFloating(true);
     _texture_palette_dock->move(_main_window->geometry().bottomLeft().x() + 50, _main_window->geometry().bottomLeft().y() - 200);
@@ -1318,7 +1319,6 @@ MapView::MapView( math::degrees camera_yaw0
   , mTimespeed(0.0f)
   , _uid_fix (uid_fix)
   , _from_bookmark (from_bookmark)
-  , _settings (new QSettings (this))
   , cursor_color (1.f, 1.f, 1.f, 1.f)
   , shader_color (1.f, 1.f, 1.f, 1.f)
   , cursor_type (static_cast<unsigned int>(cursor_mode::terrain))
@@ -1396,16 +1396,16 @@ MapView::MapView( math::degrees camera_yaw0
 
   setWindowTitle ("Noggit Studio - " STRPRODUCTVER);
 
-  cursor_type.set (_settings->value ("cursor/default_type", static_cast<unsigned int>(cursor_mode::terrain)).toUInt());
+  cursor_type.set (NoggitSettings.value ("cursor/default_type", static_cast<unsigned int>(cursor_mode::terrain)).toUInt());
 
-  cursor_color.x = _settings->value ("cursor/color/r", 1).toFloat();
-  cursor_color.y = _settings->value ("cursor/color/g", 1).toFloat();
-  cursor_color.z = _settings->value ("cursor/color/b", 1).toFloat();
-  cursor_color.w = _settings->value ("cursor/color/a", 1).toFloat();
+  cursor_color.x = NoggitSettings.value ("cursor/color/r", 1).toFloat();
+  cursor_color.y = NoggitSettings.value ("cursor/color/g", 1).toFloat();
+  cursor_color.z = NoggitSettings.value ("cursor/color/b", 1).toFloat();
+  cursor_color.w = NoggitSettings.value ("cursor/color/a", 1).toFloat();
 
   connect(&cursor_type, &noggit::unsigned_int_property::changed, [&] (unsigned int type)
   {
-    _settings->setValue("cursor/default_type", type);
+    NoggitSettings.set_value("cursor/default_type", type);
   });
 
   if (cursor_type.get() == static_cast<unsigned int>(cursor_mode::unused))
@@ -1625,7 +1625,7 @@ void MapView::tick (float dt)
     update_cursor_pos();
   }
 
-  if (_tablet_active && _settings->value ("tablet/enabled", false).toBool())
+  if (_tablet_active && NoggitSettings.value ("tablet/enabled", false).toBool())
   {
     switch (terrainMode)
     {
@@ -1749,34 +1749,35 @@ void MapView::tick (float dt)
           if (snapped && _rotate_along_ground.get())
           {
             _world->rotate_selected_models_to_ground_normal(_rotate_along_ground_smooth.get());
+
             if (_rotate_along_ground_random.get())
             {
-	      float minX = 0, maxX = 0, minY = 0, maxY = 0, minZ = 0, maxZ = 0;
+              float minX = 0, maxX = 0, minY = 0, maxY = 0, minZ = 0, maxZ = 0;
 
-	      if (_settings->value("model/random_rotation", false).toBool())
-	      {
-		minY = _object_paste_params.minRotation;
-		maxY = _object_paste_params.maxRotation;
-	      }
+              if (NoggitSettings.value("model/random_rotation", false).toBool())
+              {
+                minY = _object_paste_params.minRotation;
+                maxY = _object_paste_params.maxRotation;
+              }
 
-	      if (_settings->value("model/random_tilt", false).toBool())
-	      {
-		minX = _object_paste_params.minTilt;
-		maxX = _object_paste_params.maxTilt;
-		minZ = minX;
-		maxZ = maxX;
-	      }
+              if (NoggitSettings.value("model/random_tilt", false).toBool())
+              {
+                minX = _object_paste_params.minTilt;
+                maxX = _object_paste_params.maxTilt;
+                minZ = minX;
+                maxZ = maxX;
+              }
 
-	      _world->rotate_selected_models_randomly (minX, maxX, minY, maxY, minZ, maxZ);
+              _world->rotate_selected_models_randomly(minX, maxX, minY, maxY, minZ, maxZ);
 
-	      if (_settings->value("model/random_size", false).toBool())
-	      {
-		float min = _object_paste_params.minScale;
-		float max = _object_paste_params.maxScale;
+              if (NoggitSettings.value("model/random_size", false).toBool())
+              {
+                float min = _object_paste_params.minScale;
+                float max = _object_paste_params.maxScale;
 
-		_world->scale_selected_models(misc::randfloat(min, max), World::m2_scaling_type::set);
-	      }
-	    }
+                _world->scale_selected_models(misc::randfloat(min, max), World::m2_scaling_type::set);
+              }
+            }
           }
         }
 
@@ -2097,7 +2098,7 @@ void MapView::tick (float dt)
              << std::setw (2) << (time % 60);
 
 
-    if (_tablet_active && _settings->value ("tablet/enabled", false).toBool())
+    if (_tablet_active && noggit::settings::instance().value("tablet/enabled", false).toBool())
     {
       timestrs << ", Pres: " << _tablet_pressure;
     }
@@ -2389,7 +2390,7 @@ math::matrix_4x4 MapView::model_view() const
 }
 math::matrix_4x4 MapView::projection() const
 {
-  float far_z = _settings->value("farZ", 2048).toFloat();
+  float far_z = NoggitSettings.value("farZ", 2048).toFloat();
 
   if (_display_mode == display_mode::in_2D)
   {

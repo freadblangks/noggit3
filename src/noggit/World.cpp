@@ -11,6 +11,7 @@
 #include <noggit/MapTile.h>
 #include <noggit/Misc.h>
 #include <noggit/ModelManager.h> // ModelManager
+#include <noggit/settings.hpp>
 #include <noggit/TextureManager.h>
 #include <noggit/TileWater.hpp>// tile water
 #include <noggit/WMOInstance.h> // WMOInstance
@@ -105,8 +106,7 @@ World::World(const std::string& name, int map_id)
   , skies(nullptr)
   , outdoorLightStats(OutdoorLightStats())
   , _current_selection()
-  , _settings (new QSettings())
-  , _view_distance(_settings->value ("view_distance", 1000.f).toFloat())
+  , _view_distance(NoggitSettings.value ("view_distance", 1000.f).toFloat())
 {
   LogDebug << "Loading world \"" << name << "\"." << std::endl;
 }
@@ -1030,11 +1030,11 @@ void World::draw ( math::matrix_4x4 const& model_view
     }
 
     mcnk_shader.uniform ("draw_wireframe", (int)draw_wireframe);
-    mcnk_shader.uniform ("wireframe_type", _settings->value("wireframe/type", 0).toInt());
-    mcnk_shader.uniform ("wireframe_radius", _settings->value("wireframe/radius", 1.5f).toFloat());
-    mcnk_shader.uniform ("wireframe_width", _settings->value ("wireframe/width", 1.f).toFloat());
+    mcnk_shader.uniform ("wireframe_type", NoggitSettings.value("wireframe/type", 0).toInt());
+    mcnk_shader.uniform ("wireframe_radius", NoggitSettings.value("wireframe/radius", 1.5f).toFloat());
+    mcnk_shader.uniform ("wireframe_width", NoggitSettings.value ("wireframe/width", 1.f).toFloat());
     // !\ todo store the color somewhere ?
-    QColor c = _settings->value("wireframe/color").value<QColor>();
+    QColor c = NoggitSettings.value("wireframe/color").value<QColor>();
     math::vector_4d wireframe_color(c.redF(), c.greenF(), c.blueF(), c.alphaF());
     mcnk_shader.uniform ("wireframe_color", wireframe_color);
 
@@ -1999,14 +1999,14 @@ ModelInstance* World::addM2 ( std::string const& filename
   model_instance.scale = scale;
   model_instance.dir = rotation;
 
-  if (_settings->value("model/random_rotation", false).toBool())
+  if (NoggitSettings.value("model/random_rotation", false).toBool())
   {
     float min = paste_params->minRotation;
     float max = paste_params->maxRotation;
     model_instance.dir.y += math::degrees(misc::randfloat(min, max));
   }
 
-  if (_settings->value ("model/random_tilt", false).toBool ())
+  if (NoggitSettings.value ("model/random_tilt", false).toBool ())
   {
     float min = paste_params->minTilt;
     float max = paste_params->maxTilt;
@@ -2014,7 +2014,7 @@ ModelInstance* World::addM2 ( std::string const& filename
     model_instance.dir.z += math::degrees(misc::randfloat(min, max));
   }
 
-  if (_settings->value ("model/random_size", false).toBool ())
+  if (NoggitSettings.value ("model/random_size", false).toBool ())
   {
     float min = paste_params->minScale;
     float max = paste_params->maxScale;

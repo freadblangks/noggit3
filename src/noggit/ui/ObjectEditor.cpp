@@ -3,6 +3,7 @@
 #include <noggit/MapView.h>
 #include <noggit/Misc.h>
 #include <noggit/ModelInstance.h>
+#include <noggit/settings.hpp>
 #include <noggit/WMOInstance.h> // WMOInstance
 #include <noggit/World.h>
 #include <noggit/ui/HelperModels.h>
@@ -49,7 +50,6 @@ namespace noggit
             , modelImport (new model_import(this))
             , rotationEditor (new rotation_editor(mapView, world))
             , helper_models_widget(new helper_models(this))
-            , _settings (new QSettings (this))
             , _copy_model_stats (true)
             , selected()
             , pasteMode(PASTE_ON_TERRAIN)
@@ -67,11 +67,11 @@ namespace noggit
       auto scale_layout (new QGridLayout(scale_group));
 
       rotation_group->setCheckable(true);
-      rotation_group->setChecked(_settings->value ("model/random_rotation", false).toBool());
+      rotation_group->setChecked(NoggitSettings.value ("model/random_rotation", false).toBool());
       tilt_group->setCheckable(true);
-      tilt_group->setChecked(_settings->value ("model/random_tilt", false).toBool());
+      tilt_group->setChecked(NoggitSettings.value ("model/random_tilt", false).toBool());
       scale_group->setCheckable(true);
-      scale_group->setChecked(_settings->value ("model/random_size", false).toBool());
+      scale_group->setChecked(NoggitSettings.value ("model/random_size", false).toBool());
 
       QCheckBox *copyAttributesCheck = new QCheckBox("Copy rotation, tilt, and scale", this);
 
@@ -105,7 +105,7 @@ namespace noggit
       tiltRangeEnd->setRange (-180.f, 180.f);
       scaleRangeStart->setRange (-180.f, 180.f);
       scaleRangeEnd->setRange (-180.f, 180.f);
-      
+
       rotation_layout->addWidget(rotRangeStart, 0, 0);
       rotation_layout->addWidget(rotRangeEnd, 0 ,1);
       copy_layout->addRow(rotation_group);
@@ -163,7 +163,7 @@ namespace noggit
                                                    )
                                      );
 
-      
+
       multi_select_movement_layout->addRow(multi_select_movement_cb);
       multi_select_movement_layout->addRow(object_median_pivot_point);
 
@@ -224,20 +224,20 @@ namespace noggit
 
       connect (rotation_group, &QGroupBox::toggled, [&] (int s)
       {
-        _settings->setValue ("model/random_rotation", s);
-        _settings->sync();
+        NoggitSettings.set_value ("model/random_rotation", s);
+        NoggitSettings.values->sync();
       });
 
       connect (tilt_group, &QGroupBox::toggled, [&] (int s)
       {
-        _settings->setValue ("model/random_tilt", s);
-        _settings->sync();
+        NoggitSettings.set_value ("model/random_tilt", s);
+        NoggitSettings.values->sync();
       });
 
       connect (scale_group, &QGroupBox::toggled, [&] (int s)
       {
-        _settings->setValue ("model/random_size", s);
-        _settings->sync();
+        NoggitSettings.set_value ("model/random_size", s);
+        NoggitSettings.values->sync();
       });
 
       rotRangeStart->setValue(paste_params->minRotation);
@@ -346,7 +346,7 @@ namespace noggit
       connect( helper_models_btn
              , &QPushButton::clicked
              , [=]() { helper_models_widget->show(); }
-             );    
+             );
 
       setMinimumWidth(sizeHint().width());
 
@@ -429,7 +429,7 @@ namespace noggit
           LogDebug << "object_editor::pasteObject: unknown paste mode " << pasteMode << std::endl;
           break;
         }
-        
+
         if (selection.which() == eEntry_Model)
         {
           float scale(1.f);
@@ -459,21 +459,21 @@ namespace noggit
           }
 
           world->addWMO(boost::get<selected_wmo_type>(selection)->wmo->filename, pos, rotation);
-        }        
+        }
       }
     }
 
     void object_editor::togglePasteMode()
     {
       pasteModeGroup->button ((pasteMode + 1) % PASTE_MODE_COUNT)->setChecked (true);
-    }   
+    }
 
     void object_editor::replace_selection(std::vector<selection_type> new_selection)
     {
       selected = new_selection;
 
       std::stringstream ss;
-      
+
       if (selected.empty())
       {
         _filename->setText("");
@@ -560,7 +560,7 @@ namespace noggit
         {
           auto original = boost::get<selected_model_type>(selection);
           auto clone = new ModelInstance(original->model->filename);
-          
+
           clone->scale = original->scale;
           clone->dir = original->dir;
           clone->pos = pivot ? original->pos - pivot.get() : math::vector_3d();
@@ -589,7 +589,7 @@ namespace noggit
         return;
       }
 
-      std::ofstream stream(_settings->value("project/import_file", "import.txt").toString().toStdString(), std::ios_base::app);
+      std::ofstream stream(NoggitSettings.value("project/import_file", "import.txt").toString().toStdString(), std::ios_base::app);
       for (auto& selection : world->current_selection())
       {
         if (selection.which() == eEntry_MapChunk)
@@ -616,7 +616,7 @@ namespace noggit
 
     void object_editor::import_last_model_from_wmv(int type)
     {
-      std::string wmv_log_file (_settings->value ("project/wmv_log_file").toString().toStdString());
+      std::string wmv_log_file (NoggitSettings.value ("project/wmv_log_file").toString().toStdString());
       std::string last_model_found;
       std::string line;
       std::ifstream file(wmv_log_file.c_str());
@@ -665,7 +665,7 @@ namespace noggit
       else
       {
         copy(last_model_found);
-      }      
+      }
     }
 
     QSize object_editor::sizeHint() const

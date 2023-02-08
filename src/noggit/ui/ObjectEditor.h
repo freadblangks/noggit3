@@ -8,7 +8,6 @@
 
 #include <QLabel>
 #include <QWidget>
-#include <QSettings>
 
 #include <boost/optional.hpp>
 
@@ -81,8 +80,6 @@ namespace noggit
       QSize sizeHint() const override;
 
     private:
-      QSettings* _settings;
-
       QButtonGroup* pasteModeGroup;
       QLabel* _filename;
 
@@ -91,7 +88,7 @@ namespace noggit
 
       std::vector<selection_type> selected;
       std::vector<selection_type> _model_instance_created;
-      
+
       void replace_selection(std::vector<selection_type> new_selection);
 
       void showImportModels();

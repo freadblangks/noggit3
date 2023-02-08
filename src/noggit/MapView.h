@@ -16,7 +16,6 @@
 #include <boost/optional.hpp>
 
 #include <QtCore/QElapsedTimer>
-#include <QtCore/QSettings>
 #include <QtCore/QTimer>
 #include <QtWidgets/QDockWidget>
 #include <QtWidgets/QLabel>
@@ -177,8 +176,6 @@ private:
   noggit::ui::toolbar* _toolbar;
 
   void save(save_mode mode);
-
-  QSettings* _settings;
 
 signals:
   void uid_fix_failed();

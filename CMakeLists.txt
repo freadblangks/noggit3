@@ -333,6 +333,7 @@ set ( noggit_root_headers
       src/noggit/map_horizon.h
       src/noggit/map_index.hpp
       src/noggit/multimap_with_normalized_key.hpp
+      src/noggit/settings.hpp
       src/noggit/texture_set.hpp
       src/noggit/tile_index.hpp
       src/noggit/tool_enums.hpp

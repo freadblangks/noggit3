@@ -1,12 +1,12 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
 
 #include <noggit/ui/CursorSwitcher.h>
+#include <noggit/settings.hpp>
 #include <noggit/tool_enums.hpp>
 #include <util/qt/overload.hpp>
 
 #include <qt-color-widgets/color_selector.hpp>
 
-#include <QtCore/QSettings>
 #include <QtWidgets/QButtonGroup>
 #include <QtWidgets/QRadioButton>
 #include <QtWidgets/QVBoxLayout>
@@ -47,8 +47,7 @@ namespace noggit
                  {
                    QSignalBlocker const blocker(&cursor_type);
                    cursor_type.set(id);
-                   QSettings settings;
-                   settings.setValue ("cursor/default_type", id);
+                   NoggitSettings.set_value ("cursor/default_type", id);
                  }
               );
 
@@ -74,12 +73,11 @@ namespace noggit
                   color.y = new_color.greenF();
                   color.z = new_color.blueF();
                   color.w = new_color.alphaF();
-                  QSettings settings;
-                  settings.setValue ("cursor/color/r", color.x);
-                  settings.setValue ("cursor/color/g", color.y);
-                  settings.setValue ("cursor/color/b", color.z);
-                  settings.setValue ("cursor/color/a", color.w);
-                  
+                  NoggitSettings.set_value ("cursor/color/r", color.x);
+                  NoggitSettings.set_value ("cursor/color/g", color.y);
+                  NoggitSettings.set_value ("cursor/color/b", color.z);
+                  NoggitSettings.set_value ("cursor/color/a", color.w);
+
                 }
               );
 

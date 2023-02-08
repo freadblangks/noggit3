@@ -2,8 +2,7 @@
 
 #include <noggit/AsyncLoader.h>
 #include <noggit/errorHandling.h>
-
-#include <QtCore/QSettings>
+#include <noggit/settings.hpp>
 
 #include <algorithm>
 #include <list>
@@ -12,8 +11,7 @@ void AsyncLoader::process()
 {
   AsyncObject* object = nullptr;
 
-  QSettings settings;
-  bool additional_log = settings.value("additional_file_loading_log", false).toBool();
+  bool additional_log = NoggitSettings.value("additional_file_loading_log", false).toBool();
 
   while (!_stop)
   {

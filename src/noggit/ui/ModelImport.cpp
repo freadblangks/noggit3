@@ -5,6 +5,7 @@
 #include <noggit/MapView.h>
 #include <noggit/ModelInstance.h>
 #include <noggit/Selection.h>
+#include <noggit/settings.hpp>
 #include <noggit/WMOInstance.h>
 #include <noggit/ui/ObjectEditor.h>
 
@@ -33,7 +34,7 @@ namespace noggit
               );
 
       layout->addWidget (_list = new QListWidget (this));
-        
+
       auto list_size_policy {_list->sizePolicy()};
       list_size_policy.setVerticalStretch (1);
       _list->setSizePolicy (list_size_policy);
@@ -52,9 +53,7 @@ namespace noggit
     {
       _list->clear();
 
-      QSettings settings;
-
-      std::ifstream fileReader (settings.value ("project/import_file", "import.txt").toString().toStdString());
+      std::ifstream fileReader (NoggitSettings.value ("project/import_file", "import.txt").toString().toStdString());
       std::string const filter
         (mpq::normalized_filename (_textBox->text().toStdString()));
 

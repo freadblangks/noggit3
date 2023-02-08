@@ -3,17 +3,15 @@
 #include <noggit/AsyncLoader.h>
 #include <noggit/MPQ.h>
 #include <noggit/MapChunk.h>
-#include <noggit/MapChunk.h>
 #include <noggit/MapTile.h>
 #include <noggit/Misc.h>
+#include <noggit/settings.hpp>
 #include <noggit/World.h>
 #ifdef USE_MYSQL_UID_STORAGE
   #include <mysql/mysql.h>
 #endif
 #include <noggit/map_index.hpp>
 #include <noggit/uid_storage.hpp>
-
-#include <QtCore/QSettings>
 
 #include <boost/range/adaptor/map.hpp>
 
@@ -31,10 +29,8 @@ MapIndex::MapIndex (const std::string &pBasename, int map_id, World* world)
   , highestGUID(0)
   , _world (world)
 {
-
-  QSettings settings;
-  _unload_interval = settings.value("unload_interval", 5).toInt();
-  _unload_dist = settings.value("unload_dist", 5).toInt();
+  _unload_interval = NoggitSettings.value("unload_interval", 5).toInt();
+  _unload_dist = NoggitSettings.value("unload_dist", 5).toInt();
 
   std::stringstream filename;
   filename << "World\\Maps\\" << basename << "\\" << basename << ".wdt";
@@ -586,9 +582,7 @@ uint32_t MapIndex::newGUID()
   std::unique_lock<std::mutex> lock (_mutex);
 
 #ifdef USE_MYSQL_UID_STORAGE
-  QSettings settings;
-
-  if (settings->value ("project/mysql/enabled", false).toBool())
+  if (NoggitSettings.value ("project/mysql/enabled", false).toBool())
   {
     mysql::updateUIDinDB(_map_id, highestGUID + 1); // update the highest uid in db, note that if the user don't save these uid won't be used (not really a problem tho)
   }
@@ -928,9 +922,7 @@ void MapIndex::searchMaxUID()
 void MapIndex::saveMaxUID()
 {
 #ifdef USE_MYSQL_UID_STORAGE
-  QSettings settings;
-
-  if (settings->value ("project/mysql/enabled", false).toBool())
+  if (NoggitSettings.value ("project/mysql/enabled", false).toBool())
   {
     if (mysql::hasMaxUIDStoredDB(_map_id))
     {
@@ -950,9 +942,7 @@ void MapIndex::loadMaxUID()
 {
   highestGUID = uid_storage::getMaxUID (_map_id);
 #ifdef USE_MYSQL_UID_STORAGE
-  QSettings settings;
-
-  if (settings->value ("project/mysql/enabled", false).toBool())
+  if (NoggitSettings.value ("project/mysql/enabled", false).toBool())
   {
     highestGUID = std::max(mysql::getGUIDFromDB(map_id), highestGUID);
     // save to make sure the db and disk uid are synced
