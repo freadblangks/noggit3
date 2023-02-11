@@ -161,6 +161,10 @@ MapChunk::MapChunk(MapTile *maintile, MPQFile *f, bool bigAlpha, tile_mode mode)
     {
       clear_shadows();
     }
+    else
+    {
+      mt->set_shadowmap_required();
+    }
   }
 
   // - MCCV ----------------------------------------------
@@ -255,8 +259,6 @@ void MapChunk::upload()
   _vertex_array.upload();
   _buffers.upload();
   _indice_buffers.upload();
-
-  update_shadows();
 
   // fill vertex buffers
   gl.bufferData<GL_ARRAY_BUFFER> (_vertices_vbo, sizeof(mVertices), mVertices, GL_STATIC_DRAW);
@@ -608,8 +610,6 @@ void MapChunk::draw ( math::frustum const& frustum
   // only update the shadow texture if there's a shadow map used
   if (_chunk_shadow)
   {
-    opengl::texture::set_active_texture(5);
-    _chunk_shadow->shadow.bind();
 
     if (!previous_chunk_had_shadows)
     {
@@ -1113,12 +1113,8 @@ void MapChunk::update_shadows()
 {
   if (_chunk_shadow)
   {
-    _chunk_shadow->shadow.bind();
-    gl.texImage2D(GL_TEXTURE_2D, 0, GL_RED, 64, 64, 0, GL_RED, GL_UNSIGNED_BYTE, _chunk_shadow->_shadow_map);
-    gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    opengl::texture::set_active_texture(5);
+    gl.texSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, px + 16 * py, 64, 64, 1, GL_RED, GL_UNSIGNED_BYTE, _chunk_shadow->_shadow_map);
   }
 }
 

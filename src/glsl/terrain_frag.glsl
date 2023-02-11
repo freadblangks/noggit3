@@ -3,7 +3,7 @@
 
 // todo: move to opengl 4.1+ to be able to use the layout qualifier to be able to validate the program on creation
 uniform sampler2DArray alphamap;
-uniform sampler2D shadow_map;
+uniform sampler2DArray shadow_map;
 uniform sampler2D tex0;
 uniform sampler2D tex1;
 uniform sampler2D tex2;
@@ -128,7 +128,7 @@ void main()
 
   if(has_shadows)
   {
-    out_color = vec4 (out_color.rgb * (1.0 - texture(shadow_map, vary_texcoord / 8.0).r), 1.0);
+    out_color = vec4 (out_color.rgb * (1.0 - texture(shadow_map, vec3(vary_texcoord / 8.0, chunk_id + 0.1)).r) , 1.0);
   }  
 
   if (draw_terrain_height_contour)

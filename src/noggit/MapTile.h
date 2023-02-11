@@ -133,6 +133,16 @@ private:
   opengl::texture_array _adt_alphamap;
   bool _alphamap_created = false;
   void create_alphamap();
+
+  bool _shadowmap_created = false;
+  bool _use_shadowmap = false;
+  void create_shadowmap();
+
+  std::unique_ptr<opengl::texture_array> _shadowmap;
+
+public:
+  void set_shadowmap_required() { _use_shadowmap = true; }
+
 private:
   tile_mode _mode;
   bool _tile_is_being_reloaded;

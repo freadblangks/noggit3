@@ -34,7 +34,6 @@ static const int mapbufsize = 9 * 9 + 8 * 8; // chunk size
 struct chunk_shadow
 {
   uint8_t _shadow_map[64 * 64];
-  opengl::texture shadow;
 };
 
 class MapChunk
@@ -47,8 +46,6 @@ private:
   int holes;
 
   unsigned int areaID;
-
-  void update_shadows();
 
   std::unique_ptr<chunk_shadow> _chunk_shadow;
 
@@ -186,6 +183,7 @@ public:
   void eraseTextures();
   void change_texture_flag(scoped_blp_texture_reference const& tex, std::size_t flag, bool add);
 
+  void update_shadows();
   void clear_shadows();
 
   //! \todo implement Action stack for these
