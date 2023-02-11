@@ -20,6 +20,7 @@ namespace opengl
     virtual void bind();
 
     static void set_active_texture (size_t num = 0);
+    static size_t current_active_texture;
 
   protected:
     typedef GLuint internal_type;
