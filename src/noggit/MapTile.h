@@ -9,6 +9,7 @@
 #include <noggit/Selection.h>
 #include <noggit/TileWater.hpp>
 #include <noggit/tile_index.hpp>
+#include <noggit/tileset_array_handler.hpp>
 #include <noggit/tool_enums.hpp>
 #include <opengl/shader.fwd.hpp>
 #include <noggit/Misc.h>
@@ -86,7 +87,7 @@ public:
             , std::map<int, misc::random_color>& area_id_colors
             , int animtime
             , display_mode display
-            , std::vector<int>& textures_bound
+            , noggit::tileset_array_handler& tileset_handler
             );
   void intersect (math::ray const&, selection_result*) const;
   void drawWater ( math::frustum const& frustum

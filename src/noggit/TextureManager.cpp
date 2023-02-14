@@ -107,6 +107,42 @@ void blp_texture::upload()
   _uploaded = true;
 }
 
+void blp_texture::upload_to_currently_bound_array(GLint array_layer, int starting_level)
+{
+  int width = _width >> starting_level, height = _height >> starting_level;
+
+  if (!_compression_format)
+  {
+    for (int i = starting_level; i < _data.size(); ++i)
+    {
+      gl.texSubImage3D(GL_TEXTURE_2D_ARRAY, i - starting_level, 0, 0, array_layer, width, height, 1, GL_RGBA, GL_UNSIGNED_BYTE, _data[i].data());
+      width = std::max(width >> 1, 1);
+      height = std::max(height >> 1, 1);
+    }
+  }
+  else
+  {
+    for (int i = starting_level; i < _compressed_data.size(); ++i)
+    {
+      gl.compressedTexSubImage3D(GL_TEXTURE_2D_ARRAY, i - starting_level, 0, 0, array_layer, width, height, 1, _compression_format.get(), _compressed_data[i].size(), _compressed_data[i].data());
+      width = std::max(width >> 1, 1);
+      height = std::max(height >> 1, 1);
+    }
+  }
+}
+
+GLint blp_texture::texture_format() const
+{
+  if (!_compression_format)
+  {
+    return GL_RGBA8;
+  }
+  else
+  {
+    return _compression_format.get();
+  }
+}
+
 void blp_texture::loadFromUncompressedData(BLPHeader const* lHeader, char const* lData)
 {
   unsigned int const* pal = reinterpret_cast<unsigned int const*>(lData + sizeof(BLPHeader));
@@ -244,10 +280,12 @@ void blp_texture::finishLoading()
   if (lHeader->attr_0_compression == 1)
   {
     loadFromUncompressedData(lHeader, lData);
+    _layer_count = _data.size();
   }
   else if (lHeader->attr_0_compression == 2)
   {
     loadFromCompressedData(lHeader, lData);
+    _layer_count = _compressed_data.size();
   }
   else
   {

@@ -12,6 +12,7 @@
 #include <noggit/alphamap.hpp>
 #include <noggit/map_index.hpp>
 #include <noggit/texture_set.hpp>
+#include <noggit/tileset_array_handler.hpp>
 #include <opengl/scoped.hpp>
 #include <opengl/shader.hpp>
 #include <util/sExtendableArray.hpp>
@@ -353,7 +354,7 @@ void MapTile::draw ( math::frustum const& frustum
                    , std::map<int, misc::random_color>& area_id_colors
                    , int animtime
                    , display_mode display
-                   , std::vector<int>& textures_bound
+                   , noggit::tileset_array_handler& tileset_handler
                    )
 {
   if (!finished)
@@ -366,6 +367,14 @@ void MapTile::draw ( math::frustum const& frustum
     create_alphamap();
     create_shadowmap();
 
+    // make sure all the textures are in the array
+    for (std::string const& tex : mTextureFilenames)
+    {
+      tileset_handler.get_texture_position(tex);
+    }
+
+    tileset_handler.bind();
+
 
     _ubo.upload();
     gl.bindBuffer(GL_UNIFORM_BUFFER, _chunks_data_ubo);
@@ -377,7 +386,7 @@ void MapTile::draw ( math::frustum const& frustum
 
   if (_use_shadowmap)
   {
-    opengl::texture::set_active_texture(5);
+    opengl::texture::set_active_texture(1);
     _shadowmap->bind();
   }
 
@@ -404,7 +413,7 @@ void MapTile::draw ( math::frustum const& frustum
                           , area_id_colors
                           , animtime
                           , display
-                          , textures_bound
+                          , tileset_handler
                           );
     }
   }
@@ -651,9 +660,9 @@ void MapTile::saveTile(World* world)
     {
       for (size_t tex = 0; tex < mChunks[i][j]->texture_set->num(); tex++)
       {
-        if (lTextures.find(mChunks[i][j]->texture_set->filename(tex)) == lTextures.end())
+        if (lTextures.find(mChunks[i][j]->texture_set->texture(tex)) == lTextures.end())
         {
-          lTextures.emplace(mChunks[i][j]->texture_set->filename(tex), -1);
+          lTextures.emplace(mChunks[i][j]->texture_set->texture(tex), -1);
         }
       }
     }
@@ -1005,7 +1014,7 @@ void MapTile::create_shadowmap()
     return;
   }
 
-  opengl::texture::set_active_texture(5);
+  opengl::texture::set_active_texture(1);
   _shadowmap = std::make_unique<opengl::texture_array>();
   _shadowmap->bind();
 

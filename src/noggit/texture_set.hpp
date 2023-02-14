@@ -32,8 +32,6 @@ public:
 
   math::vector_2d anim_uv_offset(int id, int animtime) const;
 
-  void bindTexture(size_t id, size_t activeTexture, std::vector<int>& textures_bound);
-
   int addTexture(scoped_blp_texture_reference texture);
   void eraseTexture(size_t id);
   void eraseTextures();
@@ -52,8 +50,6 @@ public:
                       );
   bool canPaintTexture(scoped_blp_texture_reference const& texture);
 
-  const std::string& filename(size_t id);
-
   size_t const& num() const { return nTextures; }
   unsigned int flag(size_t id);
   unsigned int effect(size_t id);
@@ -69,8 +65,6 @@ public:
   void merge_layers(size_t id1, size_t id2);
   bool removeDuplicate();
 
-  scoped_blp_texture_reference texture(size_t id);
-
   std::vector<uint8_t> lod_texture_map();
 
   bool apply_alpha_changes();
@@ -80,6 +74,10 @@ public:
   std::unique_ptr<tmp_edit_alpha_values> tmp_edit_values;
 
   void update_adt_alphamap_if_necessary(int chunk_x, int chunk_y);
+
+  std::string const& texture(int id) const { return _textures[id]; }
+
+  bool need_texture_infos_update = true;
 
 private:
   int get_texture_index_or_add (scoped_blp_texture_reference texture, float target);
@@ -91,7 +89,7 @@ private:
 
   void update_lod_texture_map();
 
-  std::vector<scoped_blp_texture_reference> textures;
+  std::vector<std::string> _textures;
   std::array<std::unique_ptr<Alphamap>, 3> alphamaps;
 
   bool _need_amap_update = true;

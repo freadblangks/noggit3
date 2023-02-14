@@ -24,9 +24,12 @@ struct blp_texture : public opengl::texture, AsyncObject
 
   int width() const { return _width; }
   int height() const { return _height; }
+  int layer_count() const { return _layer_count; }
+  GLint texture_format() const;
 
   void bind();
   void upload();
+  void upload_to_currently_bound_array(GLint array_layer, int starting_level = 0);
 
   virtual async_priority loading_priority() const
   {
@@ -40,6 +43,7 @@ private:
 
   int _width;
   int _height;
+  int _layer_count;
 
 private:
   std::map<int, std::vector<uint32_t>> _data;

@@ -103,7 +103,7 @@ namespace noggit
       auto ts = _chunk->texture_set.get();
       for (int i = 1; i < ts->num(); i++)
       {
-        if (ts->texture(i) == selectedTexture)
+        if (ts->texture(i) == selectedTexture.get()->filename)
         {
           ts->swap_layers(i - 1, i);
           update();
@@ -118,7 +118,7 @@ namespace noggit
       auto ts = _chunk->texture_set.get();
       for (int i = 0; i < ts->num() - 1; i++)
       {
-        if (ts->texture(i) == selectedTexture)
+        if (ts->texture(i) == selectedTexture.get()->filename)
         {
           ts->swap_layers(i, i + 1);
           update();
@@ -139,7 +139,7 @@ namespace noggit
 
       for (; index < _chunk->texture_set->num(); ++index)
       {
-        _textures.push_back(_chunk->texture_set->texture(index));
+        _textures.emplace_back(_chunk->texture_set->texture(index));
         _labels[index]->set_texture(_textures[index]->filename);
         _labels[index]->show();
       }

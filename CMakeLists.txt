@@ -234,6 +234,7 @@ set ( noggit_root_sources
       src/noggit/map_horizon.cpp
       src/noggit/map_index.cpp
       src/noggit/texture_set.cpp
+      src/noggit/tileset_array_handler.cpp
       src/noggit/uid_storage.cpp
       src/noggit/wmo_liquid.cpp
       src/noggit/world_model_instances_storage.cpp
@@ -336,6 +337,7 @@ set ( noggit_root_headers
       src/noggit/settings.hpp
       src/noggit/texture_set.hpp
       src/noggit/tile_index.hpp
+      src/noggit/tileset_array_handler.hpp
       src/noggit/tool_enums.hpp
       src/noggit/uid_storage.hpp
       src/noggit/wmo_liquid.hpp

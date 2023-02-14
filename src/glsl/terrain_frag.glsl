@@ -1,5 +1,7 @@
-// This file is part of Noggit3, licensed under GNU General Public License (version 3).
-#version 330 core
+// This file is part of Noggit3, licensed under GNU General Public License (version 3). 
+#version 410 core
+
+
 struct chunk_shader_data
 {
   bool has_shadow;
@@ -9,6 +11,8 @@ struct chunk_shader_data
 
   vec2 tex_anim[4];
   vec4 areaid_color;
+  ivec4 tex_param_0;
+  ivec4 tex_param_1;
 };
 
 layout (std140) uniform chunk_data
@@ -20,10 +24,10 @@ layout (std140) uniform chunk_data
 // todo: move to opengl 4.1+ to be able to use the layout qualifier to be able to validate the program on creation
 uniform sampler2DArray alphamap;
 uniform sampler2DArray shadow_map;
-uniform sampler2D tex0;
-uniform sampler2D tex1;
-uniform sampler2D tex2;
-uniform sampler2D tex3;
+// todo: use a dynamically set define for the array size
+uniform sampler2DArray texture_arrays[14];
+
+
 uniform bool draw_areaid_overlay;
 uniform bool draw_terrain_height_contour;
 uniform bool draw_lines;
@@ -66,6 +70,67 @@ const float CHUNKSIZE = TILESIZE / 16.0;
 const float HOLESIZE  = CHUNKSIZE * 0.25;
 const float UNITSIZE = HOLESIZE * 0.5;
 
+// required because opengl can't handle non uniform index for uniform arrays
+vec3 texture_color(int array_index, int index_in_array, vec2 anim_uv)
+{
+  if(array_index == 0)
+  {
+    return texture(texture_arrays[0], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 1)
+  {
+    return texture(texture_arrays[1], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 2)
+  {
+    return texture(texture_arrays[2], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 3)
+  {
+    return texture(texture_arrays[3], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 4)
+  {
+    return texture(texture_arrays[4], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 5)
+  {
+    return texture(texture_arrays[5], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 6)
+  {
+    return texture(texture_arrays[6], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 7)
+  {
+    return texture(texture_arrays[7], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 8)
+  {
+    return texture(texture_arrays[8], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 9)
+  {
+    return texture(texture_arrays[9], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 10)
+  {
+    return texture(texture_arrays[10], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 11)
+  {
+    return texture(texture_arrays[11], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 12)
+  {
+    return texture(texture_arrays[12], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 13)
+  {
+    return texture(texture_arrays[13], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+}
+
 vec4 texture_blend() 
 {
   if(!ubo_data[chunk_id].is_textured)
@@ -77,10 +142,13 @@ vec4 texture_blend()
   float a1 = alpha.g;
   float a2 = alpha.b;
 
-  vec3 t0 = texture(tex0, vary_texcoord + ubo_data[chunk_id].tex_anim[0]).rgb;
-  vec3 t1 = texture(tex1, vary_texcoord + ubo_data[chunk_id].tex_anim[1]).rgb;
-  vec3 t2 = texture(tex2, vary_texcoord + ubo_data[chunk_id].tex_anim[2]).rgb;
-  vec3 t3 = texture(tex3, vary_texcoord + ubo_data[chunk_id].tex_anim[3]).rgb;
+  ivec4 p0 = ubo_data[chunk_id].tex_param_0;
+  ivec4 p1 = ubo_data[chunk_id].tex_param_1;
+
+  vec3 t0 = texture_color(p0.x, p1.x, ubo_data[chunk_id].tex_anim[0]);
+  vec3 t1 = texture_color(p0.y, p1.y, ubo_data[chunk_id].tex_anim[1]);
+  vec3 t2 = texture_color(p0.z, p1.z, ubo_data[chunk_id].tex_anim[2]);
+  vec3 t3 = texture_color(p0.w, p1.w, ubo_data[chunk_id].tex_anim[3]);
 
   return vec4 (t0 * (1.0 - (a0 + a1 + a2)) + t1 * a0 + t2 * a1 + t3 * a2, 1.0);
 }

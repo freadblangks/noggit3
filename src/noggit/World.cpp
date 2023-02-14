@@ -91,6 +91,7 @@ bool World::IsEditableWorld(int pMapId)
 World::World(const std::string& name, int map_id)
   : _model_instance_storage(this)
   , _tile_update_queue(this)
+  , _tileset_handler(2)
   , mapIndex (name, map_id, this)
   , horizon(name, &mapIndex)
   , mWmoFilename("")
@@ -1058,14 +1059,14 @@ void World::draw ( math::matrix_4x4 const& model_view
     }
 
     mcnk_shader.uniform("alphamap", 0);
-    mcnk_shader.uniform("tex0", 1);
-    mcnk_shader.uniform("tex1", 2);
-    mcnk_shader.uniform("tex2", 3);
-    mcnk_shader.uniform("tex3", 4);
-    mcnk_shader.uniform("shadow_map", 5);
+    mcnk_shader.uniform("shadow_map", 1);
 
+    for (int i = 0; i < _tileset_handler.array_count(); ++i)
+    {
+      mcnk_shader.uniform("texture_arrays[" + std::to_string(i) + "]", i + 2);
+    }
 
-    std::vector<int> textures_bound = { -1, -1, -1, -1 };
+    _tileset_handler.bind();
 
     for (MapTile* tile : mapIndex.loaded_tiles())
     {
@@ -1082,7 +1083,7 @@ void World::draw ( math::matrix_4x4 const& model_view
                  , area_id_colors
                  , animtime
                  , display
-                 , textures_bound
+                 , _tileset_handler
                  );
     }
 

@@ -552,27 +552,50 @@ void MapChunk::update_shader_data ( bool show_unpaintable_chunks
                                   , bool draw_areaid_overlay
                                   , std::map<int, misc::random_color>& area_id_colors
                                   , int animtime
+                                  , noggit::tileset_array_handler& tileset_handler
                                   , bool force_update
                                   )
 {
   chunk_shader_data csd;
 
   int texture_count = texture_set->num();
-  bool animated = false;
+  bool need_update = false;
 
   if (texture_count)
   {
     texture_set->update_adt_alphamap_if_necessary(px, py);
 
+    bool need_texture_update = texture_set->need_texture_infos_update;
+
+    if (need_texture_update)
+    {
+      need_update = true;
+    }
+
     for (int i = 0; i < texture_count; ++i)
     {
+      if (need_texture_update)
+      {
+        std::pair<int, int> param = tileset_handler.get_texture_position(texture_set->texture(i));
+
+        csd.tex_array_index[i] = param.first;
+        csd.tex_index_in_array[i] = param.second;
+      }
+      else // no change, reuse the old values
+      {
+        csd.tex_array_index[i] = _shader_data.tex_array_index[i];
+        csd.tex_index_in_array[i] = _shader_data.tex_index_in_array[i];
+      }
+
       if (texture_set->is_animated(i))
       {
-        animated = true;
+        need_update = true;
         math::vector_2d uv_anim = texture_set->anim_uv_offset(i, animtime);
         csd.tex_animations[i] = math::vector_4d(uv_anim.x, uv_anim.y, 0.f, 0.f);
       }
     }
+
+    texture_set->need_texture_infos_update = false;
   }
 
   // normalize values "bool" values
@@ -601,13 +624,14 @@ void MapChunk::update_shader_data ( bool show_unpaintable_chunks
     csd.areaid_color = (math::vector_4d)area_id_colors[areaID];
   }
 
-  if (force_update || animated
+  // todo: flag changes to avoid all those checks/recreating the struct each frame
+  if ( force_update || need_update
     || csd.is_textured != _shader_data.is_textured
     || csd.draw_impassible_flag != _shader_data.draw_impassible_flag
     || csd.cant_paint != _shader_data.cant_paint
-    || csd.has_shadow != _shader_data.has_shadow)
+    || csd.has_shadow != _shader_data.has_shadow
+     )
   {
-    //gl.bindBuffer(GL_UNIFORM_BUFFER, mt->_chunks_data_ubo);
     gl.bufferSubData(GL_UNIFORM_BUFFER, (sizeof(chunk_shader_data) * (py * 16 + px)), sizeof(chunk_shader_data), &csd);
   }
 
@@ -627,7 +651,7 @@ void MapChunk::draw ( math::frustum const& frustum
                     , std::map<int, misc::random_color>& area_id_colors
                     , int animtime
                     , display_mode display
-                    , std::vector<int>& textures_bound
+                    , noggit::tileset_array_handler& tileset_handler
                     )
 {
   if (need_visibility_update || _need_visibility_update)
@@ -653,6 +677,7 @@ void MapChunk::draw ( math::frustum const& frustum
                       , draw_areaid_overlay
                       , area_id_colors
                       , animtime
+                      , tileset_handler
                       , true
                       );
   }
@@ -663,26 +688,15 @@ void MapChunk::draw ( math::frustum const& frustum
     update_vao(mcnk_shader, tex_coord_vbo);
   }
 
-  int texture_count = texture_set->num();
-  bool is_textured = texture_count != 0;
   update_shader_data( show_unpaintable_chunks
                     , draw_paintability_overlay
                     , draw_chunk_flag_overlay
                     , draw_areaid_overlay
                     , area_id_colors
                     , animtime
+                    , tileset_handler
                     );
 
-  if (is_textured)
-  {
-    texture_set->update_adt_alphamap_if_necessary(px, py);
-
-    for (int i = 0; i < texture_count; ++i)
-    {
-      texture_set->bindTexture(i, i + 1, textures_bound);
-
-    }
-  }
   mcnk_shader.uniform("chunk_id", py * 16 + px);
 
   gl.bindVertexArray(_vao);
@@ -1135,7 +1149,7 @@ void MapChunk::update_shadows()
 {
   if (_chunk_shadow)
   {
-    opengl::texture::set_active_texture(5);
+    opengl::texture::set_active_texture(1);
     gl.texSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, px + 16 * py, 64, 64, 1, GL_RED, GL_UNSIGNED_BYTE, _chunk_shadow->_shadow_map);
   }
 }
@@ -1335,7 +1349,7 @@ void MapChunk::save(util::sExtendableArray &lADTFile, int &lCurrentPosition, int
   {
     auto const lLayer = lADTFile.GetPointer<ENTRY_MCLY>(lCurrentPosition + 8 + 0x10 * j);
 
-    lLayer->textureID = lTextures.find(texture_set->filename(j))->second;
+    lLayer->textureID = lTextures.find(texture_set->texture(j))->second;
     lLayer->flags = texture_set->flag(j);
     lLayer->ofsAlpha = lMCAL_Size;
     lLayer->effectID = texture_set->effect(j);

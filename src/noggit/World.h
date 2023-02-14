@@ -13,6 +13,7 @@
 #include <noggit/map_horizon.h>
 #include <noggit/map_index.hpp>
 #include <noggit/tile_index.hpp>
+#include <noggit/tileset_array_handler.hpp>
 #include <noggit/tool_enums.hpp>
 #include <noggit/world_tile_update_queue.hpp>
 #include <noggit/world_model_instances_storage.hpp>
@@ -45,6 +46,8 @@ private:
   std::unordered_map<std::string, std::vector<ModelInstance*>> _models_by_filename;
   noggit::world_model_instances_storage _model_instance_storage;
   noggit::world_tile_update_queue _tile_update_queue;
+
+  noggit::tileset_array_handler _tileset_handler;
 public:
   MapIndex mapIndex;
   noggit::map_horizon horizon;

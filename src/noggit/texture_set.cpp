@@ -35,7 +35,7 @@ TextureSet::TextureSet (MapChunkHeader const& header, MPQFile* f, size_t base, M
     {
       f->read (&_layers_info[i], sizeof(ENTRY_MCLY));
 
-      textures.emplace_back (tile->mTextureFilenames[_layers_info[i].textureID]);
+      _textures.push_back(tile->mTextureFilenames[_layers_info[i].textureID]);
     }
 
     size_t alpha_base = base + header.ofsAlpha + 8;
@@ -68,7 +68,7 @@ int TextureSet::addTexture (scoped_blp_texture_reference texture)
     texLevel = nTextures;
     nTextures++;
 
-    textures.emplace_back (std::move (texture));
+    _textures.push_back(texture->filename);
     _layers_info[texLevel] = ENTRY_MCLY();
 
     if (texLevel)
@@ -82,6 +82,7 @@ int TextureSet::addTexture (scoped_blp_texture_reference texture)
     }
   }
 
+  need_texture_infos_update = true;
   _need_amap_update = true;
   _need_lod_texture_map_update = true;
 
@@ -94,11 +95,11 @@ void TextureSet::replace_texture (scoped_blp_texture_reference const& texture_to
 
   for (size_t i = 0; i < nTextures; ++i)
   {
-    if (textures[i] == texture_to_replace)
+    if (_textures[i] == texture_to_replace->filename)
     {
       texture_to_replace_level = i;
     }
-    else if (textures[i] == replacement_texture)
+    else if (_textures[i] == replacement_texture->filename)
     {
       replacement_texture_level = i;
     }
@@ -106,7 +107,9 @@ void TextureSet::replace_texture (scoped_blp_texture_reference const& texture_to
 
   if (texture_to_replace_level != -1)
   {
-    textures[texture_to_replace_level] = std::move (replacement_texture);
+    need_texture_infos_update = true;
+
+    _textures[texture_to_replace_level] = replacement_texture->filename;
 
     // prevent texture duplication
     if (replacement_texture_level != -1 && replacement_texture_level != texture_to_replace_level)
@@ -136,7 +139,7 @@ void TextureSet::swap_layers(int layer_1, int layer_2)
   {
     apply_alpha_changes();
 
-    std::swap(textures[lower_texture_id], textures[upper_texture_id]);
+    std::swap(_textures[lower_texture_id], _textures[upper_texture_id]);
     std::swap(_layers_info[lower_texture_id], _layers_info[upper_texture_id]);
 
     int a1 = lower_texture_id - 1, a2 = upper_texture_id - 1;
@@ -157,6 +160,7 @@ void TextureSet::swap_layers(int layer_1, int layer_2)
       alphamaps[a2]->setAlpha(alpha);
     }
 
+    need_texture_infos_update = true;
     _need_amap_update = true;
     _need_lod_texture_map_update = true;
   }
@@ -169,8 +173,6 @@ void TextureSet::eraseTextures()
     return;
   }
 
-  textures.clear();
-
   for (int i = 0; i < 4; ++i)
   {
     if (i > 0)
@@ -178,6 +180,7 @@ void TextureSet::eraseTextures()
       alphamaps[i - 1].reset();
     }
     _layers_info[i] = ENTRY_MCLY();
+    _textures[i] = {};
   }
 
   nTextures = 0;
@@ -185,6 +188,7 @@ void TextureSet::eraseTextures()
   _lod_texture_map.resize(8 * 8);
   memset(_lod_texture_map.data(), 0, 64 * sizeof(std::uint8_t));
 
+  need_texture_infos_update = true;
   _need_amap_update = true;
   _need_lod_texture_map_update = true;
 
@@ -213,6 +217,7 @@ void TextureSet::eraseTexture(size_t id)
     }
 
     _layers_info[i] = _layers_info[i + 1];
+    _textures[i] = _textures[i + 1];
   }
 
   if (nTextures > 1)
@@ -220,7 +225,7 @@ void TextureSet::eraseTexture(size_t id)
     alphamaps[nTextures - 2].reset();
   }
 
-  textures.erase(textures.begin()+id);
+  _textures.erase(_textures.begin()+id);
   nTextures--;
 
   // erase the old info as a precaution but it's overriden when adding a new texture
@@ -232,6 +237,7 @@ void TextureSet::eraseTexture(size_t id)
     tmp_edit_values.get()->map[nTextures].fill(0.f);
   }
 
+  need_texture_infos_update = true;
   _need_amap_update = true;
   _need_lod_texture_map_update = true;
 }
@@ -242,7 +248,7 @@ bool TextureSet::canPaintTexture(scoped_blp_texture_reference const& texture)
   {
     for (size_t k = 0; k < nTextures; ++k)
     {
-      if (textures[k] == texture)
+      if (_textures[k] == texture->filename)
       {
         return true;
       }
@@ -252,22 +258,6 @@ bool TextureSet::canPaintTexture(scoped_blp_texture_reference const& texture)
   }
 
   return true;
-}
-
-const std::string& TextureSet::filename(size_t id)
-{
-  return textures[id]->filename;
-}
-
-void TextureSet::bindTexture(size_t id, size_t activeTexture, std::vector<int>& textures_bound)
-{
-  if (textures_bound[id] != textures[id].blp_id())
-  {
-    opengl::texture::set_active_texture(activeTexture);
-    textures[id]->bind();
-
-    textures_bound[id] = textures[id].blp_id();
-  }
 }
 
 math::vector_2d TextureSet::anim_uv_offset(int id, int animtime) const
@@ -353,7 +343,7 @@ int TextureSet::get_texture_index_or_add (scoped_blp_texture_reference texture, 
 {
   for (int i = 0; i < nTextures; ++i)
   {
-    if (textures[i] == texture)
+    if (_textures[i] == texture->filename)
     {
       return i;
     }
@@ -556,11 +546,11 @@ bool TextureSet::replace_texture( float xbase
 
   for (int i=0; i<nTextures; ++i)
   {
-    if (textures[i] == texture_to_replace)
+    if (_textures[i] == texture_to_replace->filename)
     {
       old_tex_level = i;
     }
-    if (textures[i] == replacement_texture)
+    if (_textures[i] == replacement_texture->filename)
     {
       new_tex_level = i;
     }
@@ -640,7 +630,7 @@ void TextureSet::change_texture_flag(scoped_blp_texture_reference const& tex, st
 {
   for (size_t i = 0; i < nTextures; ++i)
   {
-    if (textures[i] == tex)
+    if (_textures[i] == tex->filename)
     {
       if (add)
       {
@@ -726,11 +716,6 @@ std::vector<std::vector<uint8_t>> TextureSet::save_alpha(bool big_alphamap)
   }
 
   return amaps;
-}
-
-scoped_blp_texture_reference TextureSet::texture(size_t id)
-{
-  return textures[id];
 }
 
 // dest = tab [4096 * (nTextures - 1)]
@@ -866,6 +851,8 @@ void TextureSet::merge_layers(size_t id1, size_t id2)
   }
 
   eraseTexture(id2);
+
+  need_texture_infos_update = true;
   _need_amap_update = true;
   _need_lod_texture_map_update = true;
 }
@@ -878,7 +865,7 @@ bool TextureSet::removeDuplicate()
   {
     for (size_t j = i + 1; j < nTextures; j++)
     {
-      if (textures[i] == textures[j])
+      if (_textures[i] == _textures[j])
       {
         merge_layers(i, j);
         changed = true;

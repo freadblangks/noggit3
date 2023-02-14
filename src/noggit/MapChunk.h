@@ -3,7 +3,6 @@
 #pragma once
 
 #include <math/quaternion.hpp> // math::vector_4d
-#include <noggit/MapTile.h> // MapTile
 #include <noggit/Misc.h>
 #include <noggit/ModelInstance.h>
 #include <noggit/Selection.h>
@@ -11,6 +10,7 @@
 #include <noggit/WMOInstance.h>
 #include <noggit/map_enums.hpp>
 #include <noggit/texture_set.hpp>
+#include <noggit/tileset_array_handler.hpp>
 #include <noggit/tool_enums.hpp>
 #include <opengl/scoped.hpp>
 #include <opengl/texture.hpp>
@@ -27,6 +27,7 @@ namespace math
 }
 class Brush;
 class ChunkWater;
+class MapTile;
 
 using StripType = uint8_t;
 static const int mapbufsize = 9 * 9 + 8 * 8; // chunk size
@@ -45,6 +46,8 @@ struct chunk_shader_data
   int draw_impassible_flag;
   math::vector_4d tex_animations[4]; // use vec4 for padding
   math::vector_4d areaid_color;
+  int tex_array_index[4] = { 0,0,0,0 };
+  int tex_index_in_array[4] = { 0,0,0,0 };
 };
 
 class MapChunk
@@ -146,6 +149,7 @@ public:
                           , bool draw_areaid_overlay
                           , std::map<int, misc::random_color>& area_id_colors
                           , int animtime
+                          , noggit::tileset_array_handler& tileset_handler
                           , bool force_update = false
                           );
 
@@ -162,7 +166,7 @@ public:
             , std::map<int, misc::random_color>& area_id_colors
             , int animtime
             , display_mode display
-            , std::vector<int>& textures_bound
+            , noggit::tileset_array_handler& tileset_handler
             );
   //! \todo only this function should be public, all others should be called from it
 

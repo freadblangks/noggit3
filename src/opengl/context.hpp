@@ -83,6 +83,7 @@ namespace opengl
     void texSubImage2D (GLenum target, GLint level, GLint x_offset, GLint y_offset, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid const* data);
     void texSubImage3D(GLenum target, GLint level, GLint x_offset, GLint y_offset, GLint z_offset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, GLvoid const* data);
     void compressedTexImage2D (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, GLvoid const* data);
+    void compressedTexSubImage3D(GLenum target, GLint level, GLint x_offset, GLint y_offset, GLint z_offset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, GLvoid const* data);
     void generateMipmap (GLenum);
     void activeTexture (GLenum);
 
