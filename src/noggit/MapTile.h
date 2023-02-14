@@ -86,9 +86,6 @@ public:
             , std::map<int, misc::random_color>& area_id_colors
             , int animtime
             , display_mode display
-            , bool& previous_chunk_had_shadows
-            , bool& previous_chunk_was_textured
-            , bool& previous_chunk_could_be_painted
             , std::vector<int>& textures_bound
             );
   void intersect (math::ray const&, selection_result*) const;
@@ -159,6 +156,9 @@ private:
   GLuint const& _mfbo_bottom_vbo = _mfbo_vbos[0];
   GLuint const& _mfbo_top_vbo = _mfbo_vbos[1];
 
+  opengl::scoped::deferred_upload_buffers<1> _ubo;
+  GLuint const& _chunks_data_ubo = _ubo[0];
+
   // MHDR:
   int mFlags;
   bool mBigAlpha;
@@ -167,7 +167,7 @@ private:
   std::vector<std::string> mTextureFilenames;
   std::vector<std::string> mModelFilenames;
   std::vector<std::string> mWMOFilenames;
-  
+
   std::vector<uint32_t> uids;
 
   std::unique_ptr<MapChunk> mChunks[16][16];

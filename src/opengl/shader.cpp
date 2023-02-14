@@ -138,6 +138,15 @@ namespace opengl
     return gl.getAttribLocation (*_handle, name.c_str());
   }
 
+  GLuint program::uniform_block_index(std::string const& name) const
+  {
+    return gl.getUniformBlockIndex(*_handle, name.c_str());
+  }
+  void program::uniform_block_binding(GLuint block_index, GLuint block_binding) const
+  {
+    gl.uniformBlockBinding(*_handle, block_index, block_binding);
+  }
+
   namespace scoped
   {
     use_program::use_program (program const& p)
@@ -180,6 +189,11 @@ namespace opengl
       gl.uniformMatrix4fv (uniform_location (name), 1, GL_FALSE, value);
     }
 
+    void use_program::uniform_block_binding(std::string const& name, GLuint block_binding)
+    {
+      _program.uniform_block_binding(_program.uniform_block_index(name), block_binding);
+    }
+
     void use_program::sampler (std::string const& name, GLenum texture_slot, texture* tex)
     {
       uniform (name, GLint (texture_slot - GL_TEXTURE0));
@@ -197,7 +211,7 @@ namespace opengl
         gl.enableVertexAttribArray (location + i);
         gl.vertexAttribPointer (location + i, 4, GL_FLOAT, GL_FALSE, sizeof(math::matrix_4x4), vec4_ptr + i);
         gl.vertexAttribDivisor(location + i, divisor);
-      }      
+      }
     }
     void use_program::attrib (vao_binder const&, std::string const& name, array_buffer_is_already_bound const&, GLsizei size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid* data)
     {
@@ -235,7 +249,7 @@ namespace opengl
       {
         throw std::invalid_argument ("uniform " + name + " does not exist in shader\n");
       }
-      _uniforms[name] = loc;      
+      _uniforms[name] = loc;
       return loc;
     }
 

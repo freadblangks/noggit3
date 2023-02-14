@@ -546,6 +546,74 @@ void MapChunk::update_visibility ( const float& cull_distance
   _lod_level = lod;
 }
 
+void MapChunk::update_shader_data ( bool show_unpaintable_chunks
+                                  , bool draw_paintability_overlay
+                                  , bool draw_chunk_flag_overlay
+                                  , bool draw_areaid_overlay
+                                  , std::map<int, misc::random_color>& area_id_colors
+                                  , int animtime
+                                  , bool force_update
+                                  )
+{
+  chunk_shader_data csd;
+
+  int texture_count = texture_set->num();
+  bool animated = false;
+
+  if (texture_count)
+  {
+    texture_set->update_adt_alphamap_if_necessary(px, py);
+
+    for (int i = 0; i < texture_count; ++i)
+    {
+      if (texture_set->is_animated(i))
+      {
+        animated = true;
+        math::vector_2d uv_anim = texture_set->anim_uv_offset(i, animtime);
+        csd.tex_animations[i] = math::vector_4d(uv_anim.x, uv_anim.y, 0.f, 0.f);
+      }
+    }
+  }
+
+  // normalize values "bool" values
+  csd.is_textured = texture_count ? 1 : 0;
+  csd.has_shadow = _chunk_shadow ? 1 : 0;
+
+  // todo: only check if the textures have changed on the chunk
+  // or the current selected texture has changed
+  if (show_unpaintable_chunks && draw_paintability_overlay)
+  {
+    bool cant_paint = texture_count == 4
+                   && noggit::ui::selected_texture::get()
+                   && !canPaintTexture(*noggit::ui::selected_texture::get());
+
+    csd.cant_paint = cant_paint ? 1 : 0;
+  }
+  else
+  {
+    csd.cant_paint = 0;
+  }
+
+  csd.draw_impassible_flag = (draw_chunk_flag_overlay && header_flags.flags.impass) ? 1 : 0;
+
+  if (draw_areaid_overlay)
+  {
+    csd.areaid_color = (math::vector_4d)area_id_colors[areaID];
+  }
+
+  if (force_update || animated
+    || csd.is_textured != _shader_data.is_textured
+    || csd.draw_impassible_flag != _shader_data.draw_impassible_flag
+    || csd.cant_paint != _shader_data.cant_paint
+    || csd.has_shadow != _shader_data.has_shadow)
+  {
+    //gl.bindBuffer(GL_UNIFORM_BUFFER, mt->_chunks_data_ubo);
+    gl.bufferSubData(GL_UNIFORM_BUFFER, (sizeof(chunk_shader_data) * (py * 16 + px)), sizeof(chunk_shader_data), &csd);
+  }
+
+  _shader_data = csd;
+}
+
 void MapChunk::draw ( math::frustum const& frustum
                     , opengl::scoped::use_program& mcnk_shader
                     , GLuint const& tex_coord_vbo
@@ -559,9 +627,6 @@ void MapChunk::draw ( math::frustum const& frustum
                     , std::map<int, misc::random_color>& area_id_colors
                     , int animtime
                     , display_mode display
-                    , bool& previous_chunk_had_shadows
-                    , bool& previous_chunk_was_textured
-                    , bool& previous_chunk_could_be_painted
                     , std::vector<int>& textures_bound
                     )
 {
@@ -581,6 +646,15 @@ void MapChunk::draw ( math::frustum const& frustum
     // force lod update on upload
     _need_lod_update = true;
     update_visibility(cull_distance, frustum, camera, display);
+    // force update on upload
+    update_shader_data( show_unpaintable_chunks
+                      , draw_paintability_overlay
+                      , draw_chunk_flag_overlay
+                      , draw_areaid_overlay
+                      , area_id_colors
+                      , animtime
+                      , true
+                      );
   }
 
   // todo update lod too
@@ -591,6 +665,13 @@ void MapChunk::draw ( math::frustum const& frustum
 
   int texture_count = texture_set->num();
   bool is_textured = texture_count != 0;
+  update_shader_data( show_unpaintable_chunks
+                    , draw_paintability_overlay
+                    , draw_chunk_flag_overlay
+                    , draw_areaid_overlay
+                    , area_id_colors
+                    , animtime
+                    );
 
   if (is_textured)
   {
@@ -600,58 +681,8 @@ void MapChunk::draw ( math::frustum const& frustum
     {
       texture_set->bindTexture(i, i + 1, textures_bound);
 
-      if (texture_set->is_animated(i))
-      {
-        mcnk_shader.uniform("tex_anim_"+ std::to_string(i), texture_set->anim_uv_offset(i, animtime));
-      }
     }
   }
-
-  // only update the shadow texture if there's a shadow map used
-  if (_chunk_shadow)
-  {
-
-    if (!previous_chunk_had_shadows)
-    {
-      mcnk_shader.uniform("has_shadows", 1);
-    }
-  }
-  else if (previous_chunk_had_shadows)
-  {
-    mcnk_shader.uniform("has_shadows", 0);
-  }
-
-  previous_chunk_had_shadows = !!_chunk_shadow;
-
-  if (is_textured != previous_chunk_was_textured)
-  {
-    previous_chunk_was_textured = is_textured;
-    mcnk_shader.uniform("is_textured", (int)is_textured);
-  }
-
-  if (show_unpaintable_chunks && draw_paintability_overlay)
-  {
-    bool cant_paint = texture_count == 4
-      && noggit::ui::selected_texture::get()
-      && !canPaintTexture(*noggit::ui::selected_texture::get());
-
-    if (cant_paint == previous_chunk_could_be_painted)
-    {
-      mcnk_shader.uniform("cant_paint", (int)cant_paint);
-      previous_chunk_could_be_painted = !cant_paint;
-    }
-  }
-
-  if (draw_chunk_flag_overlay)
-  {
-    mcnk_shader.uniform ("draw_impassible_flag", (int)header_flags.flags.impass);
-  }
-
-  if (draw_areaid_overlay)
-  {
-    mcnk_shader.uniform("areaid_color", (math::vector_4d)area_id_colors[areaID]);
-  }
-
   mcnk_shader.uniform("chunk_id", py * 16 + px);
 
   gl.bindVertexArray(_vao);
@@ -669,15 +700,6 @@ void MapChunk::draw ( math::frustum const& frustum
   }
 
   gl.drawElements(GL_TRIANGLES, _indices_count_per_lod_level[_lod_level], GL_UNSIGNED_BYTE, opengl::index_buffer_is_already_bound{});
-
-
-  for (int i = 0; i < texture_count; ++i)
-  {
-    if (texture_set->is_animated(i))
-    {
-      mcnk_shader.uniform("tex_anim_" + std::to_string(i), math::vector_2d());
-    }
-  }
 }
 
 void MapChunk::intersect (math::ray const& ray, selection_result* results)

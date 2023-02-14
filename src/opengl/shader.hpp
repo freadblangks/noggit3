@@ -60,6 +60,9 @@ namespace opengl
     inline GLuint uniform_location (std::string const& name) const;
     inline GLuint attrib_location (std::string const& name) const;
 
+    inline GLuint uniform_block_index(std::string const& name) const;
+    inline void uniform_block_binding(GLuint block_index, GLuint block_binding) const;
+
     friend struct scoped::use_program;
 
     boost::optional<GLuint> _handle;
@@ -88,6 +91,8 @@ namespace opengl
       void uniform (std::string const& name, math::matrix_4x4 const&);
       template<typename T> void uniform (std::string const&, T) = delete;
 
+      void uniform_block_binding(std::string const& name, GLuint block_binding);
+
       void sampler (std::string const& name, GLenum texture_slot, texture*);
 
       // \note All attrib*() functions implicitly modify the state of the currently bound VAO.
@@ -102,7 +107,7 @@ namespace opengl
     private:
       GLuint uniform_location (std::string const& name);
       GLuint attrib_location (std::string const& name);
-    
+
       std::unordered_map<std::string, GLuint> _uniforms;
       std::unordered_map<std::string, GLuint> _attribs;
 

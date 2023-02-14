@@ -98,7 +98,9 @@ namespace opengl
     void genBuffers (GLuint, GLuint*);
     void deleteBuffers (GLuint, GLuint*);
     void bindBuffer (GLenum, GLuint);
+    void bindBufferBase(GLenum target, GLuint index, GLuint buffer);
     void bufferData (GLenum target, GLsizeiptr size, GLvoid const* data, GLenum usage);
+    void bufferSubData (GLenum target, GLintptr offset, GLsizeiptr size, GLvoid const* data);
     GLvoid* mapBuffer (GLenum target, GLenum access);
     GLboolean unmapBuffer (GLenum);
 
@@ -167,6 +169,9 @@ namespace opengl
     void uniform3fv (GLint location, GLsizei count, GLfloat const* value);
     void uniform4fv (GLint location, GLsizei count, GLfloat const* value);
     void uniformMatrix4fv (GLint location, GLsizei count, GLboolean transpose, GLfloat const* value);
+
+    GLuint getUniformBlockIndex(GLuint program, const GLchar* name);
+    void uniformBlockBinding(GLuint program, GLuint uniformBlockIndex, GLuint uniformBlockBinding);
 
     void clearStencil (GLint);
     void stencilFunc (GLenum func, GLint ref, GLuint mask);

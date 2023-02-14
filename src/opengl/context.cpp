@@ -377,10 +377,20 @@ namespace opengl
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
     return _current_context->functions()->glBindBuffer (target, buffer);
   }
+  void context::bindBufferBase(GLenum target, GLuint index, GLuint buffer)
+  {
+    verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
+    return _3_3_core_func->glBindBufferBase (target, index, buffer);
+  }
   void context::bufferData (GLenum target, GLsizeiptr size, GLvoid const* data, GLenum usage)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
     return _current_context->functions()->glBufferData (target, size, data, usage);
+  }
+  void context::bufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, GLvoid const* data)
+  {
+    verify_context_and_check_for_gl_errors const _(_current_context, BOOST_CURRENT_FUNCTION);
+    return _current_context->functions()->glBufferSubData(target, offset, size, data);
   }
   GLvoid* context::mapBuffer (GLenum target, GLenum access)
   {
@@ -718,6 +728,16 @@ namespace opengl
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
     return _current_context->functions()->glUniformMatrix4fv (location, count, transpose, value);
+  }
+  GLuint context::getUniformBlockIndex(GLuint program, const GLchar* name)
+  {
+    verify_context_and_check_for_gl_errors const _(_current_context, BOOST_CURRENT_FUNCTION);
+    return _3_3_core_func->glGetUniformBlockIndex(program, name);
+  }
+  void context::uniformBlockBinding(GLuint program, GLuint uniformBlockIndex, GLuint uniformBlockBinding)
+  {
+    verify_context_and_check_for_gl_errors const _(_current_context, BOOST_CURRENT_FUNCTION);
+    _3_3_core_func->glUniformBlockBinding(program, uniformBlockIndex, uniformBlockBinding);
   }
 
   void context::clearStencil (GLint s)

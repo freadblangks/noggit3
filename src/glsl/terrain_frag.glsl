@@ -1,5 +1,21 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
 #version 330 core
+struct chunk_shader_data
+{
+  bool has_shadow;
+  bool is_textured;
+  bool cant_paint;
+  bool draw_impassible_flag;
+
+  vec2 tex_anim[4];
+  vec4 areaid_color;
+};
+
+layout (std140) uniform chunk_data
+{
+  chunk_shader_data ubo_data[256];
+};
+
 
 // todo: move to opengl 4.1+ to be able to use the layout qualifier to be able to validate the program on creation
 uniform sampler2DArray alphamap;
@@ -8,18 +24,7 @@ uniform sampler2D tex0;
 uniform sampler2D tex1;
 uniform sampler2D tex2;
 uniform sampler2D tex3;
-uniform vec2 tex_anim_0;
-uniform vec2 tex_anim_1;
-uniform vec2 tex_anim_2;
-uniform vec2 tex_anim_3;
-
-uniform bool is_textured;
-uniform bool has_shadows;
-uniform bool has_mccv;
-uniform bool cant_paint;
 uniform bool draw_areaid_overlay;
-uniform vec4 areaid_color;
-uniform bool draw_impassible_flag;
 uniform bool draw_terrain_height_contour;
 uniform bool draw_lines;
 uniform bool draw_hole_lines;
@@ -63,19 +68,19 @@ const float UNITSIZE = HOLESIZE * 0.5;
 
 vec4 texture_blend() 
 {
-  if(!is_textured)
+  if(!ubo_data[chunk_id].is_textured)
     return vec4 (1.0, 1.0, 1.0, 1.0);
 
   vec3 alpha = texture(alphamap, vec3(vary_texcoord / 8., chunk_id + 0.1)).rgb;
 
-  float a0 = alpha.r;  
+  float a0 = alpha.r;
   float a1 = alpha.g;
   float a2 = alpha.b;
 
-  vec3 t0 = texture(tex0, vary_texcoord + tex_anim_0).rgb;
-  vec3 t1 = texture(tex1, vary_texcoord + tex_anim_1).rgb;
-  vec3 t2 = texture(tex2, vary_texcoord + tex_anim_2).rgb;
-  vec3 t3 = texture(tex3, vary_texcoord + tex_anim_3).rgb;
+  vec3 t0 = texture(tex0, vary_texcoord + ubo_data[chunk_id].tex_anim[0]).rgb;
+  vec3 t1 = texture(tex1, vary_texcoord + ubo_data[chunk_id].tex_anim[1]).rgb;
+  vec3 t2 = texture(tex2, vary_texcoord + ubo_data[chunk_id].tex_anim[2]).rgb;
+  vec3 t3 = texture(tex3, vary_texcoord + ubo_data[chunk_id].tex_anim[3]).rgb;
 
   return vec4 (t0 * (1.0 - (a0 + a1 + a2)) + t1 * a0 + t2 * a1 + t3 * a2, 1.0);
 }
@@ -111,22 +116,22 @@ void main()
   // diffuse + ambient lighting
   out_color.rgb *= vec3(clamp (diffuse_color * max(dot(vary_normal, light_dir), 0.0), 0.0, 1.0)) + ambient_color;
 
-  if(cant_paint)
+  if(ubo_data[chunk_id].cant_paint)
   {
     out_color *= vec4(1.0, 0.0, 0.0, 1.0);
   }
   
   if(draw_areaid_overlay)
   {
-    out_color = out_color * 0.3 + areaid_color;
+    out_color = out_color * 0.3 + ubo_data[chunk_id].areaid_color;
   }
 
-  if(draw_impassible_flag)
+  if(ubo_data[chunk_id].draw_impassible_flag)
   {
     out_color.rgb = mix(vec3(1.0), out_color.rgb, 0.5);
   }
 
-  if(has_shadows)
+  if(ubo_data[chunk_id].has_shadow)
   {
     out_color = vec4 (out_color.rgb * (1.0 - texture(shadow_map, vec3(vary_texcoord / 8.0, chunk_id + 0.1)).r) , 1.0);
   }  

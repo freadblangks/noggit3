@@ -353,9 +353,6 @@ void MapTile::draw ( math::frustum const& frustum
                    , std::map<int, misc::random_color>& area_id_colors
                    , int animtime
                    , display_mode display
-                   , bool& previous_chunk_had_shadows
-                   , bool& previous_chunk_was_textured
-                   , bool& previous_chunk_could_be_painted
                    , std::vector<int>& textures_bound
                    )
 {
@@ -369,6 +366,15 @@ void MapTile::draw ( math::frustum const& frustum
     create_alphamap();
     create_shadowmap();
 
+
+    _ubo.upload();
+    gl.bindBuffer(GL_UNIFORM_BUFFER, _chunks_data_ubo);
+    gl.bufferData(GL_UNIFORM_BUFFER, sizeof(chunk_shader_data) * 256, NULL, GL_STATIC_DRAW);
+    gl.bindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    mcnk_shader.uniform_block_binding("chunk_data", 0);
+  }
+
   if (_use_shadowmap)
   {
     opengl::texture::set_active_texture(5);
@@ -377,6 +383,9 @@ void MapTile::draw ( math::frustum const& frustum
 
   opengl::texture::set_active_texture(0);
   _adt_alphamap.bind();
+
+  gl.bindBuffer(GL_UNIFORM_BUFFER, _chunks_data_ubo);
+  gl.bindBufferBase(GL_UNIFORM_BUFFER, 0, _chunks_data_ubo);
 
   for (int j = 0; j<16; ++j)
   {
@@ -395,9 +404,6 @@ void MapTile::draw ( math::frustum const& frustum
                           , area_id_colors
                           , animtime
                           , display
-                          , previous_chunk_had_shadows
-                          , previous_chunk_was_textured
-                          , previous_chunk_could_be_painted
                           , textures_bound
                           );
     }

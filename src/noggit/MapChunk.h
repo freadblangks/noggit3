@@ -36,9 +36,21 @@ struct chunk_shadow
   uint8_t _shadow_map[64 * 64];
 };
 
+struct chunk_shader_data
+{
+  // use ints to match the layout in glsl
+  int has_shadow;
+  int is_textured;
+  int cant_paint;
+  int draw_impassible_flag;
+  math::vector_4d tex_animations[4]; // use vec4 for padding
+  math::vector_4d areaid_color;
+};
+
 class MapChunk
 {
 private:
+  chunk_shader_data _shader_data;
   tile_mode _mode;
 
   bool hasMCCV;
@@ -128,6 +140,14 @@ private:
   int _lod_level = 0;
 
 public:
+  void update_shader_data ( bool show_unpaintable_chunks
+                          , bool draw_paintability_overlay
+                          , bool draw_chunk_flag_overlay
+                          , bool draw_areaid_overlay
+                          , std::map<int, misc::random_color>& area_id_colors
+                          , int animtime
+                          , bool force_update = false
+                          );
 
   void draw ( math::frustum const& frustum
             , opengl::scoped::use_program& mcnk_shader
@@ -142,9 +162,6 @@ public:
             , std::map<int, misc::random_color>& area_id_colors
             , int animtime
             , display_mode display
-            , bool& previous_chunk_had_shadows
-            , bool& previous_chunk_was_textured
-            , bool& previous_chunk_could_be_painted
             , std::vector<int>& textures_bound
             );
   //! \todo only this function should be public, all others should be called from it

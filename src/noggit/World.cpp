@@ -1023,12 +1023,6 @@ void World::draw ( math::matrix_4x4 const& model_view
     mcnk_shader.uniform("draw_areaid_overlay", (int)draw_areaid_overlay);
     mcnk_shader.uniform ("draw_terrain_height_contour", (int)draw_contour);
 
-    // the flag stays on if the last chunk drawn before leaving the editing tool has it
-    if (!draw_chunk_flag_overlay)
-    {
-      mcnk_shader.uniform ("draw_impassible_flag", 0);
-    }
-
     mcnk_shader.uniform ("draw_wireframe", (int)draw_wireframe);
     mcnk_shader.uniform ("wireframe_type", NoggitSettings.value("wireframe/type", 0).toInt());
     mcnk_shader.uniform ("wireframe_radius", NoggitSettings.value("wireframe/radius", 1.5f).toFloat());
@@ -1070,21 +1064,8 @@ void World::draw ( math::matrix_4x4 const& model_view
     mcnk_shader.uniform("tex3", 4);
     mcnk_shader.uniform("shadow_map", 5);
 
-    mcnk_shader.uniform("tex_anim_0", math::vector_2d());
-    mcnk_shader.uniform("tex_anim_1", math::vector_2d());
-    mcnk_shader.uniform("tex_anim_2", math::vector_2d());
-    mcnk_shader.uniform("tex_anim_3", math::vector_2d());
-
-    bool previous_chunk_could_be_painted = true;
-    bool previous_chunk_was_textured = true;
-    mcnk_shader.uniform("cant_paint", 0);
-    mcnk_shader.uniform("is_textured", 1);
 
     std::vector<int> textures_bound = { -1, -1, -1, -1 };
-
-    // start true so the first chunk update the shadow texture regardless of whether it has shadows or not
-    bool previous_chunk_had_shadows = true;
-    mcnk_shader.uniform("has_shadows", 1);
 
     for (MapTile* tile : mapIndex.loaded_tiles())
     {
@@ -1101,9 +1082,6 @@ void World::draw ( math::matrix_4x4 const& model_view
                  , area_id_colors
                  , animtime
                  , display
-                 , previous_chunk_had_shadows
-                 , previous_chunk_was_textured
-                 , previous_chunk_could_be_painted
                  , textures_bound
                  );
     }
