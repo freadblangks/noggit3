@@ -255,7 +255,7 @@ Noggit::Noggit(int argc, char *argv[])
   QSurfaceFormat format;
 
   format.setRenderableType(QSurfaceFormat::OpenGL);
-  format.setVersion(3, 3);
+  format.setVersion(4, 1);
   format.setProfile(QSurfaceFormat::CoreProfile);
 
   format.setSwapBehavior(QSurfaceFormat::DoubleBuffer);

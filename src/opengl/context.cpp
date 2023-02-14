@@ -139,20 +139,20 @@ namespace opengl
   context::scoped_setter::scoped_setter (context& context_, QOpenGLContext* current_context)
     : _context (context_)
     , _old_context (_context._current_context)
-    , _old_core_func (context_._3_3_core_func)
+    , _old_core_func (context_._4_1_core_func)
   {
     _context._current_context = current_context;
-    _context._3_3_core_func = current_context->versionFunctions<QOpenGLFunctions_3_3_Core>();
+    _context._4_1_core_func = current_context->versionFunctions<QOpenGLFunctions_4_1_Core>();
 
-    if (!_context._3_3_core_func)
+    if (!_context._4_1_core_func)
     {
-      throw std::runtime_error("Noggit requires OpenGL 3.3 core functions");
+      throw std::runtime_error("Noggit requires OpenGL 4.1 core functions");
     }
   }
   context::scoped_setter::~scoped_setter()
   {
     _context._current_context = _old_context;
-    _context._3_3_core_func = _old_core_func;
+    _context._4_1_core_func = _old_core_func;
   }
   context::save_current_context::save_current_context (context& context_)
     : _is_current ( context_._current_context
@@ -224,7 +224,7 @@ namespace opengl
   void context::readBuffer (GLenum target)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
-    return _3_3_core_func->glReadBuffer (target);
+    return _4_1_core_func->glReadBuffer (target);
   }
   void context::readPixels (GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid* data)
   {
@@ -241,27 +241,27 @@ namespace opengl
   void context::pointParameterf (GLenum pname, GLfloat param)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
-    return _3_3_core_func->glPointParameterf (pname, param);
+    return _4_1_core_func->glPointParameterf (pname, param);
   }
   void context::pointParameteri (GLenum pname, GLint param)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
-    return _3_3_core_func->glPointParameteri (pname, param);
+    return _4_1_core_func->glPointParameteri (pname, param);
   }
   void context::pointParameterfv (GLenum pname, GLfloat const* param)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
-    return _3_3_core_func->glPointParameterfv (pname, param);
+    return _4_1_core_func->glPointParameterfv (pname, param);
   }
   void context::pointParameteriv (GLenum pname, GLint const* param)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
-    return _3_3_core_func->glPointParameteriv (pname, param);
+    return _4_1_core_func->glPointParameteriv (pname, param);
   }
   void context::pointSize (GLfloat size)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
-    return _3_3_core_func->glPointSize (size);
+    return _4_1_core_func->glPointSize (size);
   }
 
   void context::hint (GLenum target, GLenum mode)
@@ -272,7 +272,7 @@ namespace opengl
   void context::polygonMode (GLenum face, GLenum mode)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
-    return _3_3_core_func->glPolygonMode (face, mode);
+    return _4_1_core_func->glPolygonMode (face, mode);
   }
 
   void context::genTextures (GLuint count, GLuint* textures)
@@ -298,7 +298,7 @@ namespace opengl
   void context::texImage3D (GLenum target, GLint level, GLint internal_format, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, GLvoid const* data)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
-    return _3_3_core_func->glTexImage3D (target, level, internal_format, width, height, depth, border, format, type, data);
+    return _4_1_core_func->glTexImage3D (target, level, internal_format, width, height, depth, border, format, type, data);
   }
   void context::texSubImage2D(GLenum target, GLint level, GLint x_offset, GLint y_offset, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid const* data)
   {
@@ -308,7 +308,7 @@ namespace opengl
   void context::texSubImage3D(GLenum target, GLint level, GLint x_offset, GLint y_offset, GLint z_offset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, GLvoid const* data)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
-    return _3_3_core_func->glTexSubImage3D(target, level, x_offset, y_offset, z_offset, width, height, depth, format, type, data);
+    return _4_1_core_func->glTexSubImage3D(target, level, x_offset, y_offset, z_offset, width, height, depth, format, type, data);
   }
   void context::compressedTexImage2D (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, GLvoid const* data)
   {
@@ -350,17 +350,17 @@ namespace opengl
   void context::genVertexArrays (GLuint count, GLuint* arrays)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
-    return _3_3_core_func->glGenVertexArrays(count, arrays);
+    return _4_1_core_func->glGenVertexArrays(count, arrays);
   }
   void context::deleteVertexArray (GLuint count, GLuint* arrays)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
-    return _3_3_core_func->glDeleteVertexArrays(count, arrays);
+    return _4_1_core_func->glDeleteVertexArrays(count, arrays);
   }
   void context::bindVertexArray (GLenum array)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
-    return _3_3_core_func->glBindVertexArray(array);
+    return _4_1_core_func->glBindVertexArray(array);
   }
   void context::genBuffers (GLuint count, GLuint* buffers)
   {
@@ -380,7 +380,7 @@ namespace opengl
   void context::bindBufferBase(GLenum target, GLuint index, GLuint buffer)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
-    return _3_3_core_func->glBindBufferBase (target, index, buffer);
+    return _4_1_core_func->glBindBufferBase (target, index, buffer);
   }
   void context::bufferData (GLenum target, GLsizeiptr size, GLvoid const* data, GLenum usage)
   {
@@ -395,12 +395,12 @@ namespace opengl
   GLvoid* context::mapBuffer (GLenum target, GLenum access)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
-    return _3_3_core_func->glMapBuffer (target, access);
+    return _4_1_core_func->glMapBuffer (target, access);
   }
   GLboolean context::unmapBuffer (GLenum target)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
-    return _3_3_core_func->glUnmapBuffer (target);
+    return _4_1_core_func->glUnmapBuffer (target);
   }
 
   void context::drawElements (GLenum mode, GLsizei count, GLenum type, index_buffer_is_already_bound, std::intptr_t indices_offset)
@@ -411,12 +411,12 @@ namespace opengl
   void context::drawElementsInstanced (GLenum mode, GLsizei count, GLsizei instancecount, GLenum type, index_buffer_is_already_bound, std::intptr_t indices_offset)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
-    return _3_3_core_func->glDrawElementsInstanced (mode, count, type, reinterpret_cast<void*> (indices_offset), instancecount);
+    return _4_1_core_func->glDrawElementsInstanced (mode, count, type, reinterpret_cast<void*> (indices_offset), instancecount);
   }
   void context::drawRangeElements (GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, index_buffer_is_already_bound, std::intptr_t indices_offset)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
-    return _3_3_core_func->glDrawRangeElements (mode, start, end, count, type, reinterpret_cast<void*> (indices_offset));
+    return _4_1_core_func->glDrawRangeElements (mode, start, end, count, type, reinterpret_cast<void*> (indices_offset));
   }
 
   void context::drawElements (GLenum mode, GLsizei count, GLenum type, GLuint index_buffer, std::intptr_t indices_offset)
@@ -457,7 +457,7 @@ namespace opengl
     void context::drawElementsInstanced (GLenum mode, GLsizei count, GLsizei instancecount, std::vector<T> const& indices, std::intptr_t indices_offset)
   {
 #ifdef NOGGIT_OPENGL_SUPPORTS_CPU_INDICES_IN_DRAW_ELEMENTS
-    return _3_3_core_func->glDrawElementsInstanced (mode, count, type_enum_for_type<T>{}, reinterpret_cast<char const*> (indices.data()) + indices_offset, instancecount);
+    return _4_1_core_func->glDrawElementsInstanced (mode, count, type_enum_for_type<T>{}, reinterpret_cast<char const*> (indices.data()) + indices_offset, instancecount);
 #else
     scoped::buffers<1> index_buffer;
     scoped::buffer_binder<GL_ELEMENT_ARRAY_BUFFER> const _ (index_buffer[0]);
@@ -516,7 +516,7 @@ namespace opengl
   void context::getDoublev (GLenum target, GLdouble* value)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
-    return _3_3_core_func->glGetDoublev (target, value);
+    return _4_1_core_func->glGetDoublev (target, value);
   }
   void context::getFloatv (GLenum target, GLfloat* value)
   {
@@ -668,7 +668,7 @@ namespace opengl
   void context::vertexAttribDivisor (GLuint index, GLuint divisor)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
-    return _3_3_core_func->glVertexAttribDivisor(index, divisor);
+    return _4_1_core_func->glVertexAttribDivisor(index, divisor);
   }
   void context::enableVertexAttribArray (GLuint index)
   {
@@ -732,12 +732,12 @@ namespace opengl
   GLuint context::getUniformBlockIndex(GLuint program, const GLchar* name)
   {
     verify_context_and_check_for_gl_errors const _(_current_context, BOOST_CURRENT_FUNCTION);
-    return _3_3_core_func->glGetUniformBlockIndex(program, name);
+    return _4_1_core_func->glGetUniformBlockIndex(program, name);
   }
   void context::uniformBlockBinding(GLuint program, GLuint uniformBlockIndex, GLuint uniformBlockBinding)
   {
     verify_context_and_check_for_gl_errors const _(_current_context, BOOST_CURRENT_FUNCTION);
-    _3_3_core_func->glUniformBlockBinding(program, uniformBlockIndex, uniformBlockBinding);
+    _4_1_core_func->glUniformBlockBinding(program, uniformBlockIndex, uniformBlockBinding);
   }
 
   void context::clearStencil (GLint s)
