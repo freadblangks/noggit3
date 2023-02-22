@@ -80,7 +80,7 @@ liquid_layer::liquid_layer(math::vector_3d const& base, mclq& liquid, int liquid
 
       _vertices.emplace_back( pos.x + UNITSIZE * x
                             // sometimes there's garbage data on unused tiles that mess things up
-                            , std::max(std::min(v.height, _maximum), _minimum)
+                            , std::clamp(v.height, _minimum, _maximum)
                             , pos.z + UNITSIZE * z
                             );
     }
@@ -125,12 +125,12 @@ liquid_layer::liquid_layer(MPQFile &f, std::size_t base_pos, math::vector_3d con
 
     if (_liquid_vertex_format == 0 || _liquid_vertex_format == 1)
     {
-
       for (int z = info.yOffset; z <= info.yOffset + info.height; ++z)
       {
         for (int x = info.xOffset; x <= info.xOffset + info.width; ++x)
         {
           f.read(&_vertices[z * 9 + x].y, sizeof(float));
+          _vertices[z * 9 + x].y = std::clamp(_vertices[z * 9 + x].y, _minimum, _maximum);
         }
       }
     }
