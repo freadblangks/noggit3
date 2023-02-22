@@ -29,8 +29,10 @@ class Brush;
 class ChunkWater;
 class MapTile;
 
-using StripType = uint8_t;
+using StripType = uint16_t;
 static const int mapbufsize = 9 * 9 + 8 * 8; // chunk size
+// 8x8 squares with 4 triangls
+static const int max_indices_count = 8 * 8 * 4 * 3;
 
 struct chunk_shadow
 {
@@ -48,6 +50,13 @@ struct chunk_shader_data
   math::vector_4d areaid_color;
   int tex_array_index[4] = { 0,0,0,0 };
   int tex_index_in_array[4] = { 0,0,0,0 };
+};
+
+struct chunk_vertex
+{
+  math::vector_3d position;
+  math::vector_3d normal;
+  math::vector_3d color;
 };
 
 class MapChunk
@@ -90,21 +99,8 @@ private:
   bool _need_lod_update = true;
   bool _need_vao_update = true;
 
-  void upload();
-  void update_indices_buffer();
-  void update_vao(opengl::scoped::use_program& mcnk_shader, GLuint const& tex_coord_vbo);
-
-  opengl::scoped::deferred_upload_vertex_arrays<1> _vertex_array;
-  GLuint const& _vao = _vertex_array[0];
-  opengl::scoped::deferred_upload_buffers<3> _buffers;
-  GLuint const& _vertices_vbo = _buffers[0];
-  GLuint const& _normals_vbo = _buffers[1];
-  GLuint const& _mccv_vbo = _buffers[2];
-
   static constexpr int lod_count = 2;
   static constexpr int indice_buffer_count = lod_count + 1;
-
-  opengl::scoped::deferred_upload_buffers<indice_buffer_count> _indice_buffers;
 
 public:
   MapChunk(MapTile* mt, MPQFile* f, bool bigAlpha, tile_mode mode);
@@ -112,6 +108,10 @@ public:
   MapTile *mt;
   math::vector_3d vmin, vmax, vcenter;
   int px, py;
+
+  int chunk_index() const { return px + 16 * py; }
+  int vertex_offset() const { return chunk_index() * mapbufsize; }
+  int indices_offset() const { return chunk_index() * max_indices_count; }
 
   MapChunkHeader header;
 
@@ -122,22 +122,25 @@ public:
 
   std::unique_ptr<TextureSet> texture_set;
 
-  math::vector_3d mNormals[mapbufsize];
-  math::vector_3d mVertices[mapbufsize];
-  math::vector_3d mccv[mapbufsize];
+  std::array<chunk_vertex, mapbufsize> vertices;
 
   bool is_visible ( const float& cull_distance
                   , const math::frustum& frustum
                   , const math::vector_3d& camera
                   , display_mode display
                   ) const;
-private:
+
+  int indices_count() const { return _indices_count_per_lod_level.at(0); }
+
+  bool is_currently_visible() const { return _is_visible; }
+
+
   void update_visibility ( const float& cull_distance
                          , const math::frustum& frustum
                          , const math::vector_3d& camera
                          , display_mode display
                          );
-
+private:
   bool _is_visible = true; // visible by default
   bool _need_visibility_update = true;
   int _lod_level = 0;
@@ -174,7 +177,6 @@ public:
   bool ChangeMCCV(math::vector_3d const& pos, math::vector_4d const& color, float change, float radius, bool editMode);
   //! Initialize MCCV to 1,1,1, do nothing if already exists.
   void maybe_create_mccv();
-  void UpdateMCCV();
   bool hasColors();
   math::vector_3d pickMCCV(math::vector_3d const& pos);
 
@@ -190,7 +192,7 @@ public:
                    , std::function<boost::optional<float> (float, float)> height
                    );
 
-  void selectVertex(math::vector_3d const& pos, float radius, std::set<math::vector_3d*>& vertices);
+  void selectVertex(math::vector_3d const& pos, float radius, std::set<math::vector_3d*>& selected_vertices);
   void fixVertices(std::set<math::vector_3d*>& selected);
   // for the vertex tool
   bool isBorderChunk(std::set<math::vector_3d*>& selected);
@@ -231,7 +233,7 @@ public:
   // fix the gaps with the chunk above
   bool fixGapAbove(const MapChunk* chunk);
 
-  void selectVertex(math::vector_3d const& minPos, math::vector_3d const& maxPos, std::set<math::vector_3d*>& vertices);
+  void selectVertex(math::vector_3d const& minPos, math::vector_3d const& maxPos, std::set<math::vector_3d*>& selected_vertices);
 
   void update_alphamap();
 };

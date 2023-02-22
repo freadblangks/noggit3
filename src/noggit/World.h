@@ -58,7 +58,6 @@ public:
 
   // Vertex Buffer Objects for coordinates used for drawing.
   GLuint detailtexcoords;
-  GLuint alphatexcoords;
 
   // The lighting used.
   std::unique_ptr<OutdoorLighting> ol;
@@ -137,7 +136,7 @@ public:
                              , bool draw_hidden_models
                              );
 
-  void initGlobalVBOs(GLuint* pDetailTexCoords, GLuint* pAlphaTexCoords);
+  void initGlobalVBOs(GLuint* pDetailTexCoords);
 
 private:
   // Information about the currently selected model / WMO / triangle.

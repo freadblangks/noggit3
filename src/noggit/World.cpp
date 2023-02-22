@@ -97,7 +97,6 @@ World::World(const std::string& name, int map_id)
   , mWmoFilename("")
   , mWmoEntry(ENTRY_MODF())
   , detailtexcoords(0)
-  , alphatexcoords(0)
   , ol(nullptr)
   , animtime(0)
   , time(1450)
@@ -662,9 +661,9 @@ void World::rotate_selected_models_to_ground_normal(bool smoothNormals)
     math::vector_3d varnormal;
 
     // Surface Normal
-    auto &p0 = hitChunkInfo.chunk->mVertices[std::get<0>(hitChunkInfo.triangle)];
-    auto &p1 = hitChunkInfo.chunk->mVertices[std::get<1>(hitChunkInfo.triangle)];
-    auto &p2 = hitChunkInfo.chunk->mVertices[std::get<2>(hitChunkInfo.triangle)];
+    auto &p0 = hitChunkInfo.chunk->vertices[std::get<0>(hitChunkInfo.triangle)].position;
+    auto &p1 = hitChunkInfo.chunk->vertices[std::get<1>(hitChunkInfo.triangle)].position;
+    auto &p2 = hitChunkInfo.chunk->vertices[std::get<2>(hitChunkInfo.triangle)].position;
 
     math::vector_3d v1 = p1 - p0;
     math::vector_3d v2 = p2 - p0;
@@ -679,9 +678,9 @@ void World::rotate_selected_models_to_ground_normal(bool smoothNormals)
     {
       auto normalWeights = getBarycentricCoordinatesAt(p0, p1, p2, hitChunkInfo.position, varnormal);
 
-      const auto& vNormal0 = hitChunkInfo.chunk->mNormals[std::get<0>(hitChunkInfo.triangle)];
-      const auto& vNormal1 = hitChunkInfo.chunk->mNormals[std::get<1>(hitChunkInfo.triangle)];
-      const auto& vNormal2 = hitChunkInfo.chunk->mNormals[std::get<2>(hitChunkInfo.triangle)];
+      const auto& vNormal0 = hitChunkInfo.chunk->vertices[std::get<0>(hitChunkInfo.triangle)].normal;
+      const auto& vNormal1 = hitChunkInfo.chunk->vertices[std::get<1>(hitChunkInfo.triangle)].normal;
+      const auto& vNormal2 = hitChunkInfo.chunk->vertices[std::get<2>(hitChunkInfo.triangle)].normal;
 
       varnormal.x =
         vNormal0.x * normalWeights.x +
@@ -725,9 +724,9 @@ void World::rotate_selected_models_to_ground_normal(bool smoothNormals)
   }
 }
 
-void World::initGlobalVBOs(GLuint* pDetailTexCoords, GLuint* pAlphaTexCoords)
+void World::initGlobalVBOs(GLuint* pDetailTexCoords)
 {
-  if (!*pDetailTexCoords && !*pAlphaTexCoords)
+  if (!*pDetailTexCoords)
   {
     math::vector_2d temp[mapbufsize], *vt;
     float tx, ty;
@@ -735,8 +734,11 @@ void World::initGlobalVBOs(GLuint* pDetailTexCoords, GLuint* pAlphaTexCoords)
     // init texture coordinates for detail map:
     vt = temp;
     const float detail_half = 0.5f * detail_size / 8.0f;
-    for (int j = 0; j<17; ++j) {
-      for (int i = 0; i<((j % 2) ? 8 : 9); ++i) {
+
+    for (int j = 0; j < 17; ++j)
+    {
+      for (int i = 0; i < ((j % 2) ? 8 : 9); ++i)
+      {
         tx = detail_size / 8.0f * i;
         ty = detail_size / 8.0f * j * 0.5f;
         if (j % 2) {
@@ -748,32 +750,21 @@ void World::initGlobalVBOs(GLuint* pDetailTexCoords, GLuint* pAlphaTexCoords)
     }
 
     gl.genBuffers(1, pDetailTexCoords);
-    gl.bufferData<GL_ARRAY_BUFFER> (*pDetailTexCoords, sizeof(temp), temp, GL_STATIC_DRAW);
+    gl.bufferData<GL_ARRAY_BUFFER> (*pDetailTexCoords, sizeof(temp) * 256, NULL, GL_STATIC_DRAW);
 
-    // init texture coordinates for alpha map:
-    vt = temp;
+    gl.bindBuffer(GL_ARRAY_BUFFER, *pDetailTexCoords);
 
-    const float alpha_half = TEXDETAILSIZE / MINICHUNKSIZE;
-    for (int j = 0; j<17; ++j) {
-      for (int i = 0; i<((j % 2) ? 8 : 9); ++i) {
-        tx = alpha_half * i *2.0f;
-        ty = alpha_half * j;
-        if (j % 2) {
-          // offset by half
-          tx += alpha_half;
-        }
-        *vt++ = math::vector_2d(tx, ty);
-      }
+    // duplicate the buffer as we render the whole adt at once now
+    for (int chunk = 0; chunk < 256; ++chunk)
+    {
+      gl.bufferSubData(GL_ARRAY_BUFFER, sizeof(temp) * chunk, sizeof(temp), temp);
     }
-
-    gl.genBuffers(1, pAlphaTexCoords);
-    gl.bufferData<GL_ARRAY_BUFFER> (*pAlphaTexCoords, sizeof(temp), temp, GL_STATIC_DRAW);
   }
 }
 
 void World::initDisplay()
 {
-  initGlobalVBOs(&detailtexcoords, &alphatexcoords);
+  initGlobalVBOs(&detailtexcoords);
 
   mapIndex.setAdt(false);
 

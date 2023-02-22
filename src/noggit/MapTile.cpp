@@ -362,10 +362,29 @@ void MapTile::draw ( math::frustum const& frustum
     return;
   }
 
+  if (need_visibility_update)
+  {
+    // todo: check if the adt's aabb is in sight first
+    for (size_t i = 0; i < 16; i++)
+    {
+      for (size_t j = 0; j < 16; j++)
+      {
+        mChunks[i][j]->update_visibility(cull_distance, frustum, camera, display);
+      }
+    }
+  }
+
+  if (!is_visible())
+  {
+    return;
+  }
+
   if (!_alphamap_created)
   {
     create_alphamap();
     create_shadowmap();
+
+    upload();
 
     // make sure all the textures are in the array
     for (std::string const& tex : mTextureFilenames)
@@ -381,7 +400,14 @@ void MapTile::draw ( math::frustum const& frustum
     gl.bufferData(GL_UNIFORM_BUFFER, sizeof(chunk_shader_data) * 256, NULL, GL_STATIC_DRAW);
     gl.bindBuffer(GL_UNIFORM_BUFFER, 0);
 
-    mcnk_shader.uniform_block_binding("chunk_data", 0);
+
+    opengl::scoped::vao_binder const _ (_vao);
+
+    mcnk_shader.attrib(_, "position", _vertices_vbo, 3, GL_FLOAT, GL_FALSE, sizeof(chunk_vertex), static_cast<char*>(0) + offsetof(chunk_vertex, position));
+    mcnk_shader.attrib(_, "normal",   _vertices_vbo, 3, GL_FLOAT, GL_FALSE, sizeof(chunk_vertex), static_cast<char*>(0) + offsetof(chunk_vertex, normal));
+    mcnk_shader.attrib(_, "mccv",     _vertices_vbo, 3, GL_FLOAT, GL_FALSE, sizeof(chunk_vertex), static_cast<char*>(0) + offsetof(chunk_vertex, color));
+    mcnk_shader.attrib(_, "texcoord", tex_coord_vbo, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
   }
 
   if (_use_shadowmap)
@@ -395,6 +421,12 @@ void MapTile::draw ( math::frustum const& frustum
 
   gl.bindBuffer(GL_UNIFORM_BUFFER, _chunks_data_ubo);
   gl.bindBufferBase(GL_UNIFORM_BUFFER, 0, _chunks_data_ubo);
+
+  opengl::scoped::vao_binder const _ (_vao);
+
+  gl.bindBuffer(GL_ARRAY_BUFFER, _vertices_vbo);
+
+  gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, _indices_vbo);
 
   for (int j = 0; j<16; ++j)
   {
@@ -417,6 +449,8 @@ void MapTile::draw ( math::frustum const& frustum
                           );
     }
   }
+
+  gl.multiDrawElements(GL_TRIANGLES, _indices_count.data(), GL_UNSIGNED_SHORT, _indices_offsets.data(), 256);
 }
 
 void MapTile::intersect (math::ray const& ray, selection_result* results) const
@@ -445,7 +479,7 @@ void MapTile::drawMFBO (opengl::scoped::use_program& mfbo_shader)
     _mfbo_vbos.upload();
     _mfbo_vaos.upload();
 
-    
+
 
     gl.bufferData<GL_ARRAY_BUFFER>( _mfbo_bottom_vbo
                                   , 9 * sizeof(math::vector_3d)
@@ -456,7 +490,7 @@ void MapTile::drawMFBO (opengl::scoped::use_program& mfbo_shader)
                                   , 9 * sizeof(math::vector_3d)
                                   , mMaximumValues
                                   , GL_STATIC_DRAW
-                                  );    
+                                  );
 
     {
       opengl::scoped::vao_binder const _ (_mfbo_bottom_vao);
@@ -758,7 +792,7 @@ void MapTile::saveTile(World* world)
     lID++;
   }
   lCurrentPosition += 8 + lMMID_Size;
-  
+
   // MWMO
   int lMWMO_Position = lCurrentPosition;
   lADTFile.Extend(8 + 0);  // We don't yet know how big this will be.
@@ -1034,6 +1068,38 @@ void MapTile::create_shadowmap()
   }
 
   _shadowmap_created = true;
+}
+
+void MapTile::upload()
+{
+  _vertex_array.upload();
+  _vertex_buffers.upload();
+
+  gl.bufferData<GL_ARRAY_BUFFER>(_vertices_vbo, sizeof(chunk_vertex) * mapbufsize * 256, NULL, GL_STATIC_DRAW);
+  gl.bufferData<GL_ELEMENT_ARRAY_BUFFER>(_indices_vbo, sizeof(StripType) * max_indices_count * 256, NULL, GL_STATIC_DRAW);
+
+  // array of offsets and size for the glmultidraw
+  for (int i = 0; i < 256; ++i)
+  {
+    _indices_offsets.push_back(static_cast<char*>(0) + i * max_indices_count * sizeof(StripType));
+    _indices_count.push_back(mChunks[i / 16][i % 16]->indices_count());
+  }
+}
+
+bool MapTile::is_visible() const
+{
+  for (size_t i = 0; i < 16; i++)
+  {
+    for (size_t j = 0; j < 16; j++)
+    {
+      if (mChunks[i][j]->is_currently_visible())
+      {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 

@@ -14,6 +14,9 @@ out vec2 vary_texcoord;
 out vec3 vary_normal;
 out vec3 vary_mccv;
 
+
+flat out int chunk_id;
+
 void main()
 {
   gl_Position = projection * model_view * vec4(position, 1.0);
@@ -21,4 +24,6 @@ void main()
   vary_position = position;
   vary_texcoord = texcoord;
   vary_mccv = mccv;
+
+  chunk_id = gl_VertexID / 145;
 }

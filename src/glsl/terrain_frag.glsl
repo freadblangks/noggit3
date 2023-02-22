@@ -1,7 +1,6 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3). 
 #version 410 core
 
-
 struct chunk_shader_data
 {
   bool has_shadow;
@@ -56,12 +55,13 @@ uniform vec3 light_dir;
 uniform vec3 diffuse_color;
 uniform vec3 ambient_color;
 
-uniform int chunk_id;
 
 in vec3 vary_position;
 in vec2 vary_texcoord;
 in vec3 vary_normal;
 in vec3 vary_mccv;
+
+flat in int chunk_id;
 
 out vec4 out_color;
 

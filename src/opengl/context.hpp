@@ -126,6 +126,8 @@ namespace opengl
       void drawElementsInstanced (GLenum mode, GLsizei count, GLsizei instancecount, std::vector<T> const& indices,            std::intptr_t indices_offset = 0);
     void drawRangeElements (GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, index_buffer_is_already_bound, std::intptr_t indices_offset = 0);
 
+    void multiDrawElements(GLenum mode, const GLsizei* count, GLenum type, const void* const* indices, GLsizei drawcount);
+
     void genPrograms (GLsizei programs, GLuint*);
     void deletePrograms (GLsizei programs, GLuint*);
     void bindProgram (GLenum, GLuint);

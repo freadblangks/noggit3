@@ -423,6 +423,11 @@ namespace opengl
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
     return _4_1_core_func->glDrawRangeElements (mode, start, end, count, type, reinterpret_cast<void*> (indices_offset));
   }
+  void context::multiDrawElements(GLenum mode, const GLsizei* count, GLenum type, const void* const* indices, GLsizei drawcount)
+  {
+    verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
+    return _4_1_core_func->glMultiDrawElements(mode, count, type, indices, drawcount);
+  }
 
   void context::drawElements (GLenum mode, GLsizei count, GLenum type, GLuint index_buffer, std::intptr_t indices_offset)
   {

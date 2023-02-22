@@ -138,8 +138,12 @@ private:
 
   std::unique_ptr<opengl::texture_array> _shadowmap;
 
+  void upload();
+
 public:
   void set_shadowmap_required() { _use_shadowmap = true; }
+
+  bool is_visible() const;
 
 private:
   tile_mode _mode;
@@ -160,6 +164,14 @@ private:
   opengl::scoped::deferred_upload_buffers<1> _ubo;
   GLuint const& _chunks_data_ubo = _ubo[0];
 
+  opengl::scoped::deferred_upload_vertex_arrays<1> _vertex_array;
+  GLuint const& _vao = _vertex_array[0];
+  opengl::scoped::deferred_upload_buffers<2> _vertex_buffers;
+  GLuint const& _vertices_vbo = _vertex_buffers[0];
+  GLuint const& _indices_vbo = _vertex_buffers[1];
+
+  std::vector<void*> _indices_offsets;
+  std::vector<int> _indices_count;
   // MHDR:
   int mFlags;
   bool mBigAlpha;
