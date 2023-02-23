@@ -10,6 +10,8 @@
 
 class MapChunk;
 
+using liquid_indice = std::uint8_t;
+
 // handle liquids like oceans, lakes, rivers, slime, magma
 class liquid_layer
 {
@@ -71,7 +73,7 @@ private:
   int get_lod_level(math::vector_3d const& camera_pos) const;
   void set_lod_level(int lod_level);
 
-  static int const lod_count = 4;
+  static int const lod_count = 3;
 
   int _current_lod_level = -1;
   int _current_lod_indices_count = 0;
@@ -92,7 +94,7 @@ private:
   std::vector<math::vector_3d> _vertices;
   std::vector<float> _depth;
   std::vector<math::vector_2d> _tex_coords;
-  std::map<int, std::vector<std::uint16_t>> _indices_by_lod;
+  std::map<int, std::vector<std::uint8_t>> _indices_by_lod;
 
   bool _need_buffer_update = true;
   bool _vao_need_update = true;

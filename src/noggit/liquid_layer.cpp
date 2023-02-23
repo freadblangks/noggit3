@@ -143,7 +143,7 @@ liquid_layer::liquid_layer(MPQFile &f, std::size_t base_pos, math::vector_3d con
         {
           mh2o_uv uv;
           f.read(&uv, sizeof(mh2o_uv));
-          _tex_coords[z * 9 + x] = 
+          _tex_coords[z * 9 + x] =
             { static_cast<float>(uv.x) / 255.f
             , static_cast<float>(uv.y) / 255.f
             };
@@ -387,7 +387,7 @@ void liquid_layer::update_indices()
     for (int x = 0; x < 8; ++x)
     {
       size_t p = z * 9 + x;
-      
+
       for (int lod_level = 0; lod_level < lod_count; ++lod_level)
       {
         int n = 1 << lod_level;
@@ -401,13 +401,13 @@ void liquid_layer::update_indices()
             _indices_by_lod[lod_level].emplace_back(p + n * 9 + n);
             _indices_by_lod[lod_level].emplace_back (p + n);
             _indices_by_lod[lod_level].emplace_back(p);
-          }                    
+          }
         }
         else
         {
           break;
         }
-      }      
+      }
     }
   }
 
@@ -429,7 +429,7 @@ void liquid_layer::update_buffers()
   for (int i = 0; i < lod_count; ++i)
   {
     opengl::scoped::buffer_binder<GL_ELEMENT_ARRAY_BUFFER> const index_buffer (_index_buffer[i]);
-    gl.bufferData (GL_ELEMENT_ARRAY_BUFFER, _indices_by_lod[i].size() * sizeof (uint16_t), _indices_by_lod[i].data(), GL_STATIC_DRAW);
+    gl.bufferData (GL_ELEMENT_ARRAY_BUFFER, _indices_by_lod[i].size() * sizeof (uint8_t), _indices_by_lod[i].data(), GL_STATIC_DRAW);
   }
 
   gl.bufferData<GL_ARRAY_BUFFER>(_vertices_vbo, sizeof(*_vertices.data()) * _vertices.size(), _vertices.data(), GL_STATIC_DRAW);
@@ -495,8 +495,8 @@ void liquid_layer::draw ( liquid_render& render
   {
     gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, _index_buffer[_current_lod_level]);
   }
-  
-  gl.drawElements (GL_TRIANGLES, _current_lod_indices_count, GL_UNSIGNED_SHORT, opengl::index_buffer_is_already_bound{});
+
+  gl.drawElements (GL_TRIANGLES, _current_lod_indices_count, GL_UNSIGNED_BYTE, opengl::index_buffer_is_already_bound{});
 }
 
 void liquid_layer::crop(MapChunk* chunk)
@@ -672,10 +672,9 @@ int liquid_layer::get_lod_level(math::vector_3d const& camera_pos) const
   auto const& center_vertex (_vertices[5 * 9 + 4]);
   auto const dist ((center_vertex - camera_pos).length());
 
-  return dist < 1000.f ? 0
-       : dist < 2000.f ? 1
-       : dist < 4000.f ? 2
-       : 3;
+  float f = std::min(1.f, dist / 4000.f);
+
+  return std::min(lod_count-1, static_cast<int>(f * lod_count));
 }
 
 void liquid_layer::set_lod_level(int lod_level)
