@@ -259,7 +259,10 @@ Noggit::Noggit(int argc, char *argv[])
   format.setProfile(QSurfaceFormat::CoreProfile);
 
   format.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
-  format.setSwapInterval(NoggitSettings.value ("vsync", 0).toInt());
+
+  bool vsync = NoggitSettings.value("vsync", true).toBool();
+
+  format.setSwapInterval(vsync ? 1 : 0);
 
   if (doAntiAliasing)
   {
