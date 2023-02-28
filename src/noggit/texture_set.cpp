@@ -225,8 +225,8 @@ void TextureSet::eraseTexture(size_t id)
     alphamaps[nTextures - 2].reset();
   }
 
-  _textures.erase(_textures.begin()+id);
   nTextures--;
+  _textures.erase(_textures.begin() + nTextures);
 
   // erase the old info as a precaution but it's overriden when adding a new texture
   _layers_info[nTextures] = ENTRY_MCLY();
@@ -287,13 +287,14 @@ bool TextureSet::eraseUnusedTextures()
   {
     auto& amaps = *tmp_edit_values.get();
 
-    for (int i = 0; i < 4096 && visible_tex.size() < nTextures; ++i)
+    for (int layer = 0; layer < nTextures && visible_tex.size() < nTextures; ++layer)
     {
-      for (int layer = 0; layer < nTextures; ++layer)
+      for (int i = 0; i < 4096; ++i)
       {
         if (amaps[layer][i] > 0.f)
         {
-          visible_tex.emplace(i);
+          visible_tex.emplace(layer);
+          break; // texture visible, go to the next layer
         }
       }
     }
