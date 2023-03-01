@@ -217,6 +217,8 @@ public:
 
   MapChunk * get_chunk_at(math::vector_3d const& pos);
 
+  void load_full_map();
+
   void changeTerrain(math::vector_3d const& pos, float change, float radius, int BrushType, float inner_radius);
   void changeShader(math::vector_3d const& pos, math::vector_4d const& color, float change, float radius, bool editMode);
   math::vector_3d pickShaderColor(math::vector_3d const& pos);

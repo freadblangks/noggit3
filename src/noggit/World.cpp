@@ -1381,7 +1381,7 @@ void World::draw ( math::matrix_4x4 const& model_view
   if (terrainMode == editing_mode::object && has_multiple_model_selected())
   {
     opengl::scoped::bool_setter<GL_DEPTH_TEST, GL_FALSE> const disable_depth_test;
-    
+
     float dist = (camera_pos - _multi_select_pivot.get()).length();
     _sphere_render.draw(mvp, _multi_select_pivot.get(), cursor_color, std::min(2.f, std::max(0.15f, dist * 0.02f)));
   }
@@ -1649,6 +1649,25 @@ template<typename Fun, typename Post>
 
   return changed;
 }
+
+  void World::load_full_map()
+  {
+    for (int x = 0; x < 64; ++x)
+    {
+      for (int z = 0; z < 64; ++z)
+      {
+        tile_index idx(x, z);
+
+        if (mapIndex.hasTile(idx))
+        {
+          // todo: find a better solution
+          // to keep the tiles loaded
+          mapIndex.setChanged(idx);
+        }
+      }
+    }
+  }
+
 
 void World::changeShader(math::vector_3d const& pos, math::vector_4d const& color, float change, float radius, bool editMode)
 {

@@ -530,6 +530,17 @@ void MapView::createGUI()
   file_menu->addSeparator();
   ADD_ACTION_NS (file_menu, "Force uid check on next opening", [this] { _force_uid_check = true; });
   file_menu->addSeparator();
+  ADD_ACTION_NS(file_menu, "Load full map", [this]
+    {
+       makeCurrent();
+       opengl::context::scoped_setter const _(::gl, context());
+       _world->load_full_map();
+    });
+  file_menu->addSeparator();
+
+  file_menu->addSeparator();
+  ADD_ACTION_NS (file_menu, "Force uid check on next opening", [this] { _force_uid_check = true; });
+  file_menu->addSeparator();
 
 
   edit_menu->addSeparator();
