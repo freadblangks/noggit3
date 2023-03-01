@@ -542,8 +542,6 @@ void MapChunk::update_shader_data ( bool show_unpaintable_chunks
         csd.tex_animations[i] = math::vector_4d(uv_anim.x, uv_anim.y, 0.f, 0.f);
       }
     }
-
-    texture_set->need_texture_infos_update = false;
   }
 
   // normalize values "bool" values
@@ -572,18 +570,12 @@ void MapChunk::update_shader_data ( bool show_unpaintable_chunks
     csd.areaid_color = (math::vector_4d)area_id_colors[areaID];
   }
 
-  // todo: flag changes to avoid all those checks/recreating the struct each frame
-  if ( force_update || need_update
-    || csd.is_textured != _shader_data.is_textured
-    || csd.draw_impassible_flag != _shader_data.draw_impassible_flag
-    || csd.cant_paint != _shader_data.cant_paint
-    || csd.has_shadow != _shader_data.has_shadow
-     )
-  {
-    gl.bufferSubData(GL_UNIFORM_BUFFER, (sizeof(chunk_shader_data) * (py * 16 + px)), sizeof(chunk_shader_data), &csd);
-  }
+  gl.bufferSubData(GL_UNIFORM_BUFFER, (sizeof(chunk_shader_data) * (py * 16 + px)), sizeof(chunk_shader_data), &csd);
+
+  texture_set->need_texture_infos_update = false;
 
   _shader_data = csd;
+  _shader_data_need_update = false;
 }
 
 void MapChunk::draw ( math::frustum const& frustum
@@ -607,6 +599,8 @@ void MapChunk::draw ( math::frustum const& frustum
     update_visibility(cull_distance, frustum, camera, display);
   }
 
+  if(_shader_data_need_update || texture_set->need_shader_data_update())
+  {
     update_shader_data( show_unpaintable_chunks
                     , draw_paintability_overlay
                     , draw_chunk_flag_overlay
@@ -615,6 +609,7 @@ void MapChunk::draw ( math::frustum const& frustum
                     , animtime
                     , tileset_handler
                     );
+  }
 
   if (_need_indice_buffer_update)
   {

@@ -79,7 +79,12 @@ public:
 
   bool need_texture_infos_update = true;
 
+  bool need_shader_data_update() const { return need_texture_infos_update || _animated_texture_count > 0; }
+  void update_animated_texture_count();
+
 private:
+  int _animated_texture_count = 0;
+
   int get_texture_index_or_add (scoped_blp_texture_reference texture, float target);
 
   uint8_t sum_alpha(size_t offset) const;

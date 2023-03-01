@@ -145,6 +145,8 @@ private:
   bool _need_visibility_update = true;
   int _lod_level = 0;
 
+  bool _shader_data_need_update = true;
+
 public:
   void update_shader_data ( bool show_unpaintable_chunks
                           , bool draw_paintability_overlay

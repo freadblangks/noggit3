@@ -57,6 +57,8 @@ TextureSet::TextureSet (MapChunkHeader const& header, MPQFile* f, size_t base, M
 
     _need_amap_update = true;
   }
+
+  update_animated_texture_count();
 }
 
 int TextureSet::addTexture (scoped_blp_texture_reference texture)
@@ -193,6 +195,8 @@ void TextureSet::eraseTextures()
   _need_lod_texture_map_update = true;
 
   tmp_edit_values.reset();
+
+  update_animated_texture_count();
 }
 
 void TextureSet::eraseTexture(size_t id)
@@ -240,6 +244,8 @@ void TextureSet::eraseTexture(size_t id)
   need_texture_infos_update = true;
   _need_amap_update = true;
   _need_lod_texture_map_update = true;
+
+  update_animated_texture_count();
 }
 
 bool TextureSet::canPaintTexture(scoped_blp_texture_reference const& texture)
@@ -659,6 +665,8 @@ void TextureSet::change_texture_flag(scoped_blp_texture_reference const& tex, st
       break;
     }
   }
+
+  update_animated_texture_count();
 }
 
 std::vector<std::vector<uint8_t>> TextureSet::save_alpha(bool big_alphamap)
@@ -1070,5 +1078,18 @@ void TextureSet::update_adt_alphamap_if_necessary(int chunk_x, int chunk_y)
     }
 
     _need_amap_update = false;
+  }
+}
+
+void TextureSet::update_animated_texture_count()
+{
+  _animated_texture_count = 0;
+
+  for (int i = 0; i < nTextures; ++i)
+  {
+    if (is_animated(i))
+    {
+      _animated_texture_count++;
+    }
   }
 }
