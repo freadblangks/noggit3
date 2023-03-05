@@ -97,6 +97,7 @@ public:
   virtual math::vector_3d get_pos() const { return pos; }
 
   void recalcExtents();
+  bool need_recalc_extents() const { return _need_recalc_extents; }
   std::vector<math::vector_3d> const& extents();
 
 protected:

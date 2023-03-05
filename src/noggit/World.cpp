@@ -2509,7 +2509,10 @@ void World::update_models_by_filename()
   {
     _models_by_filename[model_instance.model->filename].push_back(&model_instance);
     // to make sure the transform matrix are up to date
-    model_instance.recalcExtents();
+    if(model_instance.need_recalc_extents())
+    {
+      model_instance.recalcExtents();
+    }
   });
 
   need_model_updates = false;
