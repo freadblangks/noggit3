@@ -166,9 +166,6 @@ public:
   bool tileAwaitingLoading(const tile_index& tile) const;
   bool tileLoaded(const tile_index& tile) const;
 
-  bool hasAdt();
-  void setAdt(bool value);
-
   void save();
   void saveall (World*);
 
@@ -216,11 +213,11 @@ private:
   int _last_unload_time;
   int _unload_interval;
   int _unload_dist;
+  int _loading_radius;
 
   // Is the WDT telling us to use a different alphamap structure.
   bool mBigAlpha;
   bool mHasAGlobalWMO;
-  bool noadt;
   bool changed;
   bool _sort_models_by_size_class;
 

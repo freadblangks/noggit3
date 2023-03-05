@@ -23,14 +23,14 @@ MapIndex::MapIndex (const std::string &pBasename, int map_id, World* world)
   , _last_unload_time((clock() / CLOCKS_PER_SEC)) // to not try to unload right away
   , mBigAlpha(false)
   , mHasAGlobalWMO(false)
-  , noadt(false)
   , changed(false)
   , _sort_models_by_size_class(false)
   , highestGUID(0)
   , _world (world)
 {
-  _unload_interval = NoggitSettings.value("unload_interval", 5).toInt();
+  _unload_interval = NoggitSettings.value("unload_interval", 30).toInt();
   _unload_dist = NoggitSettings.value("unload_dist", 5).toInt();
+  _loading_radius = NoggitSettings.value("loading_radius", 1).toInt();
 
   std::stringstream filename;
   filename << "World\\Maps\\" << basename << "\\" << basename << ".wdt";
@@ -230,17 +230,15 @@ void MapIndex::enterTile(const tile_index& tile)
 {
   if (!hasTile(tile))
   {
-    noadt = true;
     return;
   }
 
-  noadt = false;
   int cx = tile.x;
   int cz = tile.z;
 
-  for (int pz = std::max(cz - 1, 0); pz < std::min(cz + 2, 63); ++pz)
+  for (int pz = std::max(cz - _loading_radius, 0); pz <= std::min(cz + _loading_radius, 63); ++pz)
   {
-    for (int px = std::max(cx - 1, 0); px < std::min(cx + 2, 63); ++px)
+    for (int px = std::max(cx - _loading_radius, 0); px <= std::min(cx + _loading_radius, 63); ++px)
     {
       loadTile(tile_index(px, pz));
     }
@@ -447,16 +445,6 @@ bool MapIndex::tileAwaitingLoading(const tile_index& tile) const
 bool MapIndex::tileLoaded(const tile_index& tile) const
 {
   return hasTile(tile) && mTiles[tile.z][tile.x].tile && mTiles[tile.z][tile.x].tile->finishedLoading();
-}
-
-bool MapIndex::hasAdt()
-{
-  return noadt;
-}
-
-void MapIndex::setAdt(bool value)
-{
-  noadt = value;
 }
 
 MapTile* MapIndex::getTile(const tile_index& tile) const

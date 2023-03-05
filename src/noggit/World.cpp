@@ -766,8 +766,6 @@ void World::initDisplay()
 {
   initGlobalVBOs(&detailtexcoords);
 
-  mapIndex.setAdt(false);
-
   if (mapIndex.hasAGlobalWMO())
   {
     WMOInstance inst(mWmoFilename, &mWmoEntry);

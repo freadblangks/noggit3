@@ -162,6 +162,10 @@ namespace noggit
       layout->addRow ("Adt unloading check interval (sec)", _adt_unload_check_interval = new QSpinBox(this));
       _adt_unload_check_interval->setMinimum(1);
 
+      layout->addRow ("Adt loading radius", _adt_loading_radius = new QSpinBox(this));
+      _adt_loading_radius->setMinimum(0);
+      _adt_loading_radius->setMaximum(64);
+
       layout->addRow ("Always check for max UID", _uid_cb = new QCheckBox(this));
 
       layout->addRow ("Tablet support", tabletModeCheck = new QCheckBox(this));
@@ -228,6 +232,7 @@ namespace noggit
       _fullscreen_cb->setChecked (NoggitSettings.value ("fullscreen", false).toBool());
       _adt_unload_dist->setValue(NoggitSettings.value("unload_dist", 5).toInt());
       _adt_unload_check_interval->setValue(NoggitSettings.value("unload_interval", 5).toInt());
+      _adt_loading_radius->setValue(NoggitSettings.value("loading_radius", 1).toInt());
       _uid_cb->setChecked(NoggitSettings.value("uid_startup_check", true).toBool());
       _additional_file_loading_log->setChecked(NoggitSettings.value("additional_file_loading_log", false).toBool());
 #ifdef NOGGIT_HAS_SCRIPTING
@@ -263,6 +268,7 @@ namespace noggit
       NoggitSettings.set_value ("fullscreen", _fullscreen_cb->isChecked());
       NoggitSettings.set_value ("unload_dist", _adt_unload_dist->value());
       NoggitSettings.set_value ("unload_interval", _adt_unload_check_interval->value());
+      NoggitSettings.set_value ("loading_radius", _adt_loading_radius->value());
       NoggitSettings.set_value ("uid_startup_check", _uid_cb->isChecked());
       NoggitSettings.set_value ("additional_file_loading_log", _additional_file_loading_log->isChecked());
 

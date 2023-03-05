@@ -44,6 +44,7 @@ namespace noggit
       QDoubleSpinBox* farZField;
       QSpinBox* _adt_unload_dist;
       QSpinBox* _adt_unload_check_interval;
+      QSpinBox* _adt_loading_radius;
       QCheckBox* _uid_cb;
 
       QCheckBox* tabletModeCheck;
