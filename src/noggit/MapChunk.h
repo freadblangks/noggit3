@@ -81,6 +81,7 @@ private:
   std::vector<uint8_t> compressed_shadow_map() const;
   bool shadow_map_is_empty() const;
 
+  int indices_count(int lod_level) const;
   void initStrip();
 
   int indexNoLoD(int z, int x);
@@ -212,7 +213,7 @@ public:
   void clear_shadows();
 
   //! \todo implement Action stack for these
-  bool isHole(int i, int j);
+  bool isHole(int i, int j) const;
   void setHole(math::vector_3d const& pos, bool big, bool add);
 
   void setFlag(bool value, uint32_t);

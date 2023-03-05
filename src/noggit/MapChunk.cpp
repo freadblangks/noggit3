@@ -305,6 +305,42 @@ bool MapChunk::shadow_map_is_empty() const
   return true;
 }
 
+int MapChunk::indices_count(int lod_level) const
+{
+  int count = 0;
+
+  if (lod_level == 0)
+  {
+    for (int x = 0; x < 8; ++x)
+    {
+      for (int y = 0; y < 8; ++y)
+      {
+        if (!isHole(x / 2, y / 2))
+        {
+          count += 12;
+        }
+      }
+    }
+  }
+  else
+  {
+    int step = 1 << (lod_level - 1);
+
+    for (int x = 0; x < 8; x += step)
+    {
+      for (int y = 0; y < 8; y += step)
+      {
+        if (!isHole(x / 2, y / 2))
+        {
+          count += 6;
+        }
+      }
+    }
+  }
+
+  return count;
+}
+
 std::vector<StripType> MapChunk::strip_without_holes = {};
 
 void MapChunk::initStrip()
@@ -312,6 +348,18 @@ void MapChunk::initStrip()
   bool init_strip_without_holes = strip_without_holes.size() == 0;
 
   _indice_strips.clear();
+
+  std::array<int, indice_buffer_count> index_count;
+
+  for (int lod_level = 0; lod_level < indice_buffer_count; ++lod_level)
+  {
+    int count = indices_count(lod_level);
+    _indices_count_per_lod_level[lod_level] = count;
+    _indice_strips[lod_level] = std::vector<StripType>(count, 0);
+    index_count[lod_level] = 0;
+  }
+
+
 
   for (int x = 0; x<8; ++x)
   {
@@ -342,34 +390,34 @@ void MapChunk::initStrip()
         int n = 1 << (lod_level-1);
         if ((x % n) == 0 && (y % n) == 0)
         {
-          _indice_strips[lod_level].emplace_back (vertex_offset() + indexNoLoD(y, x)); //0
-          _indice_strips[lod_level].emplace_back (vertex_offset() + indexNoLoD(y + n, x)); //17
-          _indice_strips[lod_level].emplace_back (vertex_offset() + indexNoLoD(y + n, x + n)); //18
-          _indice_strips[lod_level].emplace_back (vertex_offset() + indexNoLoD(y + n, x + n)); //18
-          _indice_strips[lod_level].emplace_back (vertex_offset() + indexNoLoD(y, x + n)); //1
-          _indice_strips[lod_level].emplace_back (vertex_offset() + indexNoLoD(y, x)); //0
+          int current_index = index_count[lod_level];
+
+          _indice_strips[lod_level][current_index + 0] = (vertex_offset() + indexNoLoD(y, x)); //0
+          _indice_strips[lod_level][current_index + 1] = (vertex_offset() + indexNoLoD(y + n, x)); //17
+          _indice_strips[lod_level][current_index + 2] = (vertex_offset() + indexNoLoD(y + n, x + n)); //18
+          _indice_strips[lod_level][current_index + 3] = (vertex_offset() + indexNoLoD(y + n, x + n)); //18
+          _indice_strips[lod_level][current_index + 4] = (vertex_offset() + indexNoLoD(y, x + n)); //1
+          _indice_strips[lod_level][current_index + 5] = (vertex_offset() + indexNoLoD(y, x)); //0
+
+          index_count[lod_level] += 6;
         }
       }
 
-      _indice_strips[0].emplace_back (vertex_offset() + indexLoD(y, x)); //9
-      _indice_strips[0].emplace_back (vertex_offset() + indexNoLoD(y, x)); //0
-      _indice_strips[0].emplace_back (vertex_offset() + indexNoLoD(y + 1, x)); //17
-      _indice_strips[0].emplace_back (vertex_offset() + indexLoD(y, x)); //9
-      _indice_strips[0].emplace_back (vertex_offset() + indexNoLoD(y + 1, x)); //17
-      _indice_strips[0].emplace_back (vertex_offset() + indexNoLoD(y + 1, x + 1)); //18
-      _indice_strips[0].emplace_back (vertex_offset() + indexLoD(y, x)); //9
-      _indice_strips[0].emplace_back (vertex_offset() + indexNoLoD(y + 1, x + 1)); //18
-      _indice_strips[0].emplace_back (vertex_offset() + indexNoLoD(y, x + 1)); //1
-      _indice_strips[0].emplace_back (vertex_offset() + indexLoD(y, x)); //9
-      _indice_strips[0].emplace_back (vertex_offset() + indexNoLoD(y, x + 1)); //1
-      _indice_strips[0].emplace_back (vertex_offset() + indexNoLoD(y, x)); //0
+      int start = vertex_offset() + indexNoLoD(y, x);
+      int current_index = index_count[0];
+
+      static std::array<int, 12> triangles = { 9,0,17, 9,17,18, 9,18,1, 9,1,0 };
+
+      for (int i = 0; i < 12; ++i)
+      {
+        _indice_strips[0][current_index + i] = start + triangles[i];
+      }
+
+      index_count[0] += 12;
     }
   }
 
-  for (int lod_level = 0; lod_level < indice_buffer_count; ++lod_level)
-  {
-    _indices_count_per_lod_level[lod_level] = _indice_strips[lod_level].size();
-  }
+
 
   _need_indice_buffer_update = true;
 }
@@ -1053,7 +1101,7 @@ void MapChunk::clear_shadows()
   _chunk_shadow.reset();
 }
 
-bool MapChunk::isHole(int i, int j)
+bool MapChunk::isHole(int i, int j) const
 {
   return (holes & ((1 << ((j * 4) + i)))) != 0;
 }
