@@ -371,11 +371,12 @@ void MapIndex::unloadTiles(const tile_index& tile)
 
 void MapIndex::unloadTile(const tile_index& tile)
 {
-  // unloads a tile with givn cords
   if (tileLoaded(tile))
   {
-    mTiles[tile.z][tile.x].tile = nullptr;
-    NOGGIT_LOG << "Unload Tile " << tile.x << "-" << tile.z << std::endl;
+    // either log before or don't use a reference for the tile/make a copy
+    // otherwise it can be deleted before the log because it comes from the adt itself (see unloadTiles)
+    NOGGIT_LOG << "Unloading Tile " << tile.x << "-" << tile.z << std::endl;
+    mTiles[tile.z][tile.x].tile.reset();
   }
 }
 
