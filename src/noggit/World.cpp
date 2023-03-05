@@ -2074,7 +2074,7 @@ void World::remove_models_if_needed(std::vector<uint32_t> const& uids)
     reset_selection();
   }
 
-  update_models_by_filename();
+  need_model_updates = true;
 }
 
 void World::reload_tile(tile_index const& tile)
