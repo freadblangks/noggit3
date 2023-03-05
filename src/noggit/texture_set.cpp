@@ -750,9 +750,10 @@ void TextureSet::alphas_to_big_alpha(uint8_t* dest)
 
     for (int k = nTextures - 2; k >= 0; --k)
     {
-      uint8_t val = misc::rounded_255_int_div(*alpha(k, i) * a);
+      uint8_t* value_ptr = alpha(k, i);
+      uint8_t val = alpha_convertion_lookup[*value_ptr * a];
       a -= val;
-      *alpha(k, i) = val;
+      *value_ptr = val;
     }
   }
 }
@@ -765,14 +766,14 @@ void TextureSet::convertToBigAlpha()
     return;
   }
 
-  uint8_t tab[4096 * 3];
+  std::array<std::uint8_t, 4096 * 3> tab;
 
   apply_alpha_changes();
-  alphas_to_big_alpha(tab);
+  alphas_to_big_alpha(tab.data());
 
   for (size_t k = 0; k < nTextures - 1; k++)
   {
-    alphamaps[k]->setAlpha(tab + 4096 * k);
+    alphamaps[k]->setAlpha(tab.data() + 4096 * k);
   }
 }
 
@@ -1093,3 +1094,5 @@ void TextureSet::update_animated_texture_count()
     }
   }
 }
+
+std::array<std::uint8_t, 256 * 256> TextureSet::alpha_convertion_lookup = TextureSet::make_alpha_lookup_array();

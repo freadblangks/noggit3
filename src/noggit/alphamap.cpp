@@ -24,8 +24,8 @@ Alphamap::Alphamap(MPQFile *f, unsigned int flags, bool use_big_alphamaps, bool 
     else
     {
       readBigAlpha(f);
-    }    
-  }    
+    }
+  }
   else
   {
     readNotCompressed(f, do_not_fix_alpha_map);
@@ -93,16 +93,25 @@ void Alphamap::readBigAlpha(MPQFile *f)
   f->seekRelative(0x1000);
 }
 
+namespace
+{
+  struct alpha_4_4
+  {
+    std::uint8_t lower : 4;
+    std::uint8_t upper : 4;
+  };
+}
+
 void Alphamap::readNotCompressed(MPQFile *f, bool do_not_fix_alpha_map)
 {
-  char const* abuf = f->getPointer();
+  alpha_4_4 const* abuf = reinterpret_cast<alpha_4_4 const*>(f->getPointer());
 
   for (std::size_t x(0); x < 64; ++x)
   {
     for (std::size_t y(0); y < 64; y += 2)
     {
-      amap[x * 64 + y + 0] = ((*abuf & 0x0f) << 4) | (*abuf & 0x0f);
-      amap[x * 64 + y + 1] = ((*abuf & 0xf0) >> 4) | (*abuf & 0xf0);
+      amap[x * 64 + y + 0] = abuf->lower | abuf->lower << 4;
+      amap[x * 64 + y + 1] = abuf->upper | abuf->upper << 4;
       ++abuf;
     }
   }
@@ -152,7 +161,7 @@ std::vector<uint8_t> Alphamap::compress() const
   int column_pos = 0;
 
   auto const consume_fill
-  ( 
+  (
     [&]
     {
       int8_t count (0);
@@ -179,7 +188,7 @@ std::vector<uint8_t> Alphamap::compress() const
   std::vector<uint8_t> result;
   boost::optional<std::size_t> current_copy_entry_offset (boost::none);
   auto const current_copy_entry
-  ( 
+  (
     [&]
     {
       return reinterpret_cast<compressed_mcal_entry*> (&*(result.begin() + *current_copy_entry_offset));
