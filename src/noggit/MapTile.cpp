@@ -319,16 +319,6 @@ bool MapTile::isTile(int pX, int pZ)
   return pX == index.x && pZ == index.z;
 }
 
-float MapTile::getMaxHeight()
-{
-  float maxHeight = -99999.0f;
-  for (int nextChunk = 0; nextChunk < 256; ++nextChunk)
-  {
-    maxHeight = std::max(mChunks[nextChunk / 16][nextChunk % 16]->vmax.y, maxHeight);
-  }
-  return maxHeight;
-}
-
 void MapTile::convert_alphamap(bool to_big_alpha)
 {
   mBigAlpha = true;
@@ -362,19 +352,17 @@ void MapTile::draw ( math::frustum const& frustum
     return;
   }
 
-  if (need_visibility_update)
+  if (_need_recalc_extents)
   {
-    // todo: check if the adt's aabb is in sight first
-    for (size_t i = 0; i < 16; i++)
-    {
-      for (size_t j = 0; j < 16; j++)
-      {
-        mChunks[i][j]->update_visibility(cull_distance, frustum, camera, display);
-      }
-    }
+    recalc_extents();
   }
 
-  if (!is_visible())
+  if (need_visibility_update || _need_visibility_update)
+  {
+    update_visibility(cull_distance, frustum, camera, display);
+  }
+
+  if (!_is_visible)
   {
     return;
   }
@@ -455,7 +443,7 @@ void MapTile::draw ( math::frustum const& frustum
 
 void MapTile::intersect (math::ray const& ray, selection_result* results) const
 {
-  if (!finished)
+  if (!finished || !ray.intersect_bounds(extents[0], extents[1]))
   {
     return;
   }
@@ -1086,20 +1074,53 @@ void MapTile::upload()
   }
 }
 
-bool MapTile::is_visible() const
+void MapTile::recalc_extents()
 {
-  for (size_t i = 0; i < 16; i++)
+  float px = xbase;// -32 * TILESIZE;
+  float pz = zbase;// -32 * TILESIZE;
+
+  extents[0] = { px, std::numeric_limits<float>::max(), pz };
+  extents[1] = { px + TILESIZE, std::numeric_limits<float>::min(), pz + TILESIZE};
+
+  for (int z = 0; z < 16; ++z)
   {
-    for (size_t j = 0; j < 16; j++)
+    for (int x = 0; x < 16; ++x)
     {
-      if (mChunks[i][j]->is_currently_visible())
-      {
-        return true;
-      }
+      extents[0].y = std::min(extents[0].y, mChunks[z][x]->vmin.y);
+      extents[1].y = std::max(extents[1].y, mChunks[z][x]->vmax.y);
     }
   }
 
-  return false;
+  _intersect_points.clear();
+  _intersect_points = misc::intersection_points(extents[0], extents[1]);
+
+  _need_recalc_extents = false;
 }
 
+void MapTile::update_visibility ( const float& cull_distance
+                                , const math::frustum& frustum
+                                , const math::vector_3d& camera
+                                , display_mode display
+                                )
+{
+  static const float adt_radius = std::sqrt (TILESIZE * TILESIZE / 2.0f);
 
+  float dist = display == display_mode::in_3D
+             ? (camera - (extents[0] + extents[1]) * 0.5).length() - adt_radius
+             : std::abs(camera.y - extents[1].y);
+
+
+  _need_visibility_update = false;
+  _is_visible = dist < cull_distance && frustum.intersects(_intersect_points);
+
+  if (_is_visible)
+  {
+    for (size_t z = 0; z < 16; z++)
+    {
+      for (size_t x = 0; x < 16; x++)
+      {
+        mChunks[z][x]->update_visibility(cull_distance, frustum, camera, display);
+      }
+    }
+  }
+}

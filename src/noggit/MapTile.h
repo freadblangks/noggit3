@@ -43,23 +43,6 @@ public:
 
   void finishLoading();
 
-  //! \todo on destruction, unload ModelInstances and WMOInstances on this tile:
-  // a) either keep up the information what tiles the instances are on at all times
-  //    (even while moving), to then check if all tiles it was on were unloaded, or
-  // b) do the reference count lazily by iterating over all instances and checking
-  //    what MapTiles they span. if any of those tiles is still loaded, keep it,
-  //    otherwise remove it.
-  //
-  // I think b) is easier. It only requires
-  // `std::set<C2iVector> XInstance::spanning_tiles() const` followed by
-  // `if_none (isTileLoaded (x, y)): unload instance`, which is way easier than
-  // constantly updating the reference counters.
-  // Note that both approaches do not cover the issue that the instance might not
-  // be saved to any tile, thus the movement might have been lost.
-
-	//! \brief Get the maximum height of terrain on this map tile.
-	float getMaxHeight();
-
   void convert_alphamap(bool to_big_alpha);
 
   //! \brief Get chunk for sub offset x,z.
@@ -143,9 +126,23 @@ private:
 public:
   void set_shadowmap_required() { _use_shadowmap = true; }
 
-  bool is_visible() const;
-
+  void chunk_height_changed() { _need_recalc_extents = true; _need_visibility_update = true; }
 private:
+  std::array<math::vector_3d, 2> extents;
+  std::vector<math::vector_3d> _intersect_points;
+
+  bool _need_recalc_extents = true;
+  void recalc_extents();
+
+  bool _need_visibility_update = true;
+  bool _is_visible = false;
+
+  void update_visibility( const float& cull_distance
+                        , const math::frustum& frustum
+                        , const math::vector_3d& camera
+                        , display_mode display
+                        );
+
   tile_mode _mode;
   bool _tile_is_being_reloaded;
 

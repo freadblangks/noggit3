@@ -444,18 +444,6 @@ float MapChunk::getHeight(int x, int z)
   return vertices[indexNoLoD(x, z)].position.y;
 }
 
-float MapChunk::getMinHeight()
-{
-  float min (vertices[0].position.y);
-
-  for (auto&& vertex : vertices)
-  {
-    min = std::min (min, vertex.position.y);
-  }
-
-  return min;
-}
-
 boost::optional<float> MapChunk::get_exact_height_at(math::vector_3d const& pos)
 {
   if (pos.x < vmin.x || pos.x > vmax.x || pos.z < vmin.z || pos.z > vmax.z)
