@@ -4,7 +4,7 @@
 #include <math/quaternion.hpp>
 #include <math/vector_3d.hpp>
 #include <noggit/Brush.h>
-#include <noggit/TileWater.hpp>
+#include <noggit/liquid_tile.hpp>
 #include <noggit/Log.h>
 #include <noggit/MapChunk.h>
 #include <noggit/MapHeaders.h>
@@ -1542,7 +1542,7 @@ bool MapChunk::isBorderChunk(std::set<math::vector_3d*>& selected)
   return false;
 }
 
-ChunkWater* MapChunk::liquid_chunk() const
+liquid_chunk* MapChunk::liquid_chunk() const
 {
   return mt->Water.getChunk(px, py);
 }

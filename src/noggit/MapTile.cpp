@@ -6,7 +6,7 @@
 #include <noggit/Misc.h>
 #include <noggit/ModelInstance.h> // ModelInstance
 #include <noggit/ModelManager.h> // ModelManager
-#include <noggit/TileWater.hpp>
+#include <noggit/liquid_tile.hpp>
 #include <noggit/WMOInstance.h> // WMOInstance
 #include <noggit/World.h>
 #include <noggit/alphamap.hpp>

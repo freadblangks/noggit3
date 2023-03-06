@@ -2225,7 +2225,7 @@ void MapView::tick (float dt)
           // liquid details if the chunk has liquid data
           if (chunk->mt->Water.hasData(0))
           {
-              ChunkWater* waterchunk = chunk->liquid_chunk();
+              liquid_chunk* waterchunk = chunk->liquid_chunk();
 
               MH2O_Render liquid_render = waterchunk->Render.value_or(MH2O_Render{ 0xffffffffffffffff,0xffffffffffffffff });
 

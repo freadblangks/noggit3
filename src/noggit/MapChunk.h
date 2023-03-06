@@ -26,7 +26,7 @@ namespace math
   struct vector_4d;
 }
 class Brush;
-class ChunkWater;
+class liquid_chunk;
 class MapTile;
 
 using StripType = uint16_t;
@@ -186,7 +186,7 @@ public:
   bool hasColors();
   math::vector_3d pickMCCV(math::vector_3d const& pos);
 
-  ChunkWater* liquid_chunk() const;
+  liquid_chunk* liquid_chunk() const;
 
   void updateVerticesData();
   void recalcNorms (std::function<boost::optional<float> (float, float)> height);

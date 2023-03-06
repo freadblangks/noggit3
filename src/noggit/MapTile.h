@@ -7,7 +7,7 @@
 #include <noggit/MapChunk.h>
 #include <noggit/MapHeaders.h>
 #include <noggit/Selection.h>
-#include <noggit/TileWater.hpp>
+#include <noggit/liquid_tile.hpp>
 #include <noggit/tile_index.hpp>
 #include <noggit/tileset_array_handler.hpp>
 #include <noggit/tool_enums.hpp>
@@ -106,7 +106,7 @@ public:
   void remove_model(uint32_t uid);
   void add_model(uint32_t uid);
 
-  TileWater Water;
+  liquid_tile Water;
 
   bool tile_is_being_reloaded() const { return _tile_is_being_reloaded; }
 
@@ -181,7 +181,7 @@ private:
   std::vector<uint32_t> uids;
 
   std::unique_ptr<MapChunk> mChunks[16][16];
-  std::vector<TileWater*> chunksLiquids; //map chunks liquids for old style water render!!! (Not MH2O)
+  std::vector<liquid_tile*> _liquid_chunks;
 
   bool _load_models;
   World* _world;

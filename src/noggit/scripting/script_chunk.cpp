@@ -11,7 +11,7 @@
 #include <noggit/MapHeaders.h>
 #include <noggit/MapView.h>
 #include <noggit/World.h>
-#include <noggit/ChunkWater.hpp>
+#include <noggit/liquid_chunk.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 
 namespace noggit

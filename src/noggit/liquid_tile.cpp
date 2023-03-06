@@ -1,12 +1,12 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
 
-#include <noggit/ChunkWater.hpp>
+#include <noggit/liquid_chunk.hpp>
 #include <noggit/Log.h>
 #include <noggit/MapTile.h>
 #include <noggit/Misc.h>
-#include <noggit/TileWater.hpp>
+#include <noggit/liquid_tile.hpp>
 
-TileWater::TileWater(MapTile *pTile, float pXbase, float pZbase, bool use_mclq_green_lava)
+liquid_tile::liquid_tile(MapTile *pTile, float pXbase, float pZbase, bool use_mclq_green_lava)
   : tile(pTile)
   , xbase(pXbase)
   , zbase(pZbase)
@@ -15,12 +15,12 @@ TileWater::TileWater(MapTile *pTile, float pXbase, float pZbase, bool use_mclq_g
   {
     for (int x = 0; x < 16; ++x)
     {
-      chunks[z][x] = std::make_unique<ChunkWater> (xbase + CHUNKSIZE * x, zbase + CHUNKSIZE * z, use_mclq_green_lava);
+      chunks[z][x] = std::make_unique<liquid_chunk> (xbase + CHUNKSIZE * x, zbase + CHUNKSIZE * z, use_mclq_green_lava);
     }
   }
 }
 
-void TileWater::readFromFile(MPQFile &theFile, size_t basePos)
+void liquid_tile::readFromFile(MPQFile &theFile, size_t basePos)
 {
   for (int z = 0; z < 16; ++z)
   {
@@ -32,7 +32,7 @@ void TileWater::readFromFile(MPQFile &theFile, size_t basePos)
   }
 }
 
-void TileWater::draw ( math::frustum const& frustum
+void liquid_tile::draw ( math::frustum const& frustum
                      , const float& cull_distance
                      , const math::vector_3d& camera
                      , bool camera_moved
@@ -52,7 +52,7 @@ void TileWater::draw ( math::frustum const& frustum
                          , camera
                          , camera_moved
                          , render
-                         , water_shader                         
+                         , water_shader
                          , animtime
                          , layer
                          , display
@@ -61,12 +61,12 @@ void TileWater::draw ( math::frustum const& frustum
   }
 }
 
-ChunkWater* TileWater::getChunk(int x, int z)
+liquid_chunk* liquid_tile::getChunk(int x, int z)
 {
   return chunks[z][x].get();
 }
 
-void TileWater::autoGen(float factor)
+void liquid_tile::autoGen(float factor)
 {
   for (int z = 0; z < 16; ++z)
   {
@@ -77,7 +77,7 @@ void TileWater::autoGen(float factor)
   }
 }
 
-void TileWater::saveToFile(util::sExtendableArray &lADTFile, int &lMHDR_Position, int &lCurrentPosition)
+void liquid_tile::saveToFile(util::sExtendableArray &lADTFile, int &lMHDR_Position, int &lCurrentPosition)
 {
   if (!hasData(0))
   {
@@ -107,7 +107,7 @@ void TileWater::saveToFile(util::sExtendableArray &lADTFile, int &lMHDR_Position
   SetChunkHeader(lADTFile, ofsW - 8, 'MH2O', lCurrentPosition - ofsW);
 }
 
-bool TileWater::hasData(size_t layer)
+bool liquid_tile::hasData(size_t layer)
 {
   for (int z = 0; z < 16; ++z)
   {
@@ -123,12 +123,12 @@ bool TileWater::hasData(size_t layer)
   return false;
 }
 
-void TileWater::CropMiniChunk(int x, int z, MapChunk* chunkTerrain)
+void liquid_tile::CropMiniChunk(int x, int z, MapChunk* chunkTerrain)
 {
   chunks[z][x]->CropWater(chunkTerrain);
 }
 
-void TileWater::setType(int type, size_t layer)
+void liquid_tile::setType(int type, size_t layer)
 {
   for (int z = 0; z < 16; ++z)
   {
@@ -139,7 +139,7 @@ void TileWater::setType(int type, size_t layer)
   }
 }
 
-int TileWater::getType(size_t layer)
+int liquid_tile::getType(size_t layer)
 {
   for (int z = 0; z < 16; ++z)
   {

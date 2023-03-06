@@ -210,7 +210,6 @@ INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/src" )
 set ( noggit_root_sources
       src/noggit/AsyncLoader.cpp
       src/noggit/Brush.cpp
-      src/noggit/ChunkWater.cpp
       src/noggit/cursor_render.cpp
       src/noggit/DBC.cpp
       src/noggit/DBCFile.cpp
@@ -226,7 +225,6 @@ set ( noggit_root_sources
       src/noggit/Particle.cpp
       src/noggit/Sky.cpp
       src/noggit/TextureManager.cpp
-      src/noggit/TileWater.cpp
       src/noggit/WMO.cpp
       src/noggit/WMOInstance.cpp
       src/noggit/World.cpp
@@ -234,8 +232,10 @@ set ( noggit_root_sources
       src/noggit/application.cpp
       src/noggit/camera.cpp
       src/noggit/error_handling.cpp
+      src/noggit/liquid_chunk.cpp
       src/noggit/liquid_layer.cpp
       src/noggit/liquid_render.cpp
+      src/noggit/liquid_tile.cpp
       src/noggit/map_horizon.cpp
       src/noggit/map_index.cpp
       src/noggit/texture_set.cpp
@@ -308,7 +308,6 @@ set ( noggit_root_headers
       src/noggit/AsyncObject.h
       src/noggit/Brush.h
       src/noggit/camera.hpp
-      src/noggit/ChunkWater.hpp
       src/noggit/cursor_render.hpp
       src/noggit/DBC.h
       src/noggit/DBCFile.h
@@ -328,14 +327,15 @@ set ( noggit_root_headers
       src/noggit/Selection.h
       src/noggit/Sky.h
       src/noggit/TextureManager.h
-      src/noggit/TileWater.hpp
       src/noggit/WMO.h
       src/noggit/WMOInstance.h
       src/noggit/World.h
       src/noggit/alphamap.hpp
       src/noggit/errorHandling.h
+      src/noggit/liquid_chunk.hpp
       src/noggit/liquid_layer.hpp
       src/noggit/liquid_render.hpp
+      src/noggit/liquid_tile.hpp
       src/noggit/map_horizon.h
       src/noggit/map_index.hpp
       src/noggit/multimap_with_normalized_key.hpp

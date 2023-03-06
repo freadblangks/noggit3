@@ -4,7 +4,7 @@
 
 #include <math/frustum.hpp>
 #include <noggit/Brush.h> // brush
-#include <noggit/ChunkWater.hpp>
+#include <noggit/liquid_chunk.hpp>
 #include <noggit/DBC.h>
 #include <noggit/Log.h>
 #include <noggit/MapChunk.h>
@@ -13,7 +13,7 @@
 #include <noggit/ModelManager.h> // ModelManager
 #include <noggit/settings.hpp>
 #include <noggit/TextureManager.h>
-#include <noggit/TileWater.hpp>// tile water
+#include <noggit/liquid_tile.hpp>// tile water
 #include <noggit/WMOInstance.h> // WMOInstance
 #include <noggit/map_index.hpp>
 #include <noggit/texture_set.hpp>

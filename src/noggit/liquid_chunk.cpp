@@ -1,12 +1,12 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
 
-#include <noggit/ChunkWater.hpp>
+#include <noggit/liquid_chunk.hpp>
 #include <noggit/liquid_layer.hpp>
 #include <noggit/MPQ.h>
 #include <noggit/MapChunk.h>
 #include <noggit/Misc.h>
 
-ChunkWater::ChunkWater(float x, float z, bool use_mclq_green_lava)
+liquid_chunk::liquid_chunk(float x, float z, bool use_mclq_green_lava)
   : xbase(x)
   , zbase(z)
   , vmin(x, 0.f, z)
@@ -15,7 +15,7 @@ ChunkWater::ChunkWater(float x, float z, bool use_mclq_green_lava)
 {
 }
 
-void ChunkWater::from_mclq(std::vector<mclq>& layers)
+void liquid_chunk::from_mclq(std::vector<mclq>& layers)
 {
   math::vector_3d pos(xbase, 0.0f, zbase);
   if (!Render.has_value()) Render.emplace();
@@ -53,7 +53,7 @@ void ChunkWater::from_mclq(std::vector<mclq>& layers)
   update_layers();
 }
 
-void ChunkWater::fromFile(MPQFile &f, size_t basePos)
+void liquid_chunk::fromFile(MPQFile &f, size_t basePos)
 {
   MH2O_Header header;
   f.read(&header, sizeof(MH2O_Header));
@@ -98,7 +98,7 @@ void ChunkWater::fromFile(MPQFile &f, size_t basePos)
 }
 
 
-void ChunkWater::save(util::sExtendableArray& adt, int base_pos, int& header_pos, int& current_pos)
+void liquid_chunk::save(util::sExtendableArray& adt, int base_pos, int& header_pos, int& current_pos)
 {
   MH2O_Header header;
 
@@ -139,7 +139,7 @@ void ChunkWater::save(util::sExtendableArray& adt, int base_pos, int& header_pos
 }
 
 
-void ChunkWater::autoGen(MapChunk *chunk, float factor)
+void liquid_chunk::autoGen(MapChunk *chunk, float factor)
 {
   for (liquid_layer& layer : _layers)
   {
@@ -149,7 +149,7 @@ void ChunkWater::autoGen(MapChunk *chunk, float factor)
 }
 
 
-void ChunkWater::CropWater(MapChunk* chunkTerrain)
+void liquid_chunk::CropWater(MapChunk* chunkTerrain)
 {
   for (liquid_layer& layer : _layers)
   {
@@ -158,12 +158,12 @@ void ChunkWater::CropWater(MapChunk* chunkTerrain)
   update_layers();
 }
 
-int ChunkWater::getType(size_t layer) const
+int liquid_chunk::getType(size_t layer) const
 {
   return hasData(layer) ? _layers[layer].liquidID() : 0;
 }
 
-void ChunkWater::setType(int type, size_t layer)
+void liquid_chunk::setType(int type, size_t layer)
 {
   if(hasData(layer))
   {
@@ -171,7 +171,7 @@ void ChunkWater::setType(int type, size_t layer)
   }
 }
 
-void ChunkWater::draw ( math::frustum const& frustum
+void liquid_chunk::draw ( math::frustum const& frustum
                       , const float& cull_distance
                       , const math::vector_3d& camera
                       , bool camera_moved
@@ -200,7 +200,7 @@ void ChunkWater::draw ( math::frustum const& frustum
   }
 }
 
-bool ChunkWater::is_visible ( const float& cull_distance
+bool liquid_chunk::is_visible ( const float& cull_distance
                             , const math::frustum& frustum
                             , const math::vector_3d& camera
                             , display_mode display
@@ -216,7 +216,7 @@ bool ChunkWater::is_visible ( const float& cull_distance
       && dist < cull_distance;
 }
 
-void ChunkWater::update_layers()
+void liquid_chunk::update_layers()
 {
   for (liquid_layer& layer : _layers)
   {
@@ -231,13 +231,13 @@ void ChunkWater::update_layers()
   _intersect_points = misc::intersection_points(vmin, vmax);
 }
 
-bool ChunkWater::hasData(size_t layer) const
+bool liquid_chunk::hasData(size_t layer) const
 {
   return _layers.size() > layer;
 }
 
 
-void ChunkWater::paintLiquid( math::vector_3d const& pos
+void liquid_chunk::paintLiquid( math::vector_3d const& pos
                             , float radius
                             , int liquid_id
                             , bool add
@@ -313,7 +313,7 @@ void ChunkWater::paintLiquid( math::vector_3d const& pos
   update_layers();
 }
 
-void ChunkWater::cleanup()
+void liquid_chunk::cleanup()
 {
   for (int i = _layers.size() - 1; i >= 0; --i)
   {
@@ -324,7 +324,7 @@ void ChunkWater::cleanup()
   }
 }
 
-void ChunkWater::copy_height_to_layer(liquid_layer& target, math::vector_3d const& pos, float radius)
+void liquid_chunk::copy_height_to_layer(liquid_layer& target, math::vector_3d const& pos, float radius)
 {
   for (liquid_layer& layer : _layers)
   {

@@ -22,16 +22,16 @@ namespace noggit {
     }
 }
 
-class ChunkWater
+class liquid_chunk
 {
 public:
-  ChunkWater() = delete;
-  explicit ChunkWater(float x, float z, bool use_mclq_green_lava);
+  liquid_chunk() = delete;
+  explicit liquid_chunk(float x, float z, bool use_mclq_green_lava);
 
-  ChunkWater (ChunkWater const&) = delete;
-  ChunkWater (ChunkWater&&) = delete;
-  ChunkWater& operator= (ChunkWater const&) = delete;
-  ChunkWater& operator= (ChunkWater&&) = delete;
+  liquid_chunk (liquid_chunk const&) = delete;
+  liquid_chunk (liquid_chunk&&) = delete;
+  liquid_chunk& operator= (liquid_chunk const&) = delete;
+  liquid_chunk& operator= (liquid_chunk&&) = delete;
 
   void from_mclq(std::vector<mclq>& layers);
   void fromFile(MPQFile &f, size_t basePos);

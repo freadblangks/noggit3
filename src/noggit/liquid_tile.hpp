@@ -3,7 +3,7 @@
 #pragma once
 
 #include <math/vector_3d.hpp>
-#include <noggit/ChunkWater.hpp>
+#include <noggit/liquid_chunk.hpp>
 #include <noggit/MPQ.h>
 #include <noggit/MapHeaders.h>
 #include <noggit/tool_enums.hpp>
@@ -13,12 +13,12 @@
 
 class MapTile;
 
-class TileWater
+class liquid_tile
 {
 public:
-  TileWater(MapTile *pTile, float pXbase, float pZbase, bool use_mclq_green_lava);
+  liquid_tile(MapTile *pTile, float pXbase, float pZbase, bool use_mclq_green_lava);
 
-  ChunkWater* getChunk(int x, int z);
+  liquid_chunk* getChunk(int x, int z);
 
   void readFromFile(MPQFile &theFile, size_t basePos);
   void saveToFile(util::sExtendableArray &lADTFile, int &lMHDR_Position, int &lCurrentPosition);
@@ -44,7 +44,7 @@ public:
 private:
 
   MapTile *tile;
-  std::unique_ptr<ChunkWater> chunks[16][16];
+  std::unique_ptr<liquid_chunk> chunks[16][16];
 
   float xbase;
   float zbase;
