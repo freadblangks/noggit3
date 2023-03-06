@@ -147,7 +147,10 @@ private:
   int _lod_level = 0;
 
   bool _shader_data_need_update = true;
-
+  // store those here to avoid having to overhead during the draw call preparations
+  // which was significant when rendering a large map
+  bool _texture_set_need_update = true;
+  int _animated_texture_count = 0;
 public:
   void update_shader_data ( bool show_unpaintable_chunks
                           , bool draw_paintability_overlay

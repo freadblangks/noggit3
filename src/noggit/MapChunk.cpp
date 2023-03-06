@@ -61,7 +61,7 @@ MapChunk::MapChunk(MapTile *maintile, MPQFile *f, bool bigAlpha, tile_mode mode)
     vmax = math::vector_3d(-9999999.0f, -9999999.0f, -9999999.0f);
   }
 
-  texture_set = std::make_unique<TextureSet>(header, f, base, maintile, bigAlpha, !!header_flags.flags.do_not_fix_alpha_map, mode == tile_mode::uid_fix_all);
+  texture_set = std::make_unique<TextureSet>(header, f, base, maintile, bigAlpha, !!header_flags.flags.do_not_fix_alpha_map, mode == tile_mode::uid_fix_all, _texture_set_need_update, _animated_texture_count);
 
   // - MCVT ----------------------------------------------
   {
@@ -524,8 +524,7 @@ bool MapChunk::is_visible ( const float& cull_distance
              ? (camera - vcenter).length() - chunk_radius
              : std::abs(camera.y - vmax.y);
 
-  return frustum.intersects (_intersect_points)
-      && dist < cull_distance;
+  return dist < cull_distance && frustum.intersects (_intersect_points);
 }
 
 void MapChunk::update_visibility ( const float& cull_distance
@@ -555,22 +554,14 @@ void MapChunk::update_shader_data ( bool show_unpaintable_chunks
   chunk_shader_data csd;
 
   int texture_count = texture_set->num();
-  bool need_update = false;
 
   if (texture_count)
   {
     texture_set->update_adt_alphamap_if_necessary(px, py);
 
-    bool need_texture_update = texture_set->need_texture_infos_update;
-
-    if (need_texture_update)
-    {
-      need_update = true;
-    }
-
     for (int i = 0; i < texture_count; ++i)
     {
-      if (need_texture_update)
+      if (_texture_set_need_update)
       {
         std::pair<int, int> param = tileset_handler.get_texture_position(texture_set->texture(i));
 
@@ -583,9 +574,8 @@ void MapChunk::update_shader_data ( bool show_unpaintable_chunks
         csd.tex_index_in_array[i] = _shader_data.tex_index_in_array[i];
       }
 
-      if (texture_set->is_animated(i))
+      if (_animated_texture_count > 0)
       {
-        need_update = true;
         math::vector_2d uv_anim = texture_set->anim_uv_offset(i, animtime);
         csd.tex_animations[i] = math::vector_4d(uv_anim.x, uv_anim.y, 0.f, 0.f);
       }
@@ -620,10 +610,9 @@ void MapChunk::update_shader_data ( bool show_unpaintable_chunks
 
   gl.bufferSubData(GL_UNIFORM_BUFFER, (sizeof(chunk_shader_data) * (py * 16 + px)), sizeof(chunk_shader_data), &csd);
 
-  texture_set->need_texture_infos_update = false;
-
-  _shader_data = csd;
+  _texture_set_need_update = false;
   _shader_data_need_update = false;
+  _shader_data = csd;
 }
 
 void MapChunk::draw ( math::frustum const& frustum
@@ -642,12 +631,7 @@ void MapChunk::draw ( math::frustum const& frustum
                     , noggit::tileset_array_handler& tileset_handler
                     )
 {
-  if (need_visibility_update || _need_visibility_update)
-  {
-    update_visibility(cull_distance, frustum, camera, display);
-  }
-
-  if(_shader_data_need_update || texture_set->need_shader_data_update())
+  if(_shader_data_need_update || _texture_set_need_update || _animated_texture_count > 0)
   {
     update_shader_data( show_unpaintable_chunks
                     , draw_paintability_overlay
@@ -718,6 +702,9 @@ void MapChunk::updateVerticesData()
   update_intersect_points();
 
   _need_vao_update = true;
+
+  // update adt extents each time the min/max height of a chunk might have changed
+  mt->chunk_height_changed();
 }
 
 void MapChunk::recalcNorms (std::function<boost::optional<float> (float, float)> height)

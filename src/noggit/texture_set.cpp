@@ -13,9 +13,20 @@
 
 #include <boost/utility/in_place_factory.hpp>
 
-TextureSet::TextureSet (MapChunkHeader const& header, MPQFile* f, size_t base, MapTile* tile, bool use_big_alphamaps, bool do_not_fix_alpha_map, bool do_not_convert_alphamaps)
+TextureSet::TextureSet ( MapChunkHeader const& header
+                       , MPQFile* f
+                       , size_t base
+                       , MapTile* tile
+                       , bool use_big_alphamaps
+                       , bool do_not_fix_alpha_map
+                       , bool do_not_convert_alphamaps
+                       , bool& need_update_ref
+                       , int& animated_tex_ref
+                       )
   : nTextures(header.nLayers)
   , _do_not_convert_alphamaps(do_not_convert_alphamaps)
+  , _need_texture_infos_update(need_update_ref)
+  , _animated_texture_count(animated_tex_ref)
 {
   for (int i = 0; i < 64; ++i)
   {
@@ -84,9 +95,7 @@ int TextureSet::addTexture (scoped_blp_texture_reference texture)
     }
   }
 
-  need_texture_infos_update = true;
-  _need_amap_update = true;
-  _need_lod_texture_map_update = true;
+  require_update();
 
   return texLevel;
 }
@@ -109,7 +118,7 @@ void TextureSet::replace_texture (scoped_blp_texture_reference const& texture_to
 
   if (texture_to_replace_level != -1)
   {
-    need_texture_infos_update = true;
+    _need_texture_infos_update = true;
 
     _textures[texture_to_replace_level] = replacement_texture->filename;
 
@@ -162,9 +171,7 @@ void TextureSet::swap_layers(int layer_1, int layer_2)
       alphamaps[a2]->setAlpha(alpha);
     }
 
-    need_texture_infos_update = true;
-    _need_amap_update = true;
-    _need_lod_texture_map_update = true;
+    require_update();
   }
 }
 
@@ -190,12 +197,9 @@ void TextureSet::eraseTextures()
   _lod_texture_map.resize(8 * 8);
   memset(_lod_texture_map.data(), 0, 64 * sizeof(std::uint8_t));
 
-  need_texture_infos_update = true;
-  _need_amap_update = true;
-  _need_lod_texture_map_update = true;
-
   tmp_edit_values.reset();
 
+  require_update();
   update_animated_texture_count();
 }
 
@@ -241,10 +245,7 @@ void TextureSet::eraseTexture(size_t id)
     tmp_edit_values.get()->map[nTextures].fill(0.f);
   }
 
-  need_texture_infos_update = true;
-  _need_amap_update = true;
-  _need_lod_texture_map_update = true;
-
+  require_update();
   update_animated_texture_count();
 }
 
@@ -338,8 +339,8 @@ bool TextureSet::eraseUnusedTextures()
       }
     }
 
-    _need_amap_update = true;
-    _need_lod_texture_map_update = true;
+    require_update();
+
     return true;
   }
 
@@ -518,8 +519,7 @@ bool TextureSet::paintTexture(float xbase, float zbase, float x, float z, Brush*
   // cleanup
   eraseUnusedTextures();
 
-  _need_amap_update = true;
-  _need_lod_texture_map_update = true;
+  require_update();
 
   return true;
 }
@@ -606,8 +606,7 @@ bool TextureSet::replace_texture( float xbase
 
   if (changed)
   {
-    _need_amap_update = true;
-    _need_lod_texture_map_update = true;
+    require_update();
   }
 
   return changed;
@@ -775,6 +774,8 @@ void TextureSet::convertToBigAlpha()
   {
     alphamaps[k]->setAlpha(tab.data() + 4096 * k);
   }
+
+  require_update();
 }
 
 // dest = tab [4096 * (nTextures - 1)]
@@ -835,7 +836,7 @@ void TextureSet::convertToOldAlpha()
     alphamaps[k]->setAlpha(tab + k * 4096);
   }
 
-  _need_amap_update = true;
+  require_update();
 }
 
 void TextureSet::merge_layers(size_t id1, size_t id2)
@@ -861,10 +862,7 @@ void TextureSet::merge_layers(size_t id1, size_t id2)
   }
 
   eraseTexture(id2);
-
-  need_texture_infos_update = true;
-  _need_amap_update = true;
-  _need_lod_texture_map_update = true;
+  require_update();
 }
 
 bool TextureSet::removeDuplicate()
@@ -995,8 +993,7 @@ bool TextureSet::apply_alpha_changes()
     alphamaps[alpha_layer]->setAlpha(values.data());
   }
 
-  _need_amap_update = true;
-  _need_lod_texture_map_update = true;
+  require_update();
 
   tmp_edit_values.reset();
 
@@ -1093,6 +1090,15 @@ void TextureSet::update_animated_texture_count()
       _animated_texture_count++;
     }
   }
+
+  _need_texture_infos_update = true;
 }
 
 std::array<std::uint8_t, 256 * 256> TextureSet::alpha_convertion_lookup = TextureSet::make_alpha_lookup_array();
+
+void TextureSet::require_update()
+{
+  _need_amap_update = true;
+  _need_lod_texture_map_update = true;
+  _need_texture_infos_update = true;
+}

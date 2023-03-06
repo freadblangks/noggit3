@@ -28,7 +28,16 @@ class TextureSet
 {
 public:
   TextureSet() = delete;
-  TextureSet(MapChunkHeader const& header, MPQFile* f, size_t base, MapTile* tile, bool use_big_alphamaps, bool do_not_fix_alpha_map, bool do_not_convert_alphamaps);
+  TextureSet( MapChunkHeader const& header
+            , MPQFile* f
+            , size_t base
+            , MapTile* tile
+            , bool use_big_alphamaps
+            , bool do_not_fix_alpha_map
+            , bool do_not_convert_alphamaps
+            , bool& need_update_ref
+            , int& animated_tex_ref
+            );
 
   math::vector_2d anim_uv_offset(int id, int animtime) const;
 
@@ -77,13 +86,11 @@ public:
 
   std::string const& texture(int id) const { return _textures[id]; }
 
-  bool need_texture_infos_update = true;
-
-  bool need_shader_data_update() const { return need_texture_infos_update || _animated_texture_count > 0; }
   void update_animated_texture_count();
 
 private:
-  int _animated_texture_count = 0;
+  bool& _need_texture_infos_update;
+  int& _animated_texture_count;
 
   int get_texture_index_or_add (scoped_blp_texture_reference texture, float target);
 
@@ -101,6 +108,8 @@ private:
 
   std::vector<uint8_t> _lod_texture_map;
   bool _need_lod_texture_map_update = false;
+
+  void require_update();
 
   ENTRY_MCLY _layers_info[4];
 
