@@ -39,7 +39,7 @@ public:
             , int& animated_tex_ref
             );
 
-  math::vector_2d anim_uv_offset(int id, int animtime) const;
+  math::vector_3d anim_param(int layer) const;
 
   int addTexture(scoped_blp_texture_reference texture);
   void eraseTexture(size_t id);

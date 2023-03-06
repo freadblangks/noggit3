@@ -267,18 +267,18 @@ bool TextureSet::canPaintTexture(scoped_blp_texture_reference const& texture)
   return true;
 }
 
-math::vector_2d TextureSet::anim_uv_offset(int id, int animtime) const
+math::vector_3d TextureSet::anim_param(int layer) const
 {
-  uint32_t flags = _layers_info[id].flags;
+  static const float anim_dir_x[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
+  static const float anim_dir_y[8] = { 1, 1, 0, -1, -1, -1, 0, 1 };
 
-  const int spd = (flags >> 3) & 0x7;
-  const int dir = flags & 0x7;
-  const float texanimxtab[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
-  const float texanimytab[8] = { 1, 1, 0, -1, -1, -1, 0, 1 };
-  const float fdx = -texanimxtab[dir], fdy = texanimytab[dir];
-  const int animspd = (const int)(200 * detail_size);
-  float f = ((static_cast<int>(animtime*(spd / 7.0f))) % animspd) / static_cast<float>(animspd);
-  return { f*fdx, f*fdy };
+  uint32_t flags = _layers_info[layer].flags;
+
+  float speed = static_cast<float>((flags >> 3) & 0x7) / 7.f;
+
+  const int dir_index = flags & 0x7;
+
+  return { -anim_dir_x[dir_index], anim_dir_y[dir_index], speed };
 }
 
 bool TextureSet::eraseUnusedTextures()

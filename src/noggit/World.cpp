@@ -1033,6 +1033,8 @@ void World::draw ( math::matrix_4x4 const& model_view
     mcnk_shader.uniform("diffuse_color", diffuse_color);
     mcnk_shader.uniform("ambient_color", ambient_color);
 
+    mcnk_shader.uniform("anim_time", animtime / 1600.f);
+
 
     if (cursor == cursor_mode::terrain)
     {

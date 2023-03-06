@@ -46,7 +46,7 @@ struct chunk_shader_data
   int is_textured;
   int cant_paint;
   int draw_impassible_flag;
-  math::vector_4d tex_animations[4]; // use vec4 for padding
+  math::vector_4d tex_animations[4]; // anim direction + anim speed, 4th value is padding
   math::vector_4d areaid_color;
   int tex_array_index[4] = { 0,0,0,0 };
   int tex_index_in_array[4] = { 0,0,0,0 };

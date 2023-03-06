@@ -8,7 +8,7 @@ struct chunk_shader_data
   bool cant_paint;
   bool draw_impassible_flag;
 
-  vec2 tex_anim[4];
+  vec3 tex_anim[4]; // direction + speed
   vec4 areaid_color;
   ivec4 tex_param_0;
   ivec4 tex_param_1;
@@ -54,6 +54,8 @@ uniform vec4 cursor_color;
 uniform vec3 light_dir;
 uniform vec3 diffuse_color;
 uniform vec3 ambient_color;
+
+uniform float anim_time;
 
 
 in vec3 vary_position;
@@ -131,6 +133,12 @@ vec3 texture_color(int array_index, int index_in_array, vec2 anim_uv)
   }
 }
 
+vec2 anim_uv(int index)
+{
+  vec3 v = ubo_data[chunk_id].tex_anim[index];
+  return v.xy * mod(anim_time * v.z, 1.);
+}
+
 vec4 texture_blend() 
 {
   if(!ubo_data[chunk_id].is_textured)
@@ -145,10 +153,10 @@ vec4 texture_blend()
   ivec4 p0 = ubo_data[chunk_id].tex_param_0;
   ivec4 p1 = ubo_data[chunk_id].tex_param_1;
 
-  vec3 t0 = texture_color(p0.x, p1.x, ubo_data[chunk_id].tex_anim[0]);
-  vec3 t1 = texture_color(p0.y, p1.y, ubo_data[chunk_id].tex_anim[1]);
-  vec3 t2 = texture_color(p0.z, p1.z, ubo_data[chunk_id].tex_anim[2]);
-  vec3 t3 = texture_color(p0.w, p1.w, ubo_data[chunk_id].tex_anim[3]);
+  vec3 t0 = texture_color(p0.x, p1.x, anim_uv(0));
+  vec3 t1 = texture_color(p0.y, p1.y, anim_uv(1));
+  vec3 t2 = texture_color(p0.z, p1.z, anim_uv(2));
+  vec3 t3 = texture_color(p0.w, p1.w, anim_uv(3));
 
   return vec4 (t0 * (1.0 - (a0 + a1 + a2)) + t1 * a0 + t2 * a1 + t3 * a2, 1.0);
 }

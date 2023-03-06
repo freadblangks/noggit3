@@ -564,8 +564,7 @@ void MapChunk::update_shader_data ( bool show_unpaintable_chunks
 
       if (_animated_texture_count > 0)
       {
-        math::vector_2d uv_anim = texture_set->anim_uv_offset(i, animtime);
-        csd.tex_animations[i] = math::vector_4d(uv_anim.x, uv_anim.y, 0.f, 0.f);
+        csd.tex_animations[i] = math::vector_4d(texture_set->anim_param(i), 0.f);
       }
     }
   }
@@ -619,7 +618,7 @@ void MapChunk::draw ( math::frustum const& frustum
                     , noggit::tileset_array_handler& tileset_handler
                     )
 {
-  if(_shader_data_need_update || _texture_set_need_update || _animated_texture_count > 0)
+  if(_shader_data_need_update || _texture_set_need_update)
   {
     update_shader_data( show_unpaintable_chunks
                     , draw_paintability_overlay
