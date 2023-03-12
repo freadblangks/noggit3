@@ -29,10 +29,9 @@ class Brush;
 class liquid_chunk;
 class MapTile;
 
-using StripType = uint16_t;
+using chunk_indice = uint16_t;
 static const int mapbufsize = 9 * 9 + 8 * 8; // chunk size
-// 8x8 squares with 4 triangls
-static const int max_indices_count = 8 * 8 * 4 * 3;
+
 
 struct chunk_shadow
 {
@@ -61,6 +60,25 @@ struct chunk_vertex
 
 class MapChunk
 {
+public:
+
+  static constexpr int max_indices_count_without_lod = 8 * 8 * 4 * 3; // 8x8 squares with 4 triangls
+  static constexpr int lod_count = 3; // max 4, last lod level is a single quad for the chunk (which doesn't look good)
+  static constexpr int indice_buffer_count = lod_count + 1;
+  static constexpr std::array<int, 5> max_indices_per_lod_level = { 768, 384, 96, 24, 6 };
+
+  static constexpr int total_indices_count_with_lods()
+  {
+    int count = 0;
+
+    for (int i = 0; i < indice_buffer_count; ++i)
+    {
+      count += max_indices_per_lod_level[i];
+    }
+
+    return count;
+  }
+
 private:
   chunk_shader_data _shader_data;
   tile_mode _mode;
@@ -73,9 +91,9 @@ private:
 
   std::unique_ptr<chunk_shadow> _chunk_shadow;
 
-  static std::vector<StripType> strip_without_holes; // it's always the same, no need to recreate it each time
+  static std::vector<chunk_indice> strip_without_holes; // it's always the same, no need to recreate it each time
 
-  std::map<int, std::vector<StripType>> _indice_strips;
+  std::map<int, std::vector<chunk_indice>> _indice_strips;
   std::map<int, int> _indices_count_per_lod_level;
 
   std::vector<uint8_t> compressed_shadow_map() const;
@@ -100,9 +118,6 @@ private:
   bool _need_lod_update = true;
   bool _need_vao_update = true;
 
-  static constexpr int lod_count = 2;
-  static constexpr int indice_buffer_count = lod_count + 1;
-
 public:
   MapChunk(MapTile* mt, MPQFile* f, bool bigAlpha, tile_mode mode);
 
@@ -112,7 +127,8 @@ public:
 
   int chunk_index() const { return px + 16 * py; }
   int vertex_offset() const { return chunk_index() * mapbufsize; }
-  int indices_offset() const { return chunk_index() * max_indices_count; }
+  int indices_offset() const { return chunk_index() * total_indices_count_with_lods(); }
+  void* lod_indices_ptr(int lod) const;
 
   MapChunkHeader header;
 
@@ -135,7 +151,7 @@ public:
 
   bool is_currently_visible() const { return _is_visible; }
 
-
+  void set_visible();
   void update_visibility ( const float& cull_distance
                          , const math::frustum& frustum
                          , const math::vector_3d& camera
@@ -147,11 +163,11 @@ private:
   int _lod_level = 0;
 
   bool _shader_data_need_update = true;
-  // store those here to avoid having to overhead during the draw call preparations
-  // which was significant when rendering a large map
   bool _texture_set_need_update = true;
-  int _animated_texture_count = 0;
 public:
+  void require_shader_data_update();
+  void texture_set_changed() { _texture_set_need_update = true; require_shader_data_update(); }
+
   void update_shader_data ( bool show_unpaintable_chunks
                           , bool draw_paintability_overlay
                           , bool draw_chunk_flag_overlay
@@ -162,21 +178,19 @@ public:
                           , bool force_update = false
                           );
 
-  void draw ( math::frustum const& frustum
-            , opengl::scoped::use_program& mcnk_shader
-            , GLuint const& tex_coord_vbo
-            , const float& cull_distance
-            , const math::vector_3d& camera
-            , bool need_visibility_update
-            , bool show_unpaintable_chunks
-            , bool draw_paintability_overlay
-            , bool draw_chunk_flag_overlay
-            , bool draw_areaid_overlay
-            , std::map<int, misc::random_color>& area_id_colors
-            , int animtime
-            , display_mode display
-            , noggit::tileset_array_handler& tileset_handler
-            );
+  void prepare_draw( const math::vector_3d& camera
+                   , bool need_visibility_update
+                   , bool show_unpaintable_chunks
+                   , bool draw_paintability_overlay
+                   , bool draw_chunk_flag_overlay
+                   , bool draw_areaid_overlay
+                   , std::map<int, misc::random_color>& area_id_colors
+                   , int animtime
+                   , display_mode display
+                   , noggit::tileset_array_handler& tileset_handler
+                   , std::vector<void*>& indices_offsets
+                   , std::vector<int>& indices_count
+                   );
   //! \todo only this function should be public, all others should be called from it
 
   void intersect (math::ray const&, selection_result*);

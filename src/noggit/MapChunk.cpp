@@ -61,7 +61,7 @@ MapChunk::MapChunk(MapTile *maintile, MPQFile *f, bool bigAlpha, tile_mode mode)
     vmax = math::vector_3d(-9999999.0f, -9999999.0f, -9999999.0f);
   }
 
-  texture_set = std::make_unique<TextureSet>(header, f, base, maintile, bigAlpha, !!header_flags.flags.do_not_fix_alpha_map, mode == tile_mode::uid_fix_all, _texture_set_need_update, _animated_texture_count);
+  texture_set = std::make_unique<TextureSet>(header, f, base, maintile, bigAlpha, !!header_flags.flags.do_not_fix_alpha_map, mode == tile_mode::uid_fix_all);
 
   // - MCVT ----------------------------------------------
   {
@@ -250,6 +250,8 @@ void MapChunk::update_intersect_points()
 
   _intersect_points.clear();
   _intersect_points = misc::intersection_points(vmin, vmax);
+
+  mt->need_chunk_data_update();
 }
 
 int MapChunk::get_lod_level(math::vector_3d const& camera_pos, display_mode display) const
@@ -258,14 +260,14 @@ int MapChunk::get_lod_level(math::vector_3d const& camera_pos, display_mode disp
              ? std::abs(camera_pos.y - vcenter.y)
              : (camera_pos - vcenter).length();
 
-  if (dist < 500.f)
+  if (dist < 1000.f)
   {
     return 0;
   }
   else
   {
     // todo improve
-    return 1 + std::min(lod_count - 1, static_cast<int>(dist / 1000.f));
+    return 1 + std::min(lod_count - 1, static_cast<int>(dist / 2000.f));
   }
 }
 
@@ -341,7 +343,7 @@ int MapChunk::indices_count(int lod_level) const
   return count;
 }
 
-std::vector<StripType> MapChunk::strip_without_holes = {};
+std::vector<chunk_indice> MapChunk::strip_without_holes = {};
 
 void MapChunk::initStrip()
 {
@@ -355,11 +357,9 @@ void MapChunk::initStrip()
   {
     int count = indices_count(lod_level);
     _indices_count_per_lod_level[lod_level] = count;
-    _indice_strips[lod_level] = std::vector<StripType>(count, 0);
+    _indice_strips[lod_level] = std::vector<chunk_indice>(count, 0);
     index_count[lod_level] = 0;
   }
-
-
 
   for (int x = 0; x<8; ++x)
   {
@@ -417,9 +417,9 @@ void MapChunk::initStrip()
     }
   }
 
-
-
   _need_indice_buffer_update = true;
+
+  mt->need_chunk_data_update();
 }
 
 bool MapChunk::GetVertex(float x, float z, math::vector_3d *V)
@@ -498,6 +498,8 @@ void MapChunk::clearHeight()
   update_intersect_points();
 
   _need_vao_update = true;
+
+  mt->need_chunk_data_update();
 }
 
 bool MapChunk::is_visible ( const float& cull_distance
@@ -515,6 +517,12 @@ bool MapChunk::is_visible ( const float& cull_distance
   return dist < cull_distance && frustum.intersects (_intersect_points);
 }
 
+void MapChunk::set_visible()
+{
+  _is_visible = true;
+  _need_visibility_update = false;
+}
+
 void MapChunk::update_visibility ( const float& cull_distance
                                  , const math::frustum& frustum
                                  , const math::vector_3d& camera
@@ -527,6 +535,12 @@ void MapChunk::update_visibility ( const float& cull_distance
   _need_visibility_update = false;
   _need_lod_update |= lod != _lod_level;
   _lod_level = lod;
+}
+
+void MapChunk::require_shader_data_update()
+{
+  _shader_data_need_update = true;
+  mt->need_chunk_data_update();
 }
 
 void MapChunk::update_shader_data ( bool show_unpaintable_chunks
@@ -562,10 +576,7 @@ void MapChunk::update_shader_data ( bool show_unpaintable_chunks
         csd.tex_index_in_array[i] = _shader_data.tex_index_in_array[i];
       }
 
-      if (_animated_texture_count > 0)
-      {
-        csd.tex_animations[i] = math::vector_4d(texture_set->anim_param(i), 0.f);
-      }
+      csd.tex_animations[i] = math::vector_4d(texture_set->anim_param(i), 0.f);
     }
   }
 
@@ -597,43 +608,61 @@ void MapChunk::update_shader_data ( bool show_unpaintable_chunks
 
   gl.bufferSubData(GL_UNIFORM_BUFFER, (sizeof(chunk_shader_data) * (py * 16 + px)), sizeof(chunk_shader_data), &csd);
 
-  _texture_set_need_update = false;
   _shader_data_need_update = false;
   _shader_data = csd;
 }
 
-void MapChunk::draw ( math::frustum const& frustum
-                    , opengl::scoped::use_program& mcnk_shader
-                    , GLuint const& tex_coord_vbo
-                    , const float& cull_distance
-                    , const math::vector_3d& camera
-                    , bool need_visibility_update
-                    , bool show_unpaintable_chunks
-                    , bool draw_paintability_overlay
-                    , bool draw_chunk_flag_overlay
-                    , bool draw_areaid_overlay
-                    , std::map<int, misc::random_color>& area_id_colors
-                    , int animtime
-                    , display_mode display
-                    , noggit::tileset_array_handler& tileset_handler
-                    )
+void MapChunk::prepare_draw ( const math::vector_3d& camera
+                            , bool need_visibility_update
+                            , bool show_unpaintable_chunks
+                            , bool draw_paintability_overlay
+                            , bool draw_chunk_flag_overlay
+                            , bool draw_areaid_overlay
+                            , std::map<int, misc::random_color>& area_id_colors
+                            , int animtime
+                            , display_mode display
+                            , noggit::tileset_array_handler& tileset_handler
+                            , std::vector<void*>& indices_offsets
+                            , std::vector<int>& indices_count
+                            )
 {
-  if(_shader_data_need_update || _texture_set_need_update)
+  if (need_visibility_update)
+  {
+    int old_lod = _lod_level;
+    _lod_level = get_lod_level(camera, display);
+
+    if (old_lod != _lod_level)
+    {
+      indices_offsets[chunk_index()] = lod_indices_ptr(_lod_level);
+      indices_count[chunk_index()] = _indices_count_per_lod_level[_lod_level];
+    }
+  }
+
+  if(_shader_data_need_update)
   {
     update_shader_data( show_unpaintable_chunks
-                    , draw_paintability_overlay
-                    , draw_chunk_flag_overlay
-                    , draw_areaid_overlay
-                    , area_id_colors
-                    , animtime
-                    , tileset_handler
-                    );
+                      , draw_paintability_overlay
+                      , draw_chunk_flag_overlay
+                      , draw_areaid_overlay
+                      , area_id_colors
+                      , animtime
+                      , tileset_handler
+                      );
   }
 
   if (_need_indice_buffer_update)
   {
     auto size = _indice_strips[0].size();
-    gl.bufferSubData(GL_ELEMENT_ARRAY_BUFFER, indices_offset() * sizeof(StripType), _indice_strips[0].size() * sizeof(StripType), _indice_strips[0].data());
+    int offset = 0;
+
+    for (int i = 0; i < indice_buffer_count; ++i)
+    {
+      gl.bufferSubData(GL_ELEMENT_ARRAY_BUFFER, (indices_offset() + offset) * sizeof(chunk_indice), _indice_strips[i].size() * sizeof(chunk_indice), _indice_strips[i].data());
+      offset += max_indices_per_lod_level[i];
+    }
+
+    // no longer needed at this point
+    _indice_strips.clear();
 
     _need_indice_buffer_update = false;
   }
@@ -643,6 +672,18 @@ void MapChunk::draw ( math::frustum const& frustum
     gl.bufferSubData(GL_ARRAY_BUFFER, vertex_offset() * sizeof(chunk_vertex),  mapbufsize * sizeof(chunk_vertex), vertices.data());
     _need_vao_update = false;
   }
+}
+
+void* MapChunk::lod_indices_ptr(int lod) const
+{
+  int offset = 0;
+
+  for (int i = 0; i < lod; ++i)
+  {
+    offset += max_indices_per_lod_level[i];
+  }
+
+  return static_cast<char*>(0) + (indices_offset() + offset) * sizeof(chunk_indice);
 }
 
 void MapChunk::intersect (math::ray const& ray, selection_result* results)
@@ -734,6 +775,8 @@ void MapChunk::recalcNorms (std::function<boost::optional<float> (float, float)>
   }
 
    _need_vao_update = true;
+
+   mt->need_chunk_data_update();
 }
 
 bool MapChunk::changeTerrain(math::vector_3d const& pos, float change, float radius, int BrushType, float inner_radius)
@@ -862,6 +905,8 @@ bool MapChunk::ChangeMCCV(math::vector_3d const& pos, math::vector_4d const& col
   }
 
   _need_vao_update = true;
+
+  mt->need_chunk_data_update();
 
   return changed;
 }
@@ -1028,31 +1073,37 @@ bool MapChunk::blurTerrain ( math::vector_3d const& pos
 
 void MapChunk::eraseTextures()
 {
+  texture_set_changed();
   texture_set->eraseTextures();
 }
 
 void MapChunk::change_texture_flag(scoped_blp_texture_reference const& tex, std::size_t flag, bool add)
 {
+  texture_set_changed();
   texture_set->change_texture_flag(tex, flag, add);
 }
 
 int MapChunk::addTexture(scoped_blp_texture_reference texture)
 {
+  texture_set_changed();
   return texture_set->addTexture(std::move (texture));
 }
 
 void MapChunk::switchTexture(scoped_blp_texture_reference const& oldTexture, scoped_blp_texture_reference newTexture)
 {
+  texture_set_changed();
   texture_set->replace_texture(oldTexture, std::move (newTexture));
 }
 
 bool MapChunk::paintTexture(math::vector_3d const& pos, Brush* brush, float strength, float pressure, scoped_blp_texture_reference texture)
 {
+  texture_set_changed();
   return texture_set->paintTexture(xbase, zbase, pos.x, pos.z, brush, strength, pressure, std::move (texture));
 }
 
 bool MapChunk::replaceTexture(math::vector_3d const& pos, float radius, scoped_blp_texture_reference const& old_texture, scoped_blp_texture_reference new_texture)
 {
+  texture_set_changed();
   return texture_set->replace_texture(xbase, zbase, pos.x, pos.z, radius, old_texture, std::move (new_texture));
 }
 
@@ -1072,6 +1123,9 @@ void MapChunk::update_shadows()
 
 void MapChunk::clear_shadows()
 {
+  // todo trigger shadowmap update
+  // which would be deleting the shadowmap since we only clear the whole adt
+  require_shader_data_update();
   _chunk_shadow.reset();
 }
 

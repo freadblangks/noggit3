@@ -20,13 +20,9 @@ TextureSet::TextureSet ( MapChunkHeader const& header
                        , bool use_big_alphamaps
                        , bool do_not_fix_alpha_map
                        , bool do_not_convert_alphamaps
-                       , bool& need_update_ref
-                       , int& animated_tex_ref
                        )
   : nTextures(header.nLayers)
   , _do_not_convert_alphamaps(do_not_convert_alphamaps)
-  , _need_texture_infos_update(need_update_ref)
-  , _animated_texture_count(animated_tex_ref)
 {
   for (int i = 0; i < 64; ++i)
   {
@@ -68,8 +64,6 @@ TextureSet::TextureSet ( MapChunkHeader const& header
 
     _need_amap_update = true;
   }
-
-  update_animated_texture_count();
 }
 
 int TextureSet::addTexture (scoped_blp_texture_reference texture)
@@ -118,8 +112,6 @@ void TextureSet::replace_texture (scoped_blp_texture_reference const& texture_to
 
   if (texture_to_replace_level != -1)
   {
-    _need_texture_infos_update = true;
-
     _textures[texture_to_replace_level] = replacement_texture->filename;
 
     // prevent texture duplication
@@ -200,7 +192,6 @@ void TextureSet::eraseTextures()
   tmp_edit_values.reset();
 
   require_update();
-  update_animated_texture_count();
 }
 
 void TextureSet::eraseTexture(size_t id)
@@ -246,7 +237,6 @@ void TextureSet::eraseTexture(size_t id)
   }
 
   require_update();
-  update_animated_texture_count();
 }
 
 bool TextureSet::canPaintTexture(scoped_blp_texture_reference const& texture)
@@ -269,6 +259,11 @@ bool TextureSet::canPaintTexture(scoped_blp_texture_reference const& texture)
 
 math::vector_3d TextureSet::anim_param(int layer) const
 {
+  if (!is_animated(layer))
+  {
+    return { 1.f, 0.f, 0.f };
+  }
+
   static const float anim_dir_x[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
   static const float anim_dir_y[8] = { 1, 1, 0, -1, -1, -1, 0, 1 };
 
@@ -664,8 +659,6 @@ void TextureSet::change_texture_flag(scoped_blp_texture_reference const& tex, st
       break;
     }
   }
-
-  update_animated_texture_count();
 }
 
 std::vector<std::vector<uint8_t>> TextureSet::save_alpha(bool big_alphamap)
@@ -1079,26 +1072,10 @@ void TextureSet::update_adt_alphamap_if_necessary(int chunk_x, int chunk_y)
   }
 }
 
-void TextureSet::update_animated_texture_count()
-{
-  _animated_texture_count = 0;
-
-  for (int i = 0; i < nTextures; ++i)
-  {
-    if (is_animated(i))
-    {
-      _animated_texture_count++;
-    }
-  }
-
-  _need_texture_infos_update = true;
-}
-
 std::array<std::uint8_t, 256 * 256> TextureSet::alpha_convertion_lookup = TextureSet::make_alpha_lookup_array();
 
 void TextureSet::require_update()
 {
   _need_amap_update = true;
   _need_lod_texture_map_update = true;
-  _need_texture_infos_update = true;
 }

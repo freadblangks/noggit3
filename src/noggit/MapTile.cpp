@@ -360,6 +360,7 @@ void MapTile::draw ( math::frustum const& frustum
   if (need_visibility_update || _need_visibility_update)
   {
     update_visibility(cull_distance, frustum, camera, display);
+    _need_chunk_data_update = true;
   }
 
   if (!_is_visible)
@@ -382,12 +383,10 @@ void MapTile::draw ( math::frustum const& frustum
 
     tileset_handler.bind();
 
-
     _ubo.upload();
     gl.bindBuffer(GL_UNIFORM_BUFFER, _chunks_data_ubo);
     gl.bufferData(GL_UNIFORM_BUFFER, sizeof(chunk_shader_data) * 256, NULL, GL_STATIC_DRAW);
     gl.bindBuffer(GL_UNIFORM_BUFFER, 0);
-
 
     opengl::scoped::vao_binder const _ (_vao);
 
@@ -396,6 +395,8 @@ void MapTile::draw ( math::frustum const& frustum
     mcnk_shader.attrib(_, "mccv",     _vertices_vbo, 3, GL_FLOAT, GL_FALSE, sizeof(chunk_vertex), static_cast<char*>(0) + offsetof(chunk_vertex, color));
     mcnk_shader.attrib(_, "texcoord", tex_coord_vbo, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
+    _need_chunk_data_update = true;
+    need_visibility_update = true;
   }
 
   if (_use_shadowmap)
@@ -407,35 +408,38 @@ void MapTile::draw ( math::frustum const& frustum
   opengl::texture::set_active_texture(0);
   _adt_alphamap.bind();
 
-  gl.bindBuffer(GL_UNIFORM_BUFFER, _chunks_data_ubo);
   gl.bindBufferBase(GL_UNIFORM_BUFFER, 0, _chunks_data_ubo);
 
   opengl::scoped::vao_binder const _ (_vao);
 
-  gl.bindBuffer(GL_ARRAY_BUFFER, _vertices_vbo);
-
-  gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, _indices_vbo);
-
-  for (int j = 0; j<16; ++j)
+  // iterate over all chunks this way as it seems to be
+  // the fastest way when iterating over all of them
+  if (_need_chunk_data_update)
   {
-    for (int i = 0; i<16; ++i)
+    gl.bindBuffer(GL_ARRAY_BUFFER, _vertices_vbo);
+    gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, _indices_vbo);
+
+    for (int z = 0; z < 16; ++z)
     {
-      mChunks[j][i]->draw ( frustum
-                          , mcnk_shader
-                          , tex_coord_vbo
-                          , cull_distance
-                          , camera
-                          , need_visibility_update
-                          , show_unpaintable_chunks
-                          , draw_paintability_overlay
-                          , draw_chunk_flag_overlay
-                          , draw_areaid_overlay
-                          , area_id_colors
-                          , animtime
-                          , display
-                          , tileset_handler
-                          );
+      for (int x = 0; x < 16; ++x)
+      {
+        mChunks[z][x]->prepare_draw( camera
+                                   , need_visibility_update
+                                   , show_unpaintable_chunks
+                                   , draw_paintability_overlay
+                                   , draw_chunk_flag_overlay
+                                   , draw_areaid_overlay
+                                   , area_id_colors
+                                   , animtime
+                                   , display
+                                   , tileset_handler
+                                   , _indices_offsets
+                                   , _indices_count
+                                   );
+      }
     }
+
+    _need_chunk_data_update = false;
   }
 
   gl.multiDrawElements(GL_TRIANGLES, _indices_count.data(), GL_UNSIGNED_SHORT, _indices_offsets.data(), 256);
@@ -517,7 +521,7 @@ void MapTile::drawWater ( math::frustum const& frustum
                         , display_mode display
                         )
 {
-  if (!Water.hasData(0))
+  if (!Water.has_water())
   {
     return; //no need to draw water on tile without water =)
   }
@@ -1064,23 +1068,20 @@ void MapTile::upload()
   _vertex_buffers.upload();
 
   gl.bufferData<GL_ARRAY_BUFFER>(_vertices_vbo, sizeof(chunk_vertex) * mapbufsize * 256, NULL, GL_STATIC_DRAW);
-  gl.bufferData<GL_ELEMENT_ARRAY_BUFFER>(_indices_vbo, sizeof(StripType) * max_indices_count * 256, NULL, GL_STATIC_DRAW);
+  gl.bufferData<GL_ELEMENT_ARRAY_BUFFER>(_indices_vbo, sizeof(chunk_indice) * MapChunk::total_indices_count_with_lods() * 256, NULL, GL_STATIC_DRAW);
 
   // array of offsets and size for the glmultidraw
   for (int i = 0; i < 256; ++i)
   {
-    _indices_offsets.push_back(static_cast<char*>(0) + i * max_indices_count * sizeof(StripType));
+    _indices_offsets.push_back(static_cast<char*>(0) + i * MapChunk::total_indices_count_with_lods() * sizeof(chunk_indice));
     _indices_count.push_back(mChunks[i / 16][i % 16]->indices_count());
   }
 }
 
 void MapTile::recalc_extents()
 {
-  float px = xbase;// -32 * TILESIZE;
-  float pz = zbase;// -32 * TILESIZE;
-
-  extents[0] = { px, std::numeric_limits<float>::max(), pz };
-  extents[1] = { px + TILESIZE, std::numeric_limits<float>::min(), pz + TILESIZE};
+  extents[0] = { xbase, std::numeric_limits<float>::max(), zbase };
+  extents[1] = { xbase + TILESIZE, std::numeric_limits<float>::min(), zbase + TILESIZE};
 
   for (int z = 0; z < 16; ++z)
   {
@@ -1110,16 +1111,23 @@ void MapTile::update_visibility ( const float& cull_distance
              : std::abs(camera.y - extents[1].y);
 
 
+  bool old_value = _is_visible;
+
   _need_visibility_update = false;
   _is_visible = dist < cull_distance && frustum.intersects(_intersect_points);
 
-  if (_is_visible)
+  // todo: either sync the chunks' value with the adt's
+  // or just use the value from the adt in the chunks
+  // terrain rendering is so fast that culling individual chunks
+  // slows down rendering because of the cpu bottleneck
+  if (_is_visible && old_value != _is_visible)
   {
     for (size_t z = 0; z < 16; z++)
     {
       for (size_t x = 0; x < 16; x++)
       {
-        mChunks[z][x]->update_visibility(cull_distance, frustum, camera, display);
+        mChunks[z][x]->set_visible();
+        //mChunks[z][x]->update_visibility(cull_distance, frustum, camera, display);
       }
     }
   }

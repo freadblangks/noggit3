@@ -35,8 +35,6 @@ public:
             , bool use_big_alphamaps
             , bool do_not_fix_alpha_map
             , bool do_not_convert_alphamaps
-            , bool& need_update_ref
-            , int& animated_tex_ref
             );
 
   math::vector_3d anim_param(int layer) const;
@@ -86,12 +84,7 @@ public:
 
   std::string const& texture(int id) const { return _textures[id]; }
 
-  void update_animated_texture_count();
-
 private:
-  bool& _need_texture_infos_update;
-  int& _animated_texture_count;
-
   int get_texture_index_or_add (scoped_blp_texture_reference texture, float target);
 
   uint8_t sum_alpha(size_t offset) const;

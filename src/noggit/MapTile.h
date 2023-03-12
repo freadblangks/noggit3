@@ -125,9 +125,12 @@ private:
 
 public:
   void set_shadowmap_required() { _use_shadowmap = true; }
+  void chunk_height_changed() { _need_recalc_extents = true; _need_visibility_update = true; _need_chunk_data_update = true; }
+  void need_chunk_data_update() { _need_chunk_data_update = true; }
 
-  void chunk_height_changed() { _need_recalc_extents = true; _need_visibility_update = true; }
 private:
+  bool _need_chunk_data_update = true;
+
   std::array<math::vector_3d, 2> extents;
   std::vector<math::vector_3d> _intersect_points;
 
@@ -169,6 +172,7 @@ private:
 
   std::vector<void*> _indices_offsets;
   std::vector<int> _indices_count;
+
   // MHDR:
   int mFlags;
   bool mBigAlpha;
