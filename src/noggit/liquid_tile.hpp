@@ -8,6 +8,7 @@
 #include <noggit/MapHeaders.h>
 #include <noggit/tool_enums.hpp>
 #include <util/sExtendableArray.hpp>
+#include <opengl/scoped.hpp>
 
 #include <memory>
 
@@ -41,6 +42,11 @@ public:
   void setType(int type, size_t layer);
   int getType(size_t layer);
 
+  bool has_water() const { return _has_liquids; }
+  void set_has_water() { _has_liquids = true; }
+
+  void require_buffer_update() { _need_buffer_update = true; }
+  void require_buffer_regen() { _need_buffer_regen = true; }
 private:
 
   MapTile *tile;
@@ -48,4 +54,42 @@ private:
 
   float xbase;
   float zbase;
+
+  float _radius  = 0.f;
+  std::array<math::vector_3d, 2> _extents;
+  std::vector<math::vector_3d> _intersect_points;
+
+  bool _need_recalc_extents = true;
+  void recalc_extents();
+
+  bool _has_liquids = false;
+  bool _is_visible = false;
+  bool _need_visibility_update = true;
+
+  void update_visibility( const float& cull_distance
+                        , const math::frustum& frustum
+                        , const math::vector_3d& camera
+                        , display_mode display
+                        );
+
+private:
+  bool _uploaded = false;
+  bool _need_buffer_regen = true; // recreate the buffer when a layer is added or removed
+  bool _need_buffer_update = true; // update the buffer when a layer is modified
+
+  void upload(opengl::scoped::use_program& water_shader, liquid_render& render);
+  void regen_buffer(liquid_render& render);
+  void update_buffer(liquid_render& render);
+
+  opengl::scoped::deferred_upload_buffers<1> _ubo;
+  GLuint const& _chunks_data_ubo = _ubo[0];
+
+  opengl::scoped::deferred_upload_vertex_arrays<1> _vertex_array;
+  GLuint const& _vao = _vertex_array[0];
+  opengl::scoped::deferred_upload_buffers<2> _vertex_buffers;
+  GLuint const& _vertices_vbo = _vertex_buffers[0];
+  GLuint const& _indices_vbo = _vertex_buffers[1];
+
+  std::vector<void*> _indices_offsets;
+  std::vector<int> _indices_count;
 };

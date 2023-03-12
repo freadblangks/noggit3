@@ -108,6 +108,7 @@ public:
             , bool world_has_skies
             , display_mode display
             , wmo_group_uniform_data& wmo_uniform_data
+            , std::vector<std::pair<wmo_liquid*, math::matrix_4x4>>& wmo_liquids_to_draw
             );
 
   void update_transform_matrix();

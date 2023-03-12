@@ -15,7 +15,7 @@ liquid_tile::liquid_tile(MapTile *pTile, float pXbase, float pZbase, bool use_mc
   {
     for (int x = 0; x < 16; ++x)
     {
-      chunks[z][x] = std::make_unique<liquid_chunk> (xbase + CHUNKSIZE * x, zbase + CHUNKSIZE * z, use_mclq_green_lava);
+      chunks[z][x] = std::make_unique<liquid_chunk> (xbase + CHUNKSIZE * x, zbase + CHUNKSIZE * z, use_mclq_green_lava, this);
     }
   }
 }
@@ -28,6 +28,11 @@ void liquid_tile::readFromFile(MPQFile &theFile, size_t basePos)
     {
       theFile.seek(basePos + (z * 16 + x) * sizeof(MH2O_Header));
       chunks[z][x]->fromFile(theFile, basePos);
+
+      if (chunks[z][x]->hasData(0))
+      {
+        _has_liquids = true;
+      }
     }
   }
 }
@@ -43,22 +48,37 @@ void liquid_tile::draw ( math::frustum const& frustum
                      , display_mode display
                      )
 {
-  for (int z = 0; z < 16; ++z)
+  if (!_uploaded)
   {
-    for (int x = 0; x < 16; ++x)
-    {
-      chunks[z][x]->draw ( frustum
-                         , cull_distance
-                         , camera
-                         , camera_moved
-                         , render
-                         , water_shader
-                         , animtime
-                         , layer
-                         , display
-                         );
-    }
+    upload(water_shader, render);
   }
+
+  // update buffers before the visibility check as it trigger
+  // a visibility update
+  if (_need_buffer_regen)
+  {
+    regen_buffer(render);
+  }
+  else if (_need_buffer_update)
+  {
+    update_buffer(render);
+  }
+
+  if (camera_moved || _need_visibility_update)
+  {
+    update_visibility(cull_distance, frustum, camera, display);
+  }
+
+  if (!_is_visible)
+  {
+    return;
+  }
+
+  gl.bindBufferBase(GL_UNIFORM_BUFFER, 0, _chunks_data_ubo);
+
+  opengl::scoped::vao_binder const _ (_vao);
+
+  gl.multiDrawElements(GL_TRIANGLES, _indices_count.data(), GL_UNSIGNED_SHORT, _indices_offsets.data(), _indices_count.size());
 }
 
 liquid_chunk* liquid_tile::getChunk(int x, int z)
@@ -68,6 +88,8 @@ liquid_chunk* liquid_tile::getChunk(int x, int z)
 
 void liquid_tile::autoGen(float factor)
 {
+  _need_buffer_update = true;
+
   for (int z = 0; z < 16; ++z)
   {
     for (int x = 0; x < 16; ++x)
@@ -125,6 +147,9 @@ bool liquid_tile::hasData(size_t layer)
 
 void liquid_tile::CropMiniChunk(int x, int z, MapChunk* chunkTerrain)
 {
+  _need_recalc_extents = true;
+  _need_buffer_update = true;
+
   chunks[z][x]->CropWater(chunkTerrain);
 }
 
@@ -152,4 +177,137 @@ int liquid_tile::getType(size_t layer)
     }
   }
   return 0;
+}
+
+void liquid_tile::upload(opengl::scoped::use_program& water_shader, liquid_render& render)
+{
+  _vertex_array.upload();
+  _vertex_buffers.upload();
+  _ubo.upload();
+
+  regen_buffer(render);
+
+  opengl::scoped::vao_binder const _ (_vao);
+
+  water_shader.attrib(_, "position", _vertices_vbo, 3, GL_FLOAT, GL_FALSE, sizeof(liquid_vertex), static_cast<char*>(0) + offsetof(liquid_vertex, position));
+  water_shader.attrib(_, "tex_coord", _vertices_vbo, 2, GL_FLOAT, GL_FALSE, sizeof(liquid_vertex), static_cast<char*>(0) + offsetof(liquid_vertex, uv));
+  water_shader.attrib(_, "depth", _vertices_vbo, 1, GL_FLOAT, GL_FALSE, sizeof(liquid_vertex), static_cast<char*>(0) + offsetof(liquid_vertex, depth));
+
+  _uploaded = true;
+}
+void liquid_tile::regen_buffer(liquid_render& render)
+{
+  _indices_offsets.clear();
+  _indices_count.clear();
+
+  int total_layer_count = 0;
+
+  for (int z = 0; z < 16; ++z)
+  {
+    for (int x = 0; x < 16; ++x)
+    {
+      total_layer_count += chunks[z][x]->layer_count();
+    }
+  }
+
+  gl.bufferData<GL_ARRAY_BUFFER>(_vertices_vbo, total_layer_count * liquid_layer::vertex_buffer_size_required, NULL, GL_STATIC_DRAW);
+  gl.bufferData<GL_ELEMENT_ARRAY_BUFFER>(_indices_vbo, total_layer_count * liquid_layer::indice_buffer_size_required, NULL, GL_STATIC_DRAW);
+  gl.bufferData<GL_UNIFORM_BUFFER>(_chunks_data_ubo, total_layer_count * sizeof(liquid_layer_data), NULL, GL_STATIC_DRAW);
+
+  opengl::scoped::vao_binder const _ (_vao);
+
+  gl.bindBuffer(GL_ARRAY_BUFFER, _vertices_vbo);
+  gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, _indices_vbo);
+  gl.bindBuffer(GL_UNIFORM_BUFFER, _chunks_data_ubo);
+
+  int index = 0;
+
+  for (int z = 0; z < 16; ++z)
+  {
+    for (int x = 0; x < 16; ++x)
+    {
+      chunks[z][x]->upload_data(index, render);
+      chunks[z][x]->update_indices_info(_indices_offsets, _indices_count);
+    }
+  }
+
+  _has_liquids = _indices_count.size() > 0;
+
+  _need_visibility_update = true;
+  _need_recalc_extents = true;
+
+  _need_buffer_regen = false;
+  _need_buffer_update = false;
+}
+void liquid_tile::update_buffer(liquid_render& render)
+{
+  _indices_offsets.clear();
+  _indices_count.clear();
+
+  gl.bindBuffer(GL_ARRAY_BUFFER, _vertices_vbo);
+  gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, _indices_vbo);
+  gl.bindBuffer(GL_UNIFORM_BUFFER, _chunks_data_ubo);
+
+  for (int z = 0; z < 16; ++z)
+  {
+    for (int x = 0; x < 16; ++x)
+    {
+      chunks[z][x]->update_data(render);
+      chunks[z][x]->update_indices_info(_indices_offsets, _indices_count);
+    }
+  }
+
+  _has_liquids = _indices_count.size() > 0;
+
+  _need_recalc_extents = true;
+  _need_visibility_update = true;
+
+  _need_buffer_update = false;
+}
+
+void liquid_tile::recalc_extents()
+{
+  _extents[0] = math::vector_3d::max();
+  _extents[1] = math::vector_3d::min();
+
+  for (int z = 0; z < 16; ++z)
+  {
+    for (int x = 0; x < 16; ++x)
+    {
+      // only take into account chunks with liquids
+      if (chunks[z][x]->layer_count() > 0)
+      {
+        _extents[0] = math::min(_extents[0], chunks[z][x]->min());
+        _extents[1] = math::max(_extents[1], chunks[z][x]->max());
+      }
+    }
+  }
+
+  _radius = (_extents[0] - _extents[1]).length() * 0.5f;
+
+  _intersect_points.clear();
+  _intersect_points = misc::intersection_points(_extents[0], _extents[1]);
+
+  _need_visibility_update = true;
+
+  _need_recalc_extents = false;
+}
+
+void liquid_tile::update_visibility ( const float& cull_distance
+                                    , const math::frustum& frustum
+                                    , const math::vector_3d& camera
+                                    , display_mode display
+                                    )
+{
+  if (_need_recalc_extents)
+  {
+    recalc_extents();
+  }
+
+  float dist = display == display_mode::in_3D
+             ? (camera - (_extents[0] + _extents[1]) * 0.5).length() - _radius
+             : std::abs(camera.y - _extents[1].y);
+
+  _is_visible = dist < cull_distance && frustum.intersects(_intersect_points);
+  _need_visibility_update = false;
 }

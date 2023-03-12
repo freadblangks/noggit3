@@ -2,23 +2,29 @@
 
 #include <noggit/liquid_chunk.hpp>
 #include <noggit/liquid_layer.hpp>
+#include <noggit/liquid_tile.hpp>
 #include <noggit/MPQ.h>
 #include <noggit/MapChunk.h>
 #include <noggit/Misc.h>
 
-liquid_chunk::liquid_chunk(float x, float z, bool use_mclq_green_lava)
+liquid_chunk::liquid_chunk(float x, float z, bool use_mclq_green_lava, liquid_tile* parent_tile)
   : xbase(x)
   , zbase(z)
   , vmin(x, 0.f, z)
   , vmax(x + CHUNKSIZE, 0.f, z + CHUNKSIZE)
   , _use_mclq_green_lava(use_mclq_green_lava)
+  , _liquid_tile(parent_tile)
 {
 }
 
 void liquid_chunk::from_mclq(std::vector<mclq>& layers)
 {
   math::vector_3d pos(xbase, 0.0f, zbase);
-  if (!Render.has_value()) Render.emplace();
+  if (!Render.has_value())
+  {
+    Render.emplace();
+  }
+
   for (mclq& liquid : layers)
   {
     std::uint8_t mclq_liquid_type = 0;
@@ -50,7 +56,11 @@ void liquid_chunk::from_mclq(std::vector<mclq>& layers)
         break;
     }
   }
+
   update_layers();
+
+  _liquid_tile->require_buffer_regen();
+  _liquid_tile->set_has_water();
 }
 
 void liquid_chunk::fromFile(MPQFile &f, size_t basePos)
@@ -171,35 +181,6 @@ void liquid_chunk::setType(int type, size_t layer)
   }
 }
 
-void liquid_chunk::draw ( math::frustum const& frustum
-                      , const float& cull_distance
-                      , const math::vector_3d& camera
-                      , bool camera_moved
-                      , liquid_render& render
-                      , opengl::scoped::use_program& water_shader
-                      , int animtime
-                      , int layer
-                      , display_mode display
-                      )
-{
-  if (!is_visible (cull_distance, frustum, camera, display))
-  {
-    return;
-  }
-
-  if (layer == -1)
-  {
-    for (liquid_layer& lq_layer : _layers)
-    {
-      lq_layer.draw (render, water_shader, camera, camera_moved, animtime);
-    }
-  }
-  else if (layer < _layers.size())
-  {
-    _layers[layer].draw (render, water_shader, camera, camera_moved, animtime);
-  }
-}
-
 bool liquid_chunk::is_visible ( const float& cull_distance
                             , const math::frustum& frustum
                             , const math::vector_3d& camera
@@ -229,6 +210,8 @@ void liquid_chunk::update_layers()
 
   _intersect_points.clear();
   _intersect_points = misc::intersection_points(vmin, vmax);
+
+  _liquid_tile->require_buffer_update();
 }
 
 bool liquid_chunk::hasData(size_t layer) const
@@ -267,8 +250,11 @@ void liquid_chunk::paintLiquid( math::vector_3d const& pos
     if (!layer_found)
     {
       liquid_layer layer(math::vector_3d(xbase, 0.0f, zbase), pos.y, liquid_id);
+
       copy_height_to_layer(layer, pos, radius);
+
       _layers.push_back(layer);
+      _liquid_tile->require_buffer_regen();
     }
   }
 
@@ -308,9 +294,12 @@ void liquid_chunk::paintLiquid( math::vector_3d const& pos
     liquid_layer layer(math::vector_3d(xbase, 0.0f, zbase), pos.y, liquid_id);
     layer.paintLiquid(pos, radius, true, angle, orientation, lock, origin, override_height, chunk, opacity_factor);
     _layers.push_back(layer);
+
+    _liquid_tile->set_has_water();
   }
 
   update_layers();
+  _liquid_tile->require_buffer_regen();
 }
 
 void liquid_chunk::cleanup()
@@ -320,6 +309,7 @@ void liquid_chunk::cleanup()
     if (_layers[i].empty())
     {
       _layers.erase(_layers.begin() + i);
+      _liquid_tile->require_buffer_regen();
     }
   }
 }
@@ -346,5 +336,29 @@ void liquid_chunk::copy_height_to_layer(liquid_layer& target, math::vector_3d co
         }
       }
     }
+  }
+}
+
+void liquid_chunk::upload_data(int& index_in_tile, liquid_render& render)
+{
+  for (liquid_layer& layer : _layers)
+  {
+    layer.upload_data(index_in_tile++, render);
+  }
+}
+
+void liquid_chunk::update_data(liquid_render& render)
+{
+  for (liquid_layer& layer : _layers)
+  {
+    layer.update_data(render);
+  }
+}
+
+void liquid_chunk::update_indices_info(std::vector<void*>& indices_offsets, std::vector<int>& indices_count)
+{
+  for (liquid_layer& layer : _layers)
+  {
+    layer.update_indices_info(indices_offsets, indices_count);
   }
 }

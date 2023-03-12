@@ -5,12 +5,12 @@
 #include <math/trig.hpp>
 #include <noggit/MapHeaders.h>
 #include <noggit/liquid_render.hpp>
-#include <opengl/scoped.hpp>
+#include <math/vector_2d.hpp>
 #include <util/sExtendableArray.hpp>
 
 class MapChunk;
 
-using liquid_indice = std::uint8_t;
+using liquid_indice = std::uint16_t;
 
 // handle liquids like oceans, lakes, rivers, slime, magma
 class liquid_layer
@@ -29,12 +29,7 @@ public:
 
   void save(util::sExtendableArray& adt, int base_pos, int& info_pos, int& current_pos) const;
 
-  void draw ( liquid_render& render
-            , opengl::scoped::use_program& water_shader
-            , math::vector_3d const& camera
-            , bool camera_moved
-            , int animtime
-            );
+  void update_attributes(MH2O_Attributes& attributes);
   void update_indices();
   void changeLiquidID(int id);
 
@@ -67,7 +62,28 @@ public:
 
   void copy_subchunk_height(int x, int z, liquid_layer const& from);
 
+  static constexpr int vertex_buffer_size_required = 9 * 9 * sizeof(liquid_vertex);
+  static constexpr int indice_buffer_size_required = 8 * 8 * 2 * 3 * sizeof(liquid_indice); // 2 triangle per quad
+
+
+  void upload_data(int index_in_tile, liquid_render& render)
+  {
+    _index_in_tile = index_in_tile;
+    update_data(render);
+  }
+
+  void update_data(liquid_render& render);
+
+  void update_indices_info(std::vector<void*>& indices_offsets, std::vector<int>& indices_count);
+
 private:
+  // used to get the offset in the tile's buffers for the layer
+  int _index_in_tile;
+  bool _need_data_update = true;
+
+private:
+  void create_vertices(float height);
+
   void update_min_max();
   void update_vertex_opacity(int x, int z, MapChunk* chunk, float factor);
   int get_lod_level(math::vector_3d const& camera_pos) const;
@@ -78,31 +94,17 @@ private:
   int _current_lod_level = -1;
   int _current_lod_indices_count = 0;
 
-  opengl::scoped::deferred_upload_buffers<lod_count> _index_buffer;
-  opengl::scoped::deferred_upload_buffers<3> _buffers;
-  GLuint const& _vertices_vbo = _buffers[0];
-  GLuint const& _depth_vbo = _buffers[1];
-  GLuint const& _tex_coord_vbo = _buffers[2];
-  opengl::scoped::deferred_upload_vertex_arrays<1> _vertex_array;
-  GLuint const& _vao = _vertex_array[0];
 
   int _liquid_id;
   int _liquid_vertex_format;
   float _minimum;
   float _maximum;
+
   std::uint64_t _subchunks;
-  std::vector<math::vector_3d> _vertices;
-  std::vector<float> _depth;
-  std::vector<math::vector_2d> _tex_coords;
-  std::map<int, std::vector<std::uint8_t>> _indices_by_lod;
 
-  bool _need_buffer_update = true;
-  bool _vao_need_update = true;
-  bool _uploaded = false;
+  std::vector<liquid_vertex> _vertices;
 
-  void upload();
-  void update_buffers();
-  void update_vao(opengl::scoped::vao_binder const& bound_vao, opengl::scoped::use_program& water_shader);
+  std::map<int, std::vector<liquid_indice>> _indices_by_lod;
 
 private:
   math::vector_3d pos;

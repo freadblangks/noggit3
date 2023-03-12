@@ -38,7 +38,7 @@ struct SMOLTile
   uint8_t shared : 1;
 };
 
-struct WMOMaterial 
+struct WMOMaterial
 {
   union
   {
@@ -64,7 +64,7 @@ struct WMOMaterial
   uint32_t texture_offset_2; // Start position for the second texture filename in the MOTX data block
   CArgb diffuse_color;
   uint32_t ground_type;
-  uint32_t texture_offset_3; 
+  uint32_t texture_offset_3;
   uint32_t color_2;
   uint32_t flag_2;
   uint32_t runtime_data[2];
@@ -109,10 +109,9 @@ public:
 
   void draw ( math::matrix_4x4 const& transform
             , liquid_render& render
-            , int animtime
             );
 
-  void upload(opengl::scoped::use_program& water_shader);
+  void upload(opengl::scoped::use_program& water_shader, liquid_render& render);
 
 private:
   int initGeometry(MPQFile* f);
@@ -122,20 +121,19 @@ private:
   int xtiles, ytiles;
   int _liquid_id;
 
-  std::vector<float> depths;
-  std::vector<math::vector_2d> tex_coords;
-  std::vector<math::vector_3d> vertices;
+  std::vector<liquid_vertex> _vertices;
+
   std::vector<std::uint16_t> indices;
 
   int _indices_count;
 
   bool _uploaded = false;
 
-  opengl::scoped::deferred_upload_buffers<4> _buffer;
+  opengl::scoped::deferred_upload_buffers<3> _buffer;
   GLuint const& _indices_buffer = _buffer[0];
   GLuint const& _vertices_buffer = _buffer[1];
-  GLuint const& _depth_buffer = _buffer[2];
-  GLuint const& _tex_coord_buffer = _buffer[3];
+  GLuint const& _liquid_ubo = _buffer[2];
+
   opengl::scoped::deferred_upload_vertex_arrays<1> _vertex_array;
   GLuint const& _vao = _vertex_array[0];
 };

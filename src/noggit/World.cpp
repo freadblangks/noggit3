@@ -1258,85 +1258,62 @@ void World::draw ( math::matrix_4x4 const& model_view
     }
   }
 
-  // set anim time only once per frame
-  {
-    opengl::scoped::use_program water_shader {_liquid_render->shader_program()};
-    water_shader.uniform("animtime", static_cast<float>(animtime) / 2880.f);
-
-    water_shader.uniform("model_view", model_view);
-    water_shader.uniform("projection", projection);
-
-    math::vector_4d ocean_color_light(skies->color_set[OCEAN_COLOR_LIGHT], skies->ocean_shallow_alpha());
-    math::vector_4d ocean_color_dark(skies->color_set[OCEAN_COLOR_DARK], skies->ocean_deep_alpha());
-    math::vector_4d river_color_light(skies->color_set[RIVER_COLOR_LIGHT], skies->river_shallow_alpha());
-    math::vector_4d river_color_dark(skies->color_set[RIVER_COLOR_DARK], skies->river_deep_alpha());
-
-    water_shader.uniform("ocean_color_light", ocean_color_light);
-    water_shader.uniform("ocean_color_dark", ocean_color_dark);
-    water_shader.uniform("river_color_light", river_color_light);
-    water_shader.uniform("river_color_dark", river_color_dark);
-
-    if (draw_wmo || mapIndex.hasAGlobalWMO())
-    {
-      water_shader.uniform("use_transform", 1);
-    }
-  }
+  std::vector<std::pair<wmo_liquid*, math::matrix_4x4>> wmo_liquids_to_draw;
 
   // WMOs / map objects
   if (draw_wmo || mapIndex.hasAGlobalWMO())
   {
+    opengl::scoped::use_program wmo_program {*_wmo_program.get()};
+
+    wmo_program.uniform("model_view", model_view);
+    wmo_program.uniform("projection", projection);
+    wmo_program.uniform("tex1", 0);
+    wmo_program.uniform("tex2", 1);
+
+    wmo_program.uniform("draw_fog", (int)draw_fog);
+
+    if (draw_fog)
     {
-      opengl::scoped::use_program wmo_program {*_wmo_program.get()};
-
-      wmo_program.uniform("model_view", model_view);
-      wmo_program.uniform("projection", projection);
-      wmo_program.uniform("tex1", 0);
-      wmo_program.uniform("tex2", 1);
-
-      wmo_program.uniform("draw_fog", (int)draw_fog);
-
-      if (draw_fog)
-      {
-        wmo_program.uniform("fog_end", fogdistance);
-        wmo_program.uniform("fog_start", 0.5f);
-        wmo_program.uniform("fog_color", skies->color_set[FOG_COLOR]);
-        wmo_program.uniform("camera", camera_pos);
-      }
-
-      wmo_program.uniform("exterior_light_dir", light_dir);
-      wmo_program.uniform("exterior_diffuse_color", diffuse_color);
-      wmo_program.uniform("exterior_ambient_color", ambient_color);
-
-      wmo_group_uniform_data wmo_uniform_data;
-
-      _model_instance_storage.for_each_wmo_instance([&] (WMOInstance& wmo)
-      {
-        bool is_hidden = wmo.wmo->is_hidden();
-        if (draw_hidden_models || !is_hidden)
-        {
-          wmo.draw( wmo_program
-                  , model_view
-                  , projection
-                  , frustum
-                  , culldistance
-                  , camera_pos
-                  , is_hidden
-                  , draw_wmo_doodads
-                  , draw_fog
-                  , _liquid_render.get()
-                  , current_selection()
-                  , animtime
-                  , skies->hasSkies()
-                  , display
-                  , wmo_uniform_data
-                  );
-        }
-      });
-
-      gl.enable(GL_BLEND);
-      gl.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-      gl.enable(GL_CULL_FACE);
+      wmo_program.uniform("fog_end", fogdistance);
+      wmo_program.uniform("fog_start", 0.5f);
+      wmo_program.uniform("fog_color", skies->color_set[FOG_COLOR]);
+      wmo_program.uniform("camera", camera_pos);
     }
+
+    wmo_program.uniform("exterior_light_dir", light_dir);
+    wmo_program.uniform("exterior_diffuse_color", diffuse_color);
+    wmo_program.uniform("exterior_ambient_color", ambient_color);
+
+    wmo_group_uniform_data wmo_uniform_data;
+
+    _model_instance_storage.for_each_wmo_instance([&] (WMOInstance& wmo)
+    {
+      bool is_hidden = wmo.wmo->is_hidden();
+      if (draw_hidden_models || !is_hidden)
+      {
+        wmo.draw( wmo_program
+                , model_view
+                , projection
+                , frustum
+                , culldistance
+                , camera_pos
+                , is_hidden
+                , draw_wmo_doodads
+                , draw_fog
+                , _liquid_render.get()
+                , current_selection()
+                , animtime
+                , skies->hasSkies()
+                , display
+                , wmo_uniform_data
+                , wmo_liquids_to_draw
+                );
+      }
+    });
+
+    gl.enable(GL_BLEND);
+    gl.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    gl.enable(GL_CULL_FACE);
   }
 
   // model particles
@@ -1388,12 +1365,32 @@ void World::draw ( math::matrix_4x4 const& model_view
 
   if (draw_water)
   {
-    _liquid_render->force_texture_update();
+    opengl::scoped::use_program water_shader{ _liquid_render->shader_program() };
+
+    water_shader.uniform("animtime", static_cast<float>(animtime / 60.f));
+
+    water_shader.uniform("model_view", model_view);
+    water_shader.uniform("projection", projection);
+
+    math::vector_4d ocean_color_light(skies->color_set[OCEAN_COLOR_LIGHT], skies->ocean_shallow_alpha());
+    math::vector_4d ocean_color_dark(skies->color_set[OCEAN_COLOR_DARK], skies->ocean_deep_alpha());
+    math::vector_4d river_color_light(skies->color_set[RIVER_COLOR_LIGHT], skies->river_shallow_alpha());
+    math::vector_4d river_color_dark(skies->color_set[RIVER_COLOR_DARK], skies->river_deep_alpha());
+
+    water_shader.uniform("ocean_color_light", ocean_color_light);
+    water_shader.uniform("ocean_color_dark", ocean_color_dark);
+    water_shader.uniform("river_color_light", river_color_light);
+    water_shader.uniform("river_color_dark", river_color_dark);
+
+    for (int i = 0; i < _liquid_render->array_count(); ++i)
+    {
+      water_shader.uniform("textures[" + std::to_string(i) + "]", i);
+    }
+
+    _liquid_render->bind_arrays();
 
     // draw the water on both sides
     opengl::scoped::bool_setter<GL_CULL_FACE, GL_FALSE> const cull;
-
-    opengl::scoped::use_program water_shader{ _liquid_render->shader_program() };
 
     water_shader.uniform ("use_transform", 0);
 
@@ -1409,6 +1406,13 @@ void World::draw ( math::matrix_4x4 const& model_view
                       , water_layer
                       , display
                       );
+    }
+
+    water_shader.uniform("use_transform", 1);
+
+    for (auto& it : wmo_liquids_to_draw)
+    {
+      it.first->draw(it.second, _liquid_render.get());
     }
 
     gl.bindVertexArray(0);

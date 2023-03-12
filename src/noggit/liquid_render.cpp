@@ -15,108 +15,153 @@
 #include <string>
 
 
-void liquid_render::prepare_draw ( opengl::scoped::use_program& water_shader
-                                 , int liquid_id
-                                 , int animtime
-                                 )
+liquid_layer_data liquid_render::ubo_data(int liquid_id)
 {
-  std::size_t texture_index = 0;
-  bool need_texture_update = false;
+  auto& it = _liquids_ubo_data.find(liquid_id);
 
-  if (!_current_liquid_id || liquid_id != _current_liquid_id)
+  if (it != _liquids_ubo_data.end())
   {
-    _current_anim_time = animtime;
-    _current_liquid_id = liquid_id;
-
-    if (_textures_by_liquid_id[liquid_id].empty())
-    {
-      add_liquid_id(liquid_id);
-    }
-
-    texture_index = get_texture_index(liquid_id, animtime);
-    need_texture_update = true;
-    
-    water_shader.uniform("type", _liquid_id_types[liquid_id]);
-    water_shader.uniform("param", _float_param_by_liquid_id[liquid_id]);
+    return it->second;
   }
   else
   {
-    texture_index = get_texture_index(liquid_id, animtime);
-    need_texture_update = texture_index != get_texture_index(liquid_id, animtime);
-  }
-
-  if (need_texture_update)
-  {
-    auto const& textures = _textures_by_liquid_id[liquid_id];
-    water_shader.sampler
-    ("tex"
-      , GL_TEXTURE0
-      , textures[texture_index].get()
-    );
-  }
-}
-
-void liquid_render::force_texture_update()
-{
-  _current_liquid_id.reset();
-}
-
-std::size_t liquid_render::get_texture_index(int liquid_id, int animtime) const
-{
-  return static_cast<std::size_t> (animtime / 60) % _textures_by_liquid_id.at(liquid_id).size();
-}
-
-void liquid_render::add_liquid_id(int liquid_id)
-{
-  auto& textures = _textures_by_liquid_id[liquid_id];
-  textures.clear();
-
-  std::string filename;
-
-  try
-  {
-    DBCFile::Record lLiquidTypeRow = gLiquidTypeDB.getByID(liquid_id);
-
-    _liquid_id_types[liquid_id] = lLiquidTypeRow.getInt(LiquidTypeDB::Type);
-    _float_param_by_liquid_id[liquid_id] = 
-      math::vector_2d( lLiquidTypeRow.getFloat(LiquidTypeDB::AnimationX)
-                     , lLiquidTypeRow.getFloat(LiquidTypeDB::AnimationY)
-                     );
-
-    // fix to now crash when using procedural water (id 100)
-    if (lLiquidTypeRow.getInt(LiquidTypeDB::ShaderType) == 3)
+    std::string filename;
+    liquid_layer_data data;
+    try
     {
-      filename = "XTextures\\river\\lake_a.%d.blp";
-      // default param for water
-      _float_param_by_liquid_id[liquid_id] = math::vector_2d(1.f, 0.f);
-    }
-    else
-    {
-      filename = lLiquidTypeRow.getString(LiquidTypeDB::TextureFilenames);
-    }
-  }
-  catch (...)
-  {
-    // Fallback, when there is no information.
-    filename = "XTextures\\river\\lake_a.%d.blp";
-  }
+      DBCFile::Record lLiquidTypeRow = gLiquidTypeDB.getByID(liquid_id);
 
-  for (int i = 1; i <= 30; ++i)
-  {
-    try 
-    {
-      textures.emplace_back(boost::str(boost::format(filename) % i));
+      data.liquid_type = lLiquidTypeRow.getInt(LiquidTypeDB::Type);
+      data.param.x = lLiquidTypeRow.getFloat(LiquidTypeDB::AnimationX);
+      data.param.y = lLiquidTypeRow.getFloat(LiquidTypeDB::AnimationY);
+      data.param.z = 0.f;
+      data.param.w = 0.f;
+
+      // fix to not crash when using procedural water (id 100)
+      if (lLiquidTypeRow.getInt(LiquidTypeDB::ShaderType) == 3)
+      {
+        filename = "XTextures\\river\\lake_a.%d.blp";
+        // default param for water
+        data.param.x = 1.f;
+        data.param.y = 0.f;
+      }
+      else
+      {
+        filename = lLiquidTypeRow.getString(LiquidTypeDB::TextureFilenames);
+      }
     }
     catch (...)
     {
-      break;
-    }
-  }
+      // Fallback, when there is no information.
+      filename = "XTextures\\river\\lake_a.%d.blp";
 
-  // make sure there's at least one texture
-  if (textures.empty())
-  {
-    textures.emplace_back ("textures/shanecube.blp");
+      data.param = math::vector_4d(1.f, 0.f, 0.f, 0.f);
+      data.liquid_type = 0;
+    }
+
+    filename = noggit::mpq::normalized_filename(filename);
+
+    std::vector<std::string> textures;
+    for (int i = 1;; ++i)
+    {
+      std::string file = boost::str(boost::format(filename) % i);
+
+      if (MPQFile::exists(file))
+      {
+        textures.emplace_back(file);
+      }
+      else
+      {
+        break;
+      }
+    }
+
+    if (textures.empty())
+    {
+      textures.emplace_back("textures/shanecube.blp");
+    }
+
+    data.texture_count = textures.size();
+
+    blp_texture tex0(textures[0]);
+    tex0.finishLoading();
+
+    GLint format = tex0.texture_format();
+
+    bool space_found = false;
+
+    for (int i = 0; i < _texture_arrays.size(); ++i)
+    {
+      if (_textures_used_per_array[i] + data.texture_count <= textures_per_array && _arrays_format[i] == format)
+      {
+        data.array_id = i;
+        data.id_start_in_array = _textures_used_per_array[i];
+        space_found = true;
+
+        break;
+      }
+    }
+
+    if (!space_found)
+    {
+      data.array_id = _texture_arrays.size();
+      data.id_start_in_array = 0;
+
+      _textures_used_per_array[data.array_id] = 0;
+
+      opengl::texture::set_active_texture(data.array_id);
+      _texture_arrays.emplace_back();
+      _texture_arrays[data.array_id].bind();
+      _arrays_format.push_back(format);
+
+      // todo: use a loop
+      gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, format, 256, 256, textures_per_array, 0, GL_RGBA, GL_FLOAT, NULL);
+      gl.texImage3D(GL_TEXTURE_2D_ARRAY, 1, format, 128, 128, textures_per_array, 0, GL_RGBA, GL_FLOAT, NULL);
+      gl.texImage3D(GL_TEXTURE_2D_ARRAY, 2, format, 64, 64, textures_per_array, 0, GL_RGBA, GL_FLOAT, NULL);
+      gl.texImage3D(GL_TEXTURE_2D_ARRAY, 3, format, 32, 32, textures_per_array, 0, GL_RGBA, GL_FLOAT, NULL);
+      gl.texImage3D(GL_TEXTURE_2D_ARRAY, 4, format, 16, 16, textures_per_array, 0, GL_RGBA, GL_FLOAT, NULL);
+      gl.texImage3D(GL_TEXTURE_2D_ARRAY, 5, format, 8, 8, textures_per_array, 0, GL_RGBA, GL_FLOAT, NULL);
+      gl.texImage3D(GL_TEXTURE_2D_ARRAY, 6, format, 4, 4, textures_per_array, 0, GL_RGBA, GL_FLOAT, NULL);
+      gl.texImage3D(GL_TEXTURE_2D_ARRAY, 7, format, 2, 2, textures_per_array, 0, GL_RGBA, GL_FLOAT, NULL);
+      gl.texImage3D(GL_TEXTURE_2D_ARRAY, 8, format, 1, 1, textures_per_array, 0, GL_RGBA, GL_FLOAT, NULL);
+      gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+      gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 8);
+    }
+    else
+    {
+      opengl::texture::set_active_texture(data.array_id);
+      _texture_arrays[data.array_id].bind();
+    }
+
+    // todo: check for dimensions even though it should be 256x256
+    for (int i = 0; i < data.texture_count; ++i)
+    {
+      // no need to re-load the same texture
+      if (i == 0)
+      {
+        tex0.upload_to_currently_bound_array(data.id_start_in_array + i);
+      }
+      else
+      {
+        blp_texture tex(textures[i]);
+        tex.finishLoading();
+        tex.upload_to_currently_bound_array(data.id_start_in_array + i);
+      }
+    }
+
+    _textures_used_per_array[data.array_id] += data.texture_count;
+    _liquids_ubo_data[liquid_id] = data;
+
+    return data;
   }
 }
 
+void liquid_render::bind_arrays()
+{
+  for (int i = 0; i < _texture_arrays.size(); ++i)
+  {
+    opengl::texture::set_active_texture(i);
+    _texture_arrays[i].bind();
+  }
+}

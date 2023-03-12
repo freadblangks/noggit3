@@ -127,12 +127,6 @@ public:
            , wmo_group_uniform_data& wmo_uniform_data
            );
 
-  void drawLiquid ( math::matrix_4x4 const& transform
-                  , liquid_render& render
-                  , bool draw_fog
-                  , int animtime
-                  );
-
   void setupFog (bool draw_fog, std::function<void (bool)> setup_fog);
 
   void intersect (math::ray const&, std::vector<float>* results) const;
@@ -144,6 +138,8 @@ public:
                  , math::vector_3d const& camera
                  , display_mode display
                  ) const;
+
+  bool visible = true;
 
   std::vector<uint16_t> doodad_ref() const { return _doodad_ref; }
 
@@ -157,6 +153,8 @@ public:
 
   bool has_skybox() const { return header.flags.skybox; }
 
+  std::unique_ptr<wmo_liquid> liquid;
+
 private:
   void load_mocv(MPQFile& f, uint32_t size);
   void fix_vertex_color_alpha();
@@ -168,7 +166,6 @@ private:
   int32_t num;
   int32_t fog;
   std::vector<uint16_t> _doodad_ref;
-  std::unique_ptr<wmo_liquid> lq;
 
   std::vector<wmo_batch> _batches;
 
@@ -277,6 +274,7 @@ public:
             , bool world_has_skies
             , display_mode display
             , wmo_group_uniform_data& wmo_uniform_data
+            , std::vector<std::pair<wmo_liquid*, math::matrix_4x4>>& wmo_liquids_to_draw
             );
   bool draw_skybox( math::matrix_4x4 const& model_view
                   , math::vector_3d const& camera_pos

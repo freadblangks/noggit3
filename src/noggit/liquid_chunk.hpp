@@ -22,11 +22,13 @@ namespace noggit {
     }
 }
 
+class liquid_tile;
+
 class liquid_chunk
 {
 public:
   liquid_chunk() = delete;
-  explicit liquid_chunk(float x, float z, bool use_mclq_green_lava);
+  explicit liquid_chunk(float x, float z, bool use_mclq_green_lava, liquid_tile* parent_tile);
 
   liquid_chunk (liquid_chunk const&) = delete;
   liquid_chunk (liquid_chunk&&) = delete;
@@ -37,16 +39,6 @@ public:
   void fromFile(MPQFile &f, size_t basePos);
   void save(util::sExtendableArray& adt, int base_pos, int& header_pos, int& current_pos);
 
-  void draw ( math::frustum const& frustum
-            , const float& cull_distance
-            , const math::vector_3d& camera
-            , bool camera_moved
-            , liquid_render& render
-            , opengl::scoped::use_program& water_shader
-            , int animtime
-            , int layer
-            , display_mode display
-            );
 
   bool is_visible ( const float& cull_distance
                   , const math::frustum& frustum
@@ -78,6 +70,15 @@ public:
 
   float xbase, zbase;
 
+  int layer_count() const { return _layers.size(); }
+
+  void upload_data(int& index_in_tile, liquid_render& render);
+  void update_data(liquid_render& render);
+  void update_indices_info(std::vector<void*>& indices_offsets, std::vector<int>& indices_count);
+
+  math::vector_3d const& min() { return vmin; }
+  math::vector_3d const& max() { return vmax; }
+
 private:
   std::vector<math::vector_3d> _intersect_points;
 
@@ -94,6 +95,8 @@ private:
   std::optional<MH2O_Render> Render;
 
   std::vector<liquid_layer> _layers;
+
+  liquid_tile* _liquid_tile;
 
   friend class noggit::scripting::chunk;
   friend class MapView;

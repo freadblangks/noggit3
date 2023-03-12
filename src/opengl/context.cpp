@@ -822,6 +822,7 @@ namespace opengl
   }
   template void context::bufferData<GL_ARRAY_BUFFER> (GLuint buffer, GLsizeiptr size, GLvoid const* data, GLenum usage);
   template void context::bufferData<GL_ELEMENT_ARRAY_BUFFER> (GLuint buffer, GLsizeiptr size, GLvoid const* data, GLenum usage);
+  template void context::bufferData<GL_UNIFORM_BUFFER> (GLuint buffer, GLsizeiptr size, GLvoid const* data, GLenum usage);
 
   template<GLenum target, typename T>
     void context::bufferData(GLuint buffer, std::vector<T> const& data, GLenum usage)
@@ -830,6 +831,7 @@ namespace opengl
     return bufferData(target, sizeof(T) * data.size(), data.data(), usage);
   }
 
+  template void context::bufferData<GL_UNIFORM_BUFFER, float>(GLuint buffer, std::vector<float> const& data, GLenum usage);
   template void context::bufferData<GL_ARRAY_BUFFER, float>(GLuint buffer, std::vector<float> const& data, GLenum usage);
   template void context::bufferData<GL_ARRAY_BUFFER, math::vector_2d>(GLuint buffer, std::vector<math::vector_2d> const& data, GLenum usage);
   template void context::bufferData<GL_ARRAY_BUFFER, math::vector_3d>(GLuint buffer, std::vector<math::vector_3d> const& data, GLenum usage);

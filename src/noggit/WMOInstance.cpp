@@ -60,6 +60,7 @@ void WMOInstance::draw ( opengl::scoped::use_program& wmo_shader
                        , bool world_has_skies
                        , display_mode display
                        , wmo_group_uniform_data& wmo_uniform_data
+                       , std::vector<std::pair<wmo_liquid*, math::matrix_4x4>>& wmo_liquids_to_draw
                        )
 {
   if (!wmo->finishedLoading() || wmo->loading_failed())
@@ -90,6 +91,7 @@ void WMOInstance::draw ( opengl::scoped::use_program& wmo_shader
               , world_has_skies
               , display
               , wmo_uniform_data
+              , wmo_liquids_to_draw
               );
   }
 
@@ -247,8 +249,10 @@ std::vector<wmo_doodad_instance*> WMOInstance::get_visible_doodads
   {
     for (int i = 0; i < wmo->groups.size(); ++i)
     {
-      if (wmo->groups[i].is_visible(_transform_mat, frustum, cull_distance, camera, display))
+      if (wmo->groups[i].visible)
       {
+        doodads.reserve(doodads.size() + _doodads_per_group[i].size());
+
         for (auto& doodad : _doodads_per_group[i])
         {
           if (doodad.need_matrix_update())
@@ -260,7 +264,7 @@ std::vector<wmo_doodad_instance*> WMOInstance::get_visible_doodads
         }
       }
     }
-  } 
+  }
 
   return doodads;
 }

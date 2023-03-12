@@ -336,16 +336,20 @@ void WMO::draw ( opengl::scoped::use_program& wmo_shader
                , bool world_has_skies
                , display_mode display
                , wmo_group_uniform_data& wmo_uniform_data
+               , std::vector<std::pair<wmo_liquid*, math::matrix_4x4>>& wmo_liquids_to_draw
                )
-{ 
+{
   wmo_shader.uniform("ambient_color", ambient_light_color.xyz());
 
   for (auto& group : groups)
   {
     if (!group.is_visible(transform_matrix, frustum, cull_distance, camera, display))
     {
+      group.visible = false;
       continue;
     }
+
+    group.visible = true;
 
     group.draw ( wmo_shader
                , frustum
@@ -356,11 +360,10 @@ void WMO::draw ( opengl::scoped::use_program& wmo_shader
                , wmo_uniform_data
                );
 
-    group.drawLiquid ( transform_matrix_transposed
-                     , render
-                     , draw_fog
-                     , animtime
-                     );
+    if (group.liquid)
+    {
+      wmo_liquids_to_draw.emplace_back(group.liquid.get(), transform_matrix_transposed);
+    }
   }
 
   if (boundingbox)
@@ -571,9 +574,9 @@ WMOGroup::WMOGroup(WMOGroup const& other)
   , _vertex_colors(other._vertex_colors)
   , _indices(other._indices)
 {
-  if (other.lq)
+  if (other.liquid)
   {
-    lq = std::make_unique<wmo_liquid>(*other.lq.get());
+    liquid = std::make_unique<wmo_liquid>(*other.liquid.get());
   }
 }
 
@@ -892,7 +895,7 @@ void WMOGroup::load()
     WMOLiquidHeader hlq;
     f.read(&hlq, 0x1E);
 
-    lq = std::make_unique<wmo_liquid> ( &f
+    liquid = std::make_unique<wmo_liquid> ( &f
                                       , hlq
                                       , wmo->materials[hlq.material_id]
                                       , header.group_liquid
@@ -1244,23 +1247,6 @@ void WMOGroup::intersect (math::ray const& ray, std::vector<float>* results) con
         results->emplace_back (*distance);
       }
     }
-  }
-}
-
-void WMOGroup::drawLiquid ( math::matrix_4x4 const& transform
-                          , liquid_render& render
-                          , bool // draw_fog
-                          , int animtime
-                          )
-{
-  // draw liquid
-  //! \todo  culling for liquid boundingbox or something
-  if (lq) 
-  { 
-    gl.disable(GL_BLEND);
-    gl.depthMask(GL_TRUE);
-
-    lq->draw ( transform, render, animtime);
   }
 }
 

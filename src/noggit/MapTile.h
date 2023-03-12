@@ -185,7 +185,6 @@ private:
   std::vector<uint32_t> uids;
 
   std::unique_ptr<MapChunk> mChunks[16][16];
-  std::vector<liquid_tile*> _liquid_chunks;
 
   bool _load_models;
   World* _world;
