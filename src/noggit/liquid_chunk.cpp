@@ -20,10 +20,6 @@ liquid_chunk::liquid_chunk(float x, float z, bool use_mclq_green_lava, liquid_ti
 void liquid_chunk::from_mclq(std::vector<mclq>& layers)
 {
   math::vector_3d pos(xbase, 0.0f, zbase);
-  if (!Render.has_value())
-  {
-    Render.emplace();
-  }
 
   for (mclq& liquid : layers)
   {
@@ -35,8 +31,8 @@ void liquid_chunk::from_mclq(std::vector<mclq>& layers)
       {
         mclq_tile const& tile = liquid.tiles[z * 8 + x];
 
-        misc::bit_or(Render.value().fishable, x, z, tile.fishable);
-        misc::bit_or(Render.value().fatigue, x, z, tile.fatigue);
+        misc::bit_or(attributes.fishable, x, z, tile.fishable);
+        misc::bit_or(attributes.fatigue, x, z, tile.fatigue);
 
         if (!tile.dont_render)
         {
@@ -76,9 +72,8 @@ void liquid_chunk::fromFile(MPQFile &f, size_t basePos)
   //render
   if (header.ofsRenderMask)
   {
-    Render.emplace();
     f.seek(basePos + header.ofsRenderMask);
-    f.read(&Render.value(), sizeof(MH2O_Render));
+    f.read(&attributes, sizeof(MH2O_Attributes));
   }
 
   for (std::size_t k = 0; k < header.nLayers; ++k)
@@ -108,26 +103,41 @@ void liquid_chunk::fromFile(MPQFile &f, size_t basePos)
 }
 
 
+void liquid_chunk::update_attributes()
+{
+  attributes.fishable = 0;
+  attributes.fatigue = 0;
+
+  for (liquid_layer& layer : _layers)
+  {
+    layer.update_attributes(attributes);
+  }
+}
+
 void liquid_chunk::save(util::sExtendableArray& adt, int base_pos, int& header_pos, int& current_pos)
 {
   MH2O_Header header;
 
   // remove empty layers
   cleanup();
+  update_attributes();
 
   if (hasData(0))
   {
     header.nLayers = _layers.size();
 
-    if (Render.has_value())
+    // fagique only for single layer ocean chunk
+    bool fatigue = _layers[0].has_fatigue();
+
+    if (!fatigue)
     {
-        header.ofsRenderMask = current_pos - base_pos;
-        adt.Insert(current_pos, sizeof(MH2O_Render), reinterpret_cast<char*>(&Render.value()));
-        current_pos += sizeof(MH2O_Render);
+      header.ofsRenderMask = current_pos - base_pos;
+      adt.Insert(current_pos, sizeof(MH2O_Attributes), reinterpret_cast<char*>(&attributes));
+      current_pos += sizeof(MH2O_Attributes);
     }
     else
     {
-        header.ofsRenderMask = 0;
+      header.ofsRenderMask = 0;
     }
 
     header.ofsInformation = current_pos - base_pos;

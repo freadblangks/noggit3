@@ -80,6 +80,8 @@ public:
   math::vector_3d const& max() { return vmax; }
 
 private:
+  void update_attributes();
+
   std::vector<math::vector_3d> _intersect_points;
 
   math::vector_3d vmin, vmax, vcenter;
@@ -92,7 +94,7 @@ private:
 
   void copy_height_to_layer(liquid_layer& target, math::vector_3d const& pos, float radius);
 
-  std::optional<MH2O_Render> Render;
+  MH2O_Attributes attributes;
 
   std::vector<liquid_layer> _layers;
 

@@ -2226,8 +2226,7 @@ void MapView::tick (float dt)
           if (chunk->mt->Water.hasData(0))
           {
               liquid_chunk* waterchunk = chunk->liquid_chunk();
-
-              MH2O_Render liquid_render = waterchunk->Render.value_or(MH2O_Render{ 0xffffffffffffffff,0xffffffffffffffff });
+              MH2O_Attributes attributes = waterchunk->attributes;
 
               if (waterchunk->hasData(0))
               {
@@ -2236,8 +2235,8 @@ void MapView::tick (float dt)
                   select_info << "\nliquid type: " << liquid._liquid_id << " (\"" << gLiquidTypeDB.getLiquidName(liquid._liquid_id) << "\")"
                               << "\nliquid flags: "
                                 // getting flags from the center tile
-                              << ((liquid_render.fishable >> (4 * 8 + 4)) & 1 ? "fishable " : "")
-                              << ((liquid_render.fatigue >> (4 * 8 + 4)) & 1 ? "fatigue" : "");
+                              << ((attributes.fishable >> (4 * 8 + 4)) & 1 ? "fishable " : "")
+                              << (liquid.has_fatigue() ? "fatigue" : "");
 
               }
           }

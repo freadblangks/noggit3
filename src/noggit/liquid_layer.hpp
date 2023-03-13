@@ -41,6 +41,9 @@ public:
   float max() const { return _maximum; }
   int liquidID() const { return _liquid_id; }
 
+  // used for fatigue calculation
+  bool subchunk_at_max_depth(int x, int z) const;
+
   bool hasSubchunk(int x, int z, int size = 1) const;
   void setSubchunk(int x, int z, bool water);
 
@@ -76,7 +79,11 @@ public:
 
   void update_indices_info(std::vector<void*>& indices_offsets, std::vector<int>& indices_count);
 
+  bool has_fatigue() const { return _fatigue_enabled; }
 private:
+  bool check_fatigue() const;
+  bool _fatigue_enabled = false;
+
   // used to get the offset in the tile's buffers for the layer
   int _index_in_tile;
   bool _need_data_update = true;
@@ -96,6 +103,7 @@ private:
 
 
   int _liquid_id;
+  int _liquid_type;
   int _liquid_vertex_format;
   float _minimum;
   float _maximum;

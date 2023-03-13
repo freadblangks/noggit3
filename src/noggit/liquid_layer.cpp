@@ -145,6 +145,8 @@ liquid_layer::liquid_layer(MPQFile &f, std::size_t base_pos, math::vector_3d con
       }
     }
   }
+
+  changeLiquidID(_liquid_id); // to update the liquid type
 }
 
 liquid_layer::liquid_layer(liquid_layer&& other)
@@ -282,9 +284,8 @@ void liquid_layer::save(util::sExtendableArray& adt, int base_pos, int& info_pos
     }
   }
 
-  info.ofsHeightMap = current_pos - base_pos;
-
   int vertices_count = (info.width + 1) * (info.height + 1);
+  info.ofsHeightMap = current_pos - base_pos;
 
   if (_liquid_vertex_format == 0 || _liquid_vertex_format == 1)
   {
@@ -298,6 +299,11 @@ void liquid_layer::save(util::sExtendableArray& adt, int base_pos, int& info_pos
         current_pos += sizeof(float);
       }
     }
+  }
+  // no heightmap/depth data for fatigue chunks
+  else if(_fatigue_enabled)
+  {
+    info.ofsHeightMap = 0;
   }
 
   if (_liquid_vertex_format == 1)
@@ -318,7 +324,7 @@ void liquid_layer::save(util::sExtendableArray& adt, int base_pos, int& info_pos
     }
   }
 
-  if (_liquid_vertex_format == 0 || _liquid_vertex_format == 2)
+  if (_liquid_vertex_format == 0 || (_liquid_vertex_format == 2 && !_fatigue_enabled))
   {
     adt.Extend(vertices_count * sizeof(std::uint8_t));
 
@@ -345,11 +351,16 @@ void liquid_layer::changeLiquidID(int id)
   {
     DBCFile::Record lLiquidTypeRow = gLiquidTypeDB.getByID(_liquid_id);
 
-    switch (lLiquidTypeRow.getInt(LiquidTypeDB::Type))
+    _liquid_type = lLiquidTypeRow.getInt(LiquidTypeDB::Type);
+
+    switch (_liquid_type)
     {
     case 2: // magma
     case 3: // slime
       _liquid_vertex_format = 1;
+      break;
+    case 1: // ocean
+      _liquid_vertex_format = 2;
       break;
     default:
       _liquid_vertex_format = 0;
@@ -358,6 +369,59 @@ void liquid_layer::changeLiquidID(int id)
   }
   catch (...)
   {
+  }
+}
+
+bool liquid_layer::check_fatigue() const
+{
+  // only oceans have fatigue
+  if (_liquid_type != 1)
+  {
+    return false;
+  }
+
+  for (int z = 0; z < 8; ++z)
+  {
+    for (int x = 0; x < 8; ++x)
+    {
+      if (!(hasSubchunk(x, z) && subchunk_at_max_depth(x, z)))
+      {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+void liquid_layer::update_attributes(MH2O_Attributes& attributes)
+{
+  if (check_fatigue())
+  {
+    attributes.fishable = -1;
+    attributes.fatigue = -1;
+
+    _fatigue_enabled = true;
+  }
+  else
+  {
+    for (int z = 0; z < 8; ++z)
+    {
+      for (int x = 0; x < 8; ++x)
+      {
+        if (hasSubchunk(x, z))
+        {
+          misc::set_bit(attributes.fishable, x, z, true);
+
+          // only oceans have fatigue
+          // warning: not used by TrinityCore
+          if (_liquid_type == 1 && subchunk_at_max_depth(x, z))
+          {
+            misc::set_bit(attributes.fatigue, x, z, true);
+          }
+        }
+      }
+    }
   }
 }
 
@@ -438,6 +502,22 @@ void liquid_layer::update_opacity(MapChunk* chunk, float factor)
       update_vertex_opacity(x, z, chunk, factor);
     }
   }
+}
+
+bool liquid_layer::subchunk_at_max_depth(int x, int z) const
+{
+  for (int id_z = z; id_z <= z + 1; ++id_z)
+  {
+    for (int id_x = x; id_x <= x + 1; ++id_x)
+    {
+      if (_vertices[id_x + 9 * id_z].depth < 1.f)
+      {
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 bool liquid_layer::hasSubchunk(int x, int z, int size) const
@@ -562,7 +642,7 @@ void liquid_layer::copy_subchunk_height(int x, int z, liquid_layer const& from)
 void liquid_layer::update_vertex_opacity(int x, int z, MapChunk* chunk, float factor)
 {
   float diff = _vertices[z * 9 + x].position.y - chunk->vertices[z * 17 + x].position.y;
-  _vertices[z * 9 + x].depth = diff < 0.0f ? 0.0f : (std::min(1.0f, std::max(0.0f, (diff + 1.0f) * factor)));
+  _vertices[z * 9 + x].depth = std::clamp((diff + 1.0f) * factor, 0.f, 1.f);
 }
 
 int liquid_layer::get_lod_level(math::vector_3d const& camera_pos) const

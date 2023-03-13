@@ -209,7 +209,7 @@ struct mh2o_uv
   std::uint16_t y;
 };
 
-struct MH2O_Render
+struct MH2O_Attributes
 {
   // seems to be usable as visibility information (as per https://wowdev.wiki/ADT/v18#MH2O_chunk_.28WotLK.2B.29)
   std::uint64_t fishable = 0xFFFFFFFFFFFFFFFF;
