@@ -1125,19 +1125,7 @@ void World::draw ( math::matrix_4x4 const& model_view
     _sphere_render.draw(mvp, vertexCenter(), cursor_color, 2.f);
   }
 
-  std::unordered_map<std::string, std::vector<ModelInstance*>> _wmo_doodads;
-
   bool draw_doodads_wmo = draw_wmo && draw_wmo_doodads;
-  if (draw_doodads_wmo)
-  {
-    _model_instance_storage.for_each_wmo_instance([&] (WMOInstance& wmo)
-    {
-      for (auto& doodad : wmo.get_visible_doodads(frustum, culldistance, camera_pos, draw_hidden_models, display))
-      {
-        _wmo_doodads[doodad->model->filename].push_back(doodad);
-      }
-    });
-  }
 
   std::unordered_map<Model*, std::size_t> model_with_particles;
 
@@ -1149,9 +1137,23 @@ void World::draw ( math::matrix_4x4 const& model_view
       ModelManager::resetAnim();
     }
 
+    bool update_transform_buffers = camera_moved;
+    int models_display_mode = (draw_models ? 1 : 0) + (draw_doodads_wmo ? 2 : 0);
+
+    if (models_display_mode != _model_display_mode)
+    {
+      update_transform_buffers = true;
+      _model_display_mode = models_display_mode;
+    }
+
+    std::unordered_map<std::string, std::vector<ModelInstance*>>* models_to_draw =
+      (draw_models && draw_doodads_wmo) ? &_models_by_filename_with_wmo_doodads :
+      (draw_models ? &_models_by_filename : &_wmo_doodads_by_filename);
+
     if (need_model_updates)
     {
       update_models_by_filename();
+      update_transform_buffers = true;
     }
 
     std::unordered_map<Model*, std::size_t> model_boxes_to_draw;
@@ -1174,48 +1176,25 @@ void World::draw ( math::matrix_4x4 const& model_view
       m2_shader.uniform("diffuse_color", diffuse_color);
       m2_shader.uniform("ambient_color", ambient_color);
 
-      if (draw_models)
+      for (auto& it : *models_to_draw)
       {
-        for (auto& it : _models_by_filename)
-        {
-          if (draw_hidden_models || !it.second[0]->model->is_hidden())
-          {
-            it.second[0]->model->draw( model_view
-                                     , it.second
-                                     , m2_shader
-                                     , frustum
-                                     , culldistance
-                                     , camera_pos
-                                     , false
-                                     , animtime
-                                     , draw_model_animations
-                                     , draw_models_with_box
-                                     , model_with_particles
-                                     , model_boxes_to_draw
-                                     , display
-                                     );
-          }
-        }
-      }
-
-      if (draw_doodads_wmo)
-      {
-        for (auto& it : _wmo_doodads)
+        if (draw_hidden_models || !it.second[0]->model->is_hidden())
         {
           it.second[0]->model->draw( model_view
-                                   , it.second
-                                   , m2_shader
-                                   , frustum
-                                   , culldistance
-                                   , camera_pos
-                                   , false
-                                   , animtime
-                                   , draw_model_animations
-                                   , draw_models_with_box
-                                   , model_with_particles
-                                   , model_boxes_to_draw
-                                   , display
-                                   );
+                                    , it.second
+                                    , m2_shader
+                                    , frustum
+                                    , culldistance
+                                    , camera_pos
+                                    , false
+                                    , animtime
+                                    , draw_model_animations
+                                    , draw_models_with_box
+                                    , model_with_particles
+                                    , model_boxes_to_draw
+                                    , display
+                                    , update_transform_buffers
+                                    );
         }
       }
     }
@@ -1976,6 +1955,8 @@ void World::unload_every_model_and_wmo_instance()
   _model_instance_storage.clear();
 
   _models_by_filename.clear();
+  _wmo_doodads_by_filename.clear();
+  _models_by_filename_with_wmo_doodads.clear();
 }
 
 ModelInstance* World::addM2 ( std::string const& filename
@@ -2020,7 +2001,10 @@ ModelInstance* World::addM2 ( std::string const& filename
 
   std::uint32_t uid = _model_instance_storage.add_model_instance(std::move(model_instance), true);
   auto model = _model_instance_storage.get_model_instance(uid).get();
+
   _models_by_filename[filename].push_back(model);
+  _models_by_filename_with_wmo_doodads[filename].push_back(model);
+
   return model;
 }
 
@@ -2038,6 +2022,12 @@ WMOInstance* World::addWMO ( std::string const& filename
   // to ensure the tiles are updated correctly
   wmo_instance.wmo->wait_until_loaded();
   wmo_instance.recalcExtents();
+
+  for (auto& doodad : wmo_instance.get_current_doodads())
+  {
+    _wmo_doodads_by_filename[doodad->model->filename].push_back(doodad);
+    _models_by_filename_with_wmo_doodads[doodad->model->filename].push_back(doodad);
+  }
 
   auto uid = _model_instance_storage.add_wmo_instance(std::move(wmo_instance), true);
   return _model_instance_storage.get_wmo_instance(uid).get();
@@ -2104,6 +2094,11 @@ void World::updateTilesEntry(selection_type const& entry, model_update type)
 void World::updateTilesWMO(WMOInstance* wmo, model_update type)
 {
   _tile_update_queue.queue_update(wmo, type);
+
+  if (type == model_update::doodadset)
+  {
+    need_model_updates = true;
+  }
 }
 
 void World::updateTilesModel(ModelInstance* m2, model_update type)
@@ -2508,14 +2503,27 @@ std::set<MapChunk*>& World::vertexBorderChunks()
 void World::update_models_by_filename()
 {
   _models_by_filename.clear();
+  _wmo_doodads_by_filename.clear();
+  _models_by_filename_with_wmo_doodads.clear();
 
   _model_instance_storage.for_each_m2_instance([&] (ModelInstance& model_instance)
   {
     _models_by_filename[model_instance.model->filename].push_back(&model_instance);
+    _models_by_filename_with_wmo_doodads[model_instance.model->filename].push_back(&model_instance);
+
     // to make sure the transform matrix are up to date
     if(model_instance.need_recalc_extents())
     {
       model_instance.recalcExtents();
+    }
+  });
+
+  _model_instance_storage.for_each_wmo_instance([&](WMOInstance& wmo_instance)
+  {
+    for (auto& doodad : wmo_instance.get_current_doodads())
+    {
+      _wmo_doodads_by_filename[doodad->model->filename].push_back(doodad);
+      _models_by_filename_with_wmo_doodads[doodad->model->filename].push_back(doodad);
     }
   });
 

@@ -149,13 +149,15 @@ bool ModelInstance::is_visible( math::frustum const& frustum
                               , display_mode display
                               )
 {
-  if (_need_recalc_extents && model->finishedLoading())
+  if (_need_recalc_extents)
   {
     recalcExtents();
   }
 
   float dist;
-  
+
+  _is_visible = false;
+
   if (display == display_mode::in_3D)
   {
     dist = (get_pos() - camera).length() - model->rad * scale;
@@ -182,8 +184,10 @@ bool ModelInstance::is_visible( math::frustum const& frustum
   {
     return false;
   }
-  
-  return frustum.intersectsSphere(get_pos(), model->rad * scale);
+
+  _is_visible = frustum.intersectsSphere(get_pos(), model->rad * scale);
+
+  return _is_visible;
 }
 
 void ModelInstance::recalcExtents()
@@ -274,7 +278,7 @@ void wmo_doodad_instance::update_transform_matrix_wmo(WMOInstance* wmo)
   if (!model->finishedLoading())
   {
     return;
-  }  
+  }
 
   world_pos = wmo->transform_matrix() * pos;
 

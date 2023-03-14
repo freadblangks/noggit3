@@ -2886,7 +2886,7 @@ void MapView::change_selected_wmo_doodadset(int set)
     {
       auto wmo = boost::get<selected_wmo_type>(selection);
       wmo->change_doodadset(set);
-      _world->updateTilesWMO(wmo, model_update::none);
+      _world->updateTilesWMO(wmo, model_update::doodadset);
     }
   }
 }

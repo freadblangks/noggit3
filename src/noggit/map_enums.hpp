@@ -15,5 +15,6 @@ enum class model_update
 {
   add,
   remove,
-  none
+  // only model update that doesn't require to update the bounding boxes
+  doodadset
 };

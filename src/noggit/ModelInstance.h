@@ -93,6 +93,7 @@ public:
 
   bool isInsideRect(math::vector_3d rect[2]) const;
   bool is_visible(math::frustum const& frustum, const float& cull_distance, const math::vector_3d& camera, display_mode display);
+  bool is_visible() const { return _is_visible; }
 
   virtual math::vector_3d get_pos() const { return pos; }
 
@@ -101,6 +102,8 @@ public:
   std::vector<math::vector_3d> const& extents();
 
 protected:
+
+  bool _is_visible = true;
   bool _need_recalc_extents = true;
   std::vector<math::vector_3d> _extents = std::vector<math::vector_3d>(2);
 

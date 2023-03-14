@@ -124,6 +124,8 @@ public:
 
   bool isInsideRect(math::vector_3d rect[2]) const;
 
+  std::vector<wmo_doodad_instance*> get_current_doodads();
+
   std::vector<wmo_doodad_instance*> get_visible_doodads( math::frustum const& frustum
                                                        , float const& cull_distance
                                                        , math::vector_3d const& camera

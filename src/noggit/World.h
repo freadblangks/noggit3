@@ -43,7 +43,11 @@ static const float doodaddrawdistance = 64.0f;
 class World
 {
 private:
+  int _model_display_mode = 0;
+
   std::unordered_map<std::string, std::vector<ModelInstance*>> _models_by_filename;
+  std::unordered_map<std::string, std::vector<ModelInstance*>> _wmo_doodads_by_filename;
+  std::unordered_map<std::string, std::vector<ModelInstance*>> _models_by_filename_with_wmo_doodads;
   noggit::world_model_instances_storage _model_instance_storage;
   noggit::world_tile_update_queue _tile_update_queue;
 

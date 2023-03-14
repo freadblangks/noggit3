@@ -225,6 +225,38 @@ void WMOInstance::resetDirection()
   recalcExtents();
 }
 
+std::vector<wmo_doodad_instance*> WMOInstance::get_current_doodads()
+{
+  std::vector<wmo_doodad_instance*> doodads;
+
+  if (!wmo->finishedLoading() || wmo->loading_failed())
+  {
+    return doodads;
+  }
+
+  if (_need_doodadset_update)
+  {
+    change_doodadset(_doodadset);
+  }
+
+  for (int i = 0; i < wmo->groups.size(); ++i)
+  {
+    doodads.reserve(doodads.size() + _doodads_per_group[i].size());
+
+    for (auto& doodad : _doodads_per_group[i])
+    {
+      if (doodad.need_matrix_update())
+      {
+        doodad.update_transform_matrix_wmo(this);
+      }
+
+      doodads.push_back(&doodad);
+    }
+  }
+
+  return doodads;
+}
+
 std::vector<wmo_doodad_instance*> WMOInstance::get_visible_doodads
   ( math::frustum const& frustum
   , float const& cull_distance
