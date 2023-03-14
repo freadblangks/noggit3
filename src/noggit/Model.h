@@ -13,6 +13,7 @@
 #include <noggit/ModelHeaders.h>
 #include <noggit/Particle.h>
 #include <noggit/TextureManager.h>
+#include <noggit/texture_array_handler.hpp>
 #include <noggit/tool_enums.hpp>
 #include <opengl/scoped.hpp>
 #include <opengl/shader.fwd.hpp>
@@ -145,6 +146,28 @@ enum class texture_unit_lookup : int
 };
 
 
+struct m2_render_pass_ubo_data
+{
+  m2_render_pass_ubo_data() = default;
+
+  math::vector_4d mesh_color;
+
+  int fog_mode;
+  int unfogged;
+  int unlit;
+  int pixel_shader;
+
+  math::matrix_4x4 tex_matrix_1 = math::matrix_4x4(math::matrix_4x4::unit);
+  math::matrix_4x4 tex_matrix_2 = math::matrix_4x4(math::matrix_4x4::unit);
+
+  int texture_param[4];
+
+  float alpha_test;
+  int tex_unit_lookup_1;
+  int tex_unit_lookup_2;
+  int padding = 0;
+};
+
 struct ModelRenderPass : ModelTexUnit
 {
   ModelRenderPass() = delete;
@@ -158,10 +181,13 @@ struct ModelRenderPass : ModelTexUnit
   uint16_t uv_animations[2];
   boost::optional<ModelPixelShader> pixel_shader;
 
+  GLuint ubo = -1;
 
-  bool prepare_draw(opengl::scoped::use_program& m2_shader, Model *m);
+  m2_render_pass_ubo_data ubo_data;
+  bool need_ubo_data_update = true;
+
+  bool prepare_draw(opengl::scoped::use_program& m2_shader, Model *m, bool animate);
   void after_draw();
-  void bind_texture(size_t index, Model* m);
   void init_uv_types(Model* m);
 
   bool operator< (const ModelRenderPass &m) const
@@ -212,6 +238,7 @@ public:
   }
 
   Model(const std::string& name);
+  ~Model();
 
   void draw( math::matrix_4x4 const& model_view
            , ModelInstance& instance
@@ -223,6 +250,7 @@ public:
            , bool draw_particles
            , bool all_boxes
            , display_mode display
+            , noggit::texture_array_handler& texture_handler
            );
   void draw ( math::matrix_4x4 const& model_view
             , std::vector<ModelInstance*> instances
@@ -237,6 +265,8 @@ public:
             , std::unordered_map<Model*, std::size_t>& models_with_particles
             , std::unordered_map<Model*, std::size_t>& model_boxes_to_draw
             , display_mode display
+            , bool update_transform_matrix_buffer
+            , noggit::texture_array_handler& texture_handler
             );
   void draw_particles( math::matrix_4x4 const& model_view
                      , opengl::scoped::use_program& particles_shader
@@ -265,6 +295,8 @@ public:
     return true;
   }
 
+  void require_transform_buffer_update() { _need_transform_buffer_update = true; }
+
   // ===============================
   // Toggles
   // ===============================
@@ -273,9 +305,8 @@ public:
   // ===============================
   // Texture data
   // ===============================
-  std::vector<scoped_blp_texture_reference> _textures;
+  std::vector<std::pair<int, int>> _textures_pos_in_array;
   std::vector<std::string> _textureFilenames;
-  std::map<std::size_t, scoped_blp_texture_reference> _replaceTextures;
   std::vector<int> _specialTextures;
   std::vector<bool> _useReplaceTextures;
   std::vector<int16_t> _texture_unit_lookup;
@@ -292,6 +323,8 @@ public:
   bool animcalc;  
 
 private:
+  int _instance_visible = 0;
+
   bool _per_instance_animation;
   int _current_anim_seq;
   int _anim_time;
@@ -311,9 +344,10 @@ private:
   void lightsOn(opengl::light lbase);
   void lightsOff(opengl::light lbase);
 
-  void upload();
+  void upload(noggit::texture_array_handler& texture_handler);
 
   bool _finished_upload;
+  bool _need_transform_buffer_update = true;
 
   std::vector<math::vector_3d> _vertex_box_points;
 

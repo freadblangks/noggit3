@@ -13,6 +13,7 @@
 #include <noggit/map_horizon.h>
 #include <noggit/map_index.hpp>
 #include <noggit/tile_index.hpp>
+#include <noggit/texture_array_handler.hpp>
 #include <noggit/tileset_array_handler.hpp>
 #include <noggit/tool_enums.hpp>
 #include <noggit/world_tile_update_queue.hpp>
@@ -52,6 +53,8 @@ private:
   noggit::world_tile_update_queue _tile_update_queue;
 
   noggit::tileset_array_handler _tileset_handler;
+  noggit::texture_array_handler _model_texture_handler;
+
 public:
   MapIndex mapIndex;
   noggit::map_horizon horizon;

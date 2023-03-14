@@ -232,6 +232,10 @@ void ModelInstance::recalcExtents()
   size_cat = (bounding_of_rotated_points.max - bounding_of_rotated_points.min).length();
 
   _need_recalc_extents = false;
+
+  // trigger model transform buffer update when
+  // one instance has moved
+  model->require_transform_buffer_update();
 }
 
 

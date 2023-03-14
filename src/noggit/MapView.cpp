@@ -2166,7 +2166,7 @@ void MapView::tick (float dt)
 
           for (unsigned int j = 0; j < std::min(instance->model->header.nTextures, 6U); j++)
           {
-            select_info << "\n " << (j + 1) << ": " << instance->model->_textures[j]->filename;
+            select_info << "\n " << (j + 1) << ": " << instance->model->_textureFilenames[j];
           }
           if (instance->model->header.nTextures > 25)
           {

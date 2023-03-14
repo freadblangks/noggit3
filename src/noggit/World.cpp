@@ -92,6 +92,7 @@ World::World(const std::string& name, int map_id)
   : _model_instance_storage(this)
   , _tile_update_queue(this)
   , _tileset_handler(2)
+  , _model_texture_handler(0)
   , mapIndex (name, map_id, this)
   , horizon(name, &mapIndex)
   , mWmoFilename("")
@@ -821,10 +822,14 @@ void World::draw ( math::matrix_4x4 const& model_view
                  , display_mode display
                  )
 {
+  static int max_texture_unit = 16;
+
   if (!_display_initialized)
   {
     initDisplay();
     _display_initialized = true;
+
+    gl.getIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &max_texture_unit);
   }
 
   math::matrix_4x4 const mvp(model_view * projection);
@@ -840,6 +845,14 @@ void World::draw ( math::matrix_4x4 const& model_view
           , { GL_FRAGMENT_SHADER, opengl::shader::src_from_qrc("m2_fs") }
           }
       );
+
+    opengl::scoped::use_program m2_shader{ *_m2_program.get() };
+
+    // opengl garanties 16 texture unit
+    for (int i = 0; i < max_texture_unit; ++i)
+    {
+      m2_shader.uniform("textures[" + std::to_string(i) + "]", i);
+    }
   }
   if (!_m2_instanced_program)
   {
@@ -849,6 +862,14 @@ void World::draw ( math::matrix_4x4 const& model_view
           , { GL_FRAGMENT_SHADER, opengl::shader::src_from_qrc("m2_fs") }
           }
       );
+
+    opengl::scoped::use_program m2_shader{ *_m2_instanced_program.get() };
+
+    // opengl garanties 16 texture unit
+    for (int i = 0; i < max_texture_unit; ++i)
+    {
+      m2_shader.uniform("textures[" + std::to_string(i) + "]", i);
+    }
   }
   if (!_m2_box_program)
   {
@@ -931,8 +952,6 @@ void World::draw ( math::matrix_4x4 const& model_view
 
     m2_shader.uniform("model_view", model_view);
     m2_shader.uniform("projection", projection);
-    m2_shader.uniform("tex1", 0);
-    m2_shader.uniform("tex2", 1);
 
     m2_shader.uniform("draw_fog", 0);
 
@@ -941,6 +960,9 @@ void World::draw ( math::matrix_4x4 const& model_view
     m2_shader.uniform("ambient_color", ambient_color);
 
     bool hadSky = false;
+
+    // todo: only bind the relevant textures ?
+    _model_texture_handler.bind();
 
     if (draw_wmo || mapIndex.hasAGlobalWMO())
     {
@@ -965,6 +987,7 @@ void World::draw ( math::matrix_4x4 const& model_view
                                          , wmo.extents[0]
                                          , wmo.extents[1]
                                          , wmo.group_extents
+                                         , _model_texture_handler
                                          );
           }
         }
@@ -983,6 +1006,7 @@ void World::draw ( math::matrix_4x4 const& model_view
                  , animtime
                  , draw_model_animations
                  , outdoorLightStats
+                 , _model_texture_handler
                  );
     }
   }
@@ -1163,8 +1187,6 @@ void World::draw ( math::matrix_4x4 const& model_view
 
       m2_shader.uniform("model_view", model_view);
       m2_shader.uniform("projection", projection);
-      m2_shader.uniform("tex1", 0);
-      m2_shader.uniform("tex2", 1);
 
       m2_shader.uniform("fog_color", math::vector_4d(skies->color_set[FOG_COLOR], 1));
       // !\ todo use light dbcs values
@@ -1175,6 +1197,8 @@ void World::draw ( math::matrix_4x4 const& model_view
       m2_shader.uniform("light_dir", light_dir);
       m2_shader.uniform("diffuse_color", diffuse_color);
       m2_shader.uniform("ambient_color", ambient_color);
+
+      _model_texture_handler.bind();
 
       for (auto& it : *models_to_draw)
       {
@@ -1194,6 +1218,7 @@ void World::draw ( math::matrix_4x4 const& model_view
                                     , model_boxes_to_draw
                                     , display
                                     , update_transform_buffers
+                                    , _model_texture_handler
                                     );
         }
       }

@@ -419,6 +419,7 @@ bool WMO::draw_skybox ( math::matrix_4x4 const& model_view
                       , math::vector_3d aabb_min
                       , math::vector_3d aabb_max
                       , std::map<int, std::pair<math::vector_3d, math::vector_3d>> const& group_extents
+                      , noggit::texture_array_handler& texture_handler
                       ) const
 {
   if (!skybox || !camera_pos.is_inside_of(aabb_min, aabb_max))
@@ -444,7 +445,7 @@ bool WMO::draw_skybox ( math::matrix_4x4 const& model_view
       sky.scale = 2.f;
       sky.recalcExtents();
 
-      skybox->get()->draw(model_view, sky, m2_shader, frustum, cull_distance, camera_pos, animtime, draw_particles, false, display_mode::in_3D);
+      skybox->get()->draw(model_view, sky, m2_shader, frustum, cull_distance, camera_pos, animtime, draw_particles, false, display_mode::in_3D, texture_handler);
 
       return true;
     }

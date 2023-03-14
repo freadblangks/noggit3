@@ -1,5 +1,5 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
-#version 330 core
+#version 410 core
 
 in vec4 pos;
 in vec3 normal;
@@ -20,11 +20,30 @@ out vec3 norm;
 uniform mat4 model_view;
 uniform mat4 projection;
 
-uniform int tex_unit_lookup_1;
-uniform int tex_unit_lookup_2;
+struct m2_data
+{
+  vec4 mesh_color;
 
-uniform mat4 tex_matrix_1;
-uniform mat4 tex_matrix_2;
+  int fog_mode;
+  int unfogged;
+  int unlit;
+  int pixel_shader;
+
+  mat4 tex_matrix_1;
+  mat4 tex_matrix_2;
+
+  ivec4 tex_param;
+
+  float alpha_test;
+  int tex_unit_lookup_1;
+  int tex_unit_lookup_2;
+  int padding;
+};
+
+layout (std140) uniform chunk_data
+{
+  m2_data data;
+};
 
 // code from https://wowdev.wiki/M2/.skin#Environment_mapping
 vec2 sphere_map(vec3 vert, vec3 norm)
@@ -44,11 +63,11 @@ vec2 get_texture_uv(int tex_unit_lookup, vec3 vert, vec3 norm)
   }
   else if(tex_unit_lookup == 1)
   {
-    return (transpose(tex_matrix_1) * vec4(texcoord1, 0.0, 1.0)).xy;
+    return (transpose(data.tex_matrix_1) * vec4(texcoord1, 0.0, 1.0)).xy;
   }
   else if(tex_unit_lookup == 2)
   {
-    return (transpose(tex_matrix_2) * vec4(texcoord2, 0.0, 1.0)).xy;
+    return (transpose(data.tex_matrix_2) * vec4(texcoord2, 0.0, 1.0)).xy;
   }
   else
   {
@@ -63,8 +82,8 @@ void main()
   // important to normalize because of the scaling !!
   norm = normalize(mat3(transform) * normal);
 
-  uv1 = get_texture_uv(tex_unit_lookup_1, vertex.xyz, norm);
-  uv2 = get_texture_uv(tex_unit_lookup_2, vertex.xyz, norm);
+  uv1 = get_texture_uv(data.tex_unit_lookup_1, vertex.xyz, norm);
+  uv2 = get_texture_uv(data.tex_unit_lookup_2, vertex.xyz, norm);
 
   camera_dist = -vertex.z;
   gl_Position = projection * vertex;

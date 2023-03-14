@@ -23,6 +23,17 @@ Model::Model(const std::string& filename_)
   memset(&header, 0, sizeof(ModelHeader));
 }
 
+Model::~Model()
+{
+  for (ModelRenderPass& p : _render_passes)
+  {
+    if (p.ubo != -1)
+    {
+      gl.deleteBuffers(1, &p.ubo);
+    }
+  }
+}
+
 void Model::finishLoading()
 {
   MPQFile f(filename);
@@ -603,163 +614,237 @@ ModelRenderPass::ModelRenderPass(ModelTexUnit const& tex_unit, Model* m)
 {
 }
 
-bool ModelRenderPass::prepare_draw(opengl::scoped::use_program& m2_shader, Model *m)
+bool ModelRenderPass::prepare_draw(opengl::scoped::use_program& m2_shader, Model *m, bool animate)
 {
   if (!m->showGeosets[submesh] || !pixel_shader)
   {
     return false;
   }
 
-  // COLOUR
-  // Get the colour and transparency and check that we should even render
-  math::vector_4d mesh_color = math::vector_4d(1.0f, 1.0f, 1.0f, m->trans); // ??
-  math::vector_4d emissive_color = math::vector_4d(0.0f, 0.0f, 0.0f, 0.0f);
-
   auto const& renderflag(m->_render_flags[renderflag_index]);
 
-  // emissive colors
-  if (color_index != -1 && m->_colors[color_index].color.uses(0))
+  if (animate || need_ubo_data_update)
   {
-    ::math::vector_3d c (m->_colors[color_index].color.getValue (0, m->_anim_time, m->_global_animtime));
-    if (m->_colors[color_index].opacity.uses (m->_current_anim_seq))
+    // COLOUR
+    // Get the colour and transparency and check that we should even render
+    math::vector_4d mesh_color = math::vector_4d(1.0f, 1.0f, 1.0f, m->trans); // ??
+    math::vector_4d emissive_color = math::vector_4d(0.0f, 0.0f, 0.0f, 0.0f);
+
+    // emissive colors
+    if (color_index != -1 && m->_colors[color_index].color.uses(0))
     {
-      mesh_color.w = m->_colors[color_index].opacity.getValue (m->_current_anim_seq, m->_anim_time, m->_global_animtime);
+      ::math::vector_3d c(m->_colors[color_index].color.getValue(0, m->_anim_time, m->_global_animtime));
+      if (m->_colors[color_index].opacity.uses(m->_current_anim_seq))
+      {
+        mesh_color.w = m->_colors[color_index].opacity.getValue(m->_current_anim_seq, m->_anim_time, m->_global_animtime);
+      }
+
+      if (renderflag.flags.unlit)
+      {
+        mesh_color.x = c.x; mesh_color.y = c.y; mesh_color.z = c.z;
+      }
+      else
+      {
+        mesh_color.x = mesh_color.y = mesh_color.z = 0;
+      }
+
+      emissive_color = math::vector_4d(c, mesh_color.w);
     }
 
-    if (renderflag.flags.unlit)
+    // opacity
+    if (transparency_combo_index != 0xFFFF)
     {
-      mesh_color.x = c.x; mesh_color.y = c.y; mesh_color.z = c.z;
+      auto& transparency(m->_transparency[m->_transparency_lookup[transparency_combo_index]].trans);
+      if (transparency.uses(0))
+      {
+        mesh_color.w = mesh_color.w * transparency.getValue(0, m->_anim_time, m->_global_animtime);
+      }
+    }
+
+    // exit and return false before affecting the opengl render state
+    if (!((mesh_color.w > 0) && (color_index == -1 || emissive_color.w > 0)))
+    {
+      return false;
+    }
+
+    switch (static_cast<M2Blend>(renderflag.blend))
+    {
+    default:
+    case M2Blend::Opaque:
+      gl.disable(GL_BLEND);
+      ubo_data.alpha_test = -1.f;
+      ubo_data.fog_mode = 1;
+      break;
+    case M2Blend::Alpha_Key:
+      gl.disable(GL_BLEND);
+      ubo_data.alpha_test = (224.f / 255.f) * mesh_color.w;
+      ubo_data.fog_mode = 1;
+      break;
+    case M2Blend::Alpha:
+      gl.enable(GL_BLEND);
+      gl.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      ubo_data.alpha_test = (1.f / 255.f) * mesh_color.w;
+      ubo_data.fog_mode = 1;
+      break;
+    case M2Blend::No_Add_Alpha:
+      gl.enable(GL_BLEND);
+      gl.blendFunc(GL_ONE, GL_ONE);
+      ubo_data.alpha_test = (1.f / 255.f) * mesh_color.w;
+      ubo_data.fog_mode = 2;
+      break;
+    case M2Blend::Add:
+      gl.enable(GL_BLEND);
+      gl.blendFunc(GL_SRC_ALPHA, GL_ONE);
+      ubo_data.alpha_test = (1.f / 255.f) * mesh_color.w;
+      ubo_data.fog_mode = 2;
+      break;
+    case M2Blend::Mod:
+      gl.enable(GL_BLEND);
+      gl.blendFunc(GL_DST_COLOR, GL_ZERO);
+      ubo_data.alpha_test = (1.f / 255.f) * mesh_color.w;
+      ubo_data.fog_mode = 3;
+      break;
+    case M2Blend::Mod2x:
+      gl.enable(GL_BLEND);
+      gl.blendFunc(GL_DST_COLOR, GL_SRC_COLOR);
+      ubo_data.alpha_test = (1.f / 255.f) * mesh_color.w;
+      ubo_data.fog_mode = 4;
+      break;
+    }
+
+    if (renderflag.flags.two_sided)
+    {
+      gl.disable(GL_CULL_FACE);
     }
     else
     {
-      mesh_color.x = mesh_color.y = mesh_color.z = 0;
+      gl.enable(GL_CULL_FACE);
     }
 
-    emissive_color = math::vector_4d(c, mesh_color.w);
-  }
-
-  // opacity
-  if (transparency_combo_index != 0xFFFF)
-  {
-    auto& transparency (m->_transparency[m->_transparency_lookup[transparency_combo_index]].trans);
-    if (transparency.uses (0))
+    if (renderflag.flags.z_buffered)
     {
-      mesh_color.w = mesh_color.w * transparency.getValue(0, m->_anim_time, m->_global_animtime);
+      gl.depthMask(GL_FALSE);
     }
-  }
+    else
+    {
+      gl.depthMask(GL_TRUE);
+    }
 
-  // exit and return false before affecting the opengl render state
-  if (!((mesh_color.w > 0) && (color_index == -1 || emissive_color.w > 0)))
-  {
-    return false;
-  }
-  
-  switch (static_cast<M2Blend>(renderflag.blend))
-  {
-  default:
-  case M2Blend::Opaque:
-    gl.disable(GL_BLEND);
-    m2_shader.uniform("alpha_test", -1.f);    
-    m2_shader.uniform("fog_mode", 1);
-    break;
-  case M2Blend::Alpha_Key:
-    gl.disable(GL_BLEND);
-    m2_shader.uniform("alpha_test", (224.f / 255.f) * mesh_color.w);
-    m2_shader.uniform("fog_mode", 1);
-    break;
-  case M2Blend::Alpha:
-    gl.enable(GL_BLEND);
-    gl.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    m2_shader.uniform("alpha_test", (1.f / 255.f) * mesh_color.w);
-    m2_shader.uniform("fog_mode", 1);
-    break;
-  case M2Blend::No_Add_Alpha:
-    gl.enable(GL_BLEND);
-    gl.blendFunc(GL_ONE, GL_ONE);
-    m2_shader.uniform("alpha_test", (1.f / 255.f) * mesh_color.w);
-    m2_shader.uniform("fog_mode", 2); // Warning: wiki is unsure on that
-    break;
-  case M2Blend::Add:
-    gl.enable(GL_BLEND);
-    gl.blendFunc(GL_SRC_ALPHA, GL_ONE);
-    m2_shader.uniform("alpha_test", (1.f / 255.f) * mesh_color.w);
-    m2_shader.uniform("fog_mode", 2);
-    break;
-  case M2Blend::Mod:
-    gl.enable(GL_BLEND);
-    gl.blendFunc(GL_DST_COLOR, GL_ZERO);
-    m2_shader.uniform("alpha_test", (1.f / 255.f) * mesh_color.w);
-    m2_shader.uniform("fog_mode", 3);
-    break;
-  case M2Blend::Mod2x:
-    gl.enable(GL_BLEND);
-    gl.blendFunc(GL_DST_COLOR, GL_SRC_COLOR);
-    m2_shader.uniform("alpha_test", (1.f / 255.f) * mesh_color.w);
-    m2_shader.uniform("fog_mode", 4);
-    break;
-  }
+    ubo_data.unfogged = renderflag.flags.unfogged;
+    ubo_data.unlit = renderflag.flags.unlit;
 
-  if (renderflag.flags.two_sided)
-  {
-    gl.disable(GL_CULL_FACE);
-  }
-  else
-  {
-    gl.enable(GL_CULL_FACE);
-  }
+    auto tex1_param = m->_textures_pos_in_array[m->_texture_lookup[textures[0]]];
 
-  if (renderflag.flags.z_buffered)
-  {
-    gl.depthMask(GL_FALSE);
-  }
-  else
-  {
-    gl.depthMask(GL_TRUE);
-  }
+    ubo_data.texture_param[0] = tex1_param.first;
+    ubo_data.texture_param[1] = tex1_param.second;
 
-  m2_shader.uniform("unfogged", (int)renderflag.flags.unfogged);
-  m2_shader.uniform("unlit", (int)renderflag.flags.unlit);
-
-  if (texture_count > 1)
-  {
-    bind_texture(1, m);
-  }
-
-  bind_texture(0, m);
-
-  GLint tu1 = static_cast<GLint>(tu_lookups[0]), tu2 = static_cast<GLint>(tu_lookups[1]);
-
-  m2_shader.uniform("tex_unit_lookup_1", tu1);
-  m2_shader.uniform("tex_unit_lookup_2", tu2);
-
-  int16_t tex_anim_lookup = m->_texture_animation_lookups[uv_animations[0]];
-  math::matrix_4x4 unit(math::matrix_4x4::unit);
-
-  if (tex_anim_lookup != -1)
-  {
-    m2_shader.uniform("tex_matrix_1", m->_texture_animations[tex_anim_lookup].mat);
     if (texture_count > 1)
     {
-      tex_anim_lookup = m->_texture_animation_lookups[uv_animations[1]];
-      if (tex_anim_lookup != -1)
-      {
-        m2_shader.uniform("tex_matrix_2", m->_texture_animations[tex_anim_lookup].mat);
+      auto tex2_param = m->_textures_pos_in_array[m->_texture_lookup[textures[1]]];
+
+      ubo_data.texture_param[2] = tex2_param.first;
+      ubo_data.texture_param[3] = tex2_param.second;
     }
     else
     {
-        m2_shader.uniform("tex_matrix_2", unit);
+      ubo_data.texture_param[2] = 0;
+      ubo_data.texture_param[3] = 0;
     }
-  }
+
+    GLint tu1 = static_cast<GLint>(tu_lookups[0]), tu2 = static_cast<GLint>(tu_lookups[1]);
+
+    ubo_data.tex_unit_lookup_1 = tu1;
+    ubo_data.tex_unit_lookup_2 = tu2;
+
+    int16_t tex_anim_lookup = m->_texture_animation_lookups[uv_animations[0]];
+    math::matrix_4x4 unit(math::matrix_4x4::unit);
+
+    if (tex_anim_lookup != -1)
+    {
+      ubo_data.tex_matrix_1 = m->_texture_animations[tex_anim_lookup].mat;
+
+      if (texture_count > 1)
+      {
+        tex_anim_lookup = m->_texture_animation_lookups[uv_animations[1]];
+        if (tex_anim_lookup != -1)
+        {
+          ubo_data.tex_matrix_2 = m->_texture_animations[tex_anim_lookup].mat;
+        }
+        else
+        {
+          ubo_data.tex_matrix_2 = unit;
+        }
+      }
+    }
+    else
+    {
+      ubo_data.tex_matrix_1 = unit;
+      ubo_data.tex_matrix_2 = unit;
+    }
+
+    ubo_data.pixel_shader = static_cast<GLint>(pixel_shader.get());
+    ubo_data.mesh_color = mesh_color;
+
+    gl.bufferData<GL_UNIFORM_BUFFER>(ubo, sizeof(m2_render_pass_ubo_data), &ubo_data, GL_STATIC_DRAW);
+
+    need_ubo_data_update = false;
   }
   else
   {
-    m2_shader.uniform("tex_matrix_1", unit);
-    m2_shader.uniform("tex_matrix_2", unit);
-  }
-  
+    switch (static_cast<M2Blend>(renderflag.blend))
+    {
+    default:
+    case M2Blend::Opaque:
+      gl.disable(GL_BLEND);;
+      break;
+    case M2Blend::Alpha_Key:
+      gl.disable(GL_BLEND);
+      break;
+    case M2Blend::Alpha:
+      gl.enable(GL_BLEND);
+      gl.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      break;
+    case M2Blend::No_Add_Alpha:
+      gl.enable(GL_BLEND);
+      gl.blendFunc(GL_ONE, GL_ONE);
+      break;
+    case M2Blend::Add:
+      gl.enable(GL_BLEND);
+      gl.blendFunc(GL_SRC_ALPHA, GL_ONE);
+      break;
+    case M2Blend::Mod:
+      gl.enable(GL_BLEND);
+      gl.blendFunc(GL_DST_COLOR, GL_ZERO);
+      break;
+    case M2Blend::Mod2x:
+      gl.enable(GL_BLEND);
+      gl.blendFunc(GL_DST_COLOR, GL_SRC_COLOR);
+      break;
+    }
 
-  m2_shader.uniform("pixel_shader", static_cast<GLint>(pixel_shader.get()));
-  m2_shader.uniform("mesh_color", mesh_color);
+    if (renderflag.flags.two_sided)
+    {
+      gl.disable(GL_CULL_FACE);
+    }
+    else
+    {
+      gl.enable(GL_CULL_FACE);
+    }
+
+    if (renderflag.flags.z_buffered)
+    {
+      gl.depthMask(GL_FALSE);
+    }
+    else
+    {
+      gl.depthMask(GL_TRUE);
+    }
+
+    ubo_data.unfogged = renderflag.flags.unfogged;
+    ubo_data.unlit = renderflag.flags.unlit;
+  }
+
+  gl.bindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
 
   return true;
 }
@@ -767,22 +852,6 @@ bool ModelRenderPass::prepare_draw(opengl::scoped::use_program& m2_shader, Model
 void ModelRenderPass::after_draw()
 {
   gl.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-}
-
-void ModelRenderPass::bind_texture(size_t index, Model* m)
-{
-  opengl::texture::set_active_texture(index);
-
-  uint16_t tex = m->_texture_lookup[textures[index]];
-  
-  if (m->_specialTextures[tex] == -1)
-  {
-    m->_textures[tex]->bind();
-  }
-  else
-  {
-    m->_replaceTextures.at (m->_specialTextures[tex])->bind();
-  }    
 }
 
 void ModelRenderPass::init_uv_types(Model* m)
@@ -1356,9 +1425,10 @@ void Model::draw( math::matrix_4x4 const& model_view
                 , const float& cull_distance
                 , const math::vector_3d& camera
                 , int animtime
-                , bool // draw_particles
+                , bool draw_particles
                 , bool // all_boxes
                 , display_mode display
+                , noggit::texture_array_handler& texture_handler
                 )
 {
   if (!finishedLoading() || loading_failed())
@@ -1373,7 +1443,15 @@ void Model::draw( math::matrix_4x4 const& model_view
 
   if (!_finished_upload)
   {
-    upload();
+    upload(texture_handler);
+
+    opengl::scoped::vao_binder const _ (_vao);
+
+    opengl::scoped::buffer_binder<GL_ARRAY_BUFFER> const binder(_vertices_buffer);
+    m2_shader.attrib(_, "pos", opengl::array_buffer_is_already_bound{}, 3, GL_FLOAT, GL_FALSE, sizeof(ModelVertex), (void*)offsetof(ModelVertex, position));
+    m2_shader.attrib(_, "normal", opengl::array_buffer_is_already_bound{}, 3, GL_FLOAT, GL_FALSE, sizeof(ModelVertex), (void*)offsetof(ModelVertex, normal));
+    m2_shader.attrib(_, "texcoord1", opengl::array_buffer_is_already_bound{}, 2, GL_FLOAT, GL_FALSE, sizeof(ModelVertex), (void*)offsetof(ModelVertex, texcoords[0]));
+    m2_shader.attrib(_, "texcoord2", opengl::array_buffer_is_already_bound{}, 2, GL_FLOAT, GL_FALSE, sizeof(ModelVertex), (void*)offsetof(ModelVertex, texcoords[1]));
   }
 
   if (animated && (!animcalc || _per_instance_animation))
@@ -1382,23 +1460,13 @@ void Model::draw( math::matrix_4x4 const& model_view
     animcalc = true;
   }
 
-  opengl::scoped::vao_binder const _(_vao);
+  opengl::scoped::vao_binder const _ (_vao);
 
   m2_shader.uniform("transform", instance.transform_matrix_transposed());
 
-  {
-    opengl::scoped::buffer_binder<GL_ARRAY_BUFFER> const binder(_vertices_buffer);
-    m2_shader.attrib(_, "pos", opengl::array_buffer_is_already_bound{}, 3, GL_FLOAT, GL_FALSE, sizeof(ModelVertex), (void*)offsetof (ModelVertex, position));
-    //m2_shader.attrib(_, "bones_weight", opengl::array_buffer_is_already_bound{},  4, GL_UNSIGNED_BYTE,  GL_FALSE, sizeof (ModelVertex), (void*)offsetof (ModelVertex, weights));
-    //m2_shader.attrib(_, "bones_indices", opengl::array_buffer_is_already_bound{}, 4, GL_UNSIGNED_BYTE,  GL_FALSE, sizeof (ModelVertex), (void*)offsetof (ModelVertex, bones));
-    m2_shader.attrib(_, "normal", opengl::array_buffer_is_already_bound{}, 3, GL_FLOAT, GL_FALSE, sizeof(ModelVertex), (void*)offsetof (ModelVertex, normal));
-    m2_shader.attrib(_, "texcoord1", opengl::array_buffer_is_already_bound{}, 2, GL_FLOAT, GL_FALSE, sizeof(ModelVertex), (void*)offsetof (ModelVertex, texcoords[0]));
-    m2_shader.attrib(_, "texcoord2", opengl::array_buffer_is_already_bound{}, 2, GL_FLOAT, GL_FALSE, sizeof(ModelVertex), (void*)offsetof (ModelVertex, texcoords[1]));
-  }
-
   for (ModelRenderPass& p : _render_passes)
   {
-    if (p.prepare_draw(m2_shader, this))
+    if (p.prepare_draw(m2_shader, this, draw_particles))
     {
       gl.drawElements(GL_TRIANGLES, p.index_count, _indices, sizeof (_indices[0]) * p.index_start);
       p.after_draw();
@@ -1423,6 +1491,8 @@ void Model::draw ( math::matrix_4x4 const& model_view
                  , std::unordered_map<Model*, std::size_t>& models_with_particles
                  , std::unordered_map<Model*, std::size_t>& model_boxes_to_draw
                  , display_mode display
+                 , bool update_transform_matrix_buffer
+                 , noggit::texture_array_handler& texture_handler
                  )
 {
   if (!finishedLoading() || loading_failed())
@@ -1432,7 +1502,7 @@ void Model::draw ( math::matrix_4x4 const& model_view
 
   if (!_finished_upload)
   {
-    upload();
+    upload(texture_handler);
 
     opengl::scoped::vao_binder const _ (_vao);
 
@@ -1450,7 +1520,7 @@ void Model::draw ( math::matrix_4x4 const& model_view
     }
   }
 
-  if (animated && (!animcalc || _per_instance_animation))
+  if (animated && (!animcalc || (_per_instance_animation && draw_particles)))
   {
     animate(model_view, 0, animtime);
     animcalc = true;
@@ -1458,41 +1528,52 @@ void Model::draw ( math::matrix_4x4 const& model_view
 
   std::vector<math::matrix_4x4> transform_matrix;
 
-  for (ModelInstance* mi : instances)
+  if (update_transform_matrix_buffer || _need_transform_buffer_update)
   {
-    if (mi->is_visible(frustum, cull_distance, camera, display))
+    transform_matrix.reserve(instances.size());
+
+    for (ModelInstance* mi : instances)
     {
-      transform_matrix.push_back(mi->transform_matrix_transposed());
-    }    
+      if (mi->is_visible(frustum, cull_distance, camera, display))
+      {
+        transform_matrix.push_back(mi->transform_matrix_transposed());
+      }
+    }
+
+    _instance_visible = transform_matrix.size();
   }
 
-  if (transform_matrix.empty())
+  if (_instance_visible == 0)
   {
+    _need_transform_buffer_update = false;
     return;
   }
 
   // store the model count to draw the bounding boxes later
   if (all_boxes || _hidden)
   {
-    model_boxes_to_draw.emplace(this, transform_matrix.size());    
+    model_boxes_to_draw.emplace(this, _instance_visible);
   }
   if (draw_particles && (!_particles.empty() || !_ribbons.empty()))
   {
-    models_with_particles.emplace(this, transform_matrix.size());
-  }  
+    models_with_particles.emplace(this, _instance_visible);
+  }
 
   opengl::scoped::vao_binder const _ (_vao);
 
+  if (update_transform_matrix_buffer || _need_transform_buffer_update)
   {
     opengl::scoped::buffer_binder<GL_ARRAY_BUFFER> const transform_binder (_transform_buffer);
-    gl.bufferData(GL_ARRAY_BUFFER, transform_matrix.size() * sizeof(::math::matrix_4x4), transform_matrix.data(), GL_DYNAMIC_DRAW);
+    gl.bufferData(GL_ARRAY_BUFFER, _instance_visible * sizeof(::math::matrix_4x4), transform_matrix.data(), GL_STATIC_DRAW);
+
+    _need_transform_buffer_update = false;
   }
 
   for (ModelRenderPass& p : _render_passes)
   {
-    if (p.prepare_draw(m2_shader, this))
+    if (p.prepare_draw(m2_shader, this, draw_particles))
     {
-      gl.drawElementsInstanced(GL_TRIANGLES, p.index_count, transform_matrix.size(), _indices, sizeof (_indices[0]) * p.index_start);
+      gl.drawElementsInstanced(GL_TRIANGLES, p.index_count, _instance_visible, _indices, sizeof (_indices[0]) * p.index_start);
       p.after_draw();
     }
   }
@@ -1602,10 +1683,12 @@ void Model::lightsOff(opengl::light lbase)
   for (unsigned int i = 0, l = lbase; i<header.nLights; ++i) gl.disable(l++);
 }
 
-void Model::upload()
+void Model::upload(noggit::texture_array_handler& texture_handler)
 {
-  for (std::string texture : _textureFilenames)
-    _textures.emplace_back(texture);
+  for (std::string& texture : _textureFilenames)
+  {
+    _textures_pos_in_array.push_back(texture_handler.get_texture_position_normalize_filename(texture));
+  }
 
   _buffers.upload();
   _vertex_arrays.upload();
@@ -1619,6 +1702,11 @@ void Model::upload()
   {
     opengl::scoped::buffer_binder<GL_ARRAY_BUFFER> const binder (_box_vbo);
     gl.bufferData (GL_ARRAY_BUFFER, _vertex_box_points.size() * sizeof (math::vector_3d), _vertex_box_points.data(), GL_STATIC_DRAW);
+  }
+
+  for (ModelRenderPass& p : _render_passes)
+  {
+    gl.genBuffers(1, &p.ubo);
   }
 
   _finished_upload = true;

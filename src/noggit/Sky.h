@@ -6,6 +6,7 @@
 #include <noggit/DBCFile.h>
 #include <noggit/MPQ.h>
 #include <noggit/ModelInstance.h>
+#include <noggit/texture_array_handler.hpp>
 #include <opengl/scoped.hpp>
 #include <opengl/shader.fwd.hpp>
 
@@ -144,6 +145,7 @@ public:
             , int animtime
             , bool draw_particles
             , OutdoorLightStats const& light_stats
+            , noggit::texture_array_handler& texture_handler
             );
   bool hasSkies() { return numSkies > 0; }
 

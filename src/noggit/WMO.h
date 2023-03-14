@@ -10,6 +10,7 @@
 #include <noggit/ModelManager.h>
 #include <noggit/multimap_with_normalized_key.hpp>
 #include <noggit/TextureManager.h>
+#include <noggit/texture_array_handler.hpp>
 #include <noggit/tool_enums.hpp>
 #include <noggit/wmo_liquid.hpp>
 
@@ -286,6 +287,7 @@ public:
                   , math::vector_3d aabb_min
                   , math::vector_3d aabb_max
                   , std::map<int, std::pair<math::vector_3d, math::vector_3d>> const& group_extents
+                  , noggit::texture_array_handler& texture_handler
                   ) const;
 
   std::vector<float> intersect (math::ray const&) const;
