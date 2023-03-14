@@ -22,11 +22,15 @@
 #include <algorithm>
 #include <cstdlib>
 #include <ctime>
+#include <chrono>
 #include <fstream>
+#include <future>
 #include <iostream>
 #include <list>
 #include <string>
+#include <thread>
 #include <vector>
+
 #include <QtCore/QTimer>
 #include <QtGui/QOffscreenSurface>
 #include <QtOpenGL/QGLFormat>
@@ -203,6 +207,27 @@ namespace
   }
 }
 
+namespace
+{
+  std::atomic_bool success = false;
+
+  void opengl_context_creation_stuck_failsafe()
+  {
+    for (int i = 0; i < 50; ++i)
+    {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      if (success.load())
+      {
+        return;
+      }
+    }
+
+    LogError << "OpenGL Context creation failed (timeout), closing..." << std::endl;
+
+    std::terminate();
+  }
+}
+
 Noggit::Noggit(int argc, char *argv[])
   : fullscreen(false)
   , doAntiAliasing(true)
@@ -270,6 +295,10 @@ Noggit::Noggit(int argc, char *argv[])
     format.setSamples (4);
   }
 
+  // context creation seems to get stuck sometimes, this ensure the app is killed
+  // otherwise it's wasting cpu resources and is annoying when developping
+  auto failsafe = std::async(&opengl_context_creation_stuck_failsafe);
+
   QSurfaceFormat::setDefaultFormat (format);
 
   QOpenGLContext context;
@@ -277,6 +306,8 @@ Noggit::Noggit(int argc, char *argv[])
   QOffscreenSurface surface;
   surface.create();
   context.makeCurrent (&surface);
+
+  success = true;
 
   opengl::context::scoped_setter const _ (::gl, &context);
 
