@@ -166,6 +166,10 @@ namespace noggit
       _adt_loading_radius->setMinimum(0);
       _adt_loading_radius->setMaximum(64);
 
+      layout->addRow("Async loader thread count", _async_loader_thread_count = new QSpinBox(this));
+      _async_loader_thread_count->setMinimum(1);
+      _async_loader_thread_count->setMaximum(16);
+
       layout->addRow ("Always check for max UID", _uid_cb = new QCheckBox(this));
 
       layout->addRow ("Tablet support", tabletModeCheck = new QCheckBox(this));
@@ -233,6 +237,7 @@ namespace noggit
       _adt_unload_dist->setValue(NoggitSettings.value("unload_dist", 5).toInt());
       _adt_unload_check_interval->setValue(NoggitSettings.value("unload_interval", 5).toInt());
       _adt_loading_radius->setValue(NoggitSettings.value("loading_radius", 1).toInt());
+      _async_loader_thread_count->setValue(NoggitSettings.value("async_thread_count", 1).toInt());
       _uid_cb->setChecked(NoggitSettings.value("uid_startup_check", true).toBool());
       _additional_file_loading_log->setChecked(NoggitSettings.value("additional_file_loading_log", false).toBool());
 #ifdef NOGGIT_HAS_SCRIPTING
@@ -269,6 +274,7 @@ namespace noggit
       NoggitSettings.set_value ("unload_dist", _adt_unload_dist->value());
       NoggitSettings.set_value ("unload_interval", _adt_unload_check_interval->value());
       NoggitSettings.set_value ("loading_radius", _adt_loading_radius->value());
+      NoggitSettings.set_value ("async_thread_count", _async_loader_thread_count->value());
       NoggitSettings.set_value ("uid_startup_check", _uid_cb->isChecked());
       NoggitSettings.set_value ("additional_file_loading_log", _additional_file_loading_log->isChecked());
 

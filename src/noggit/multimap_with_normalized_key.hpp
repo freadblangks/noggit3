@@ -57,7 +57,7 @@ namespace noggit
                      }()
                    );
 
-      AsyncLoader::instance().queue_for_load(static_cast<AsyncObject*>(obj));
+      AsyncLoader::instance->queue_for_load(static_cast<AsyncObject*>(obj));
 
       return obj; 
     }
@@ -80,7 +80,7 @@ namespace noggit
         // always make sure an async object can be deleted before deleting it
         if (!obj->finishedLoading())
         {
-          AsyncLoader::instance().ensure_deletable(obj);
+          AsyncLoader::instance->ensure_deletable(obj);
         }
 
         {

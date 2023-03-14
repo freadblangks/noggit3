@@ -335,7 +335,7 @@ MapTile* MapIndex::loadTile(const tile_index& tile, bool reloading)
 
   MapTile* adt = mTiles[tile.z][tile.x].tile.get();
 
-  AsyncLoader::instance().queue_for_load(adt);
+  AsyncLoader::instance->queue_for_load(adt);
 
   return adt;
 }

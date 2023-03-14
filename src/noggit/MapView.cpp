@@ -1596,7 +1596,7 @@ MapView::~MapView()
 
   _world.reset();
 
-  AsyncLoader::instance().reset_object_fail();
+  AsyncLoader::instance->reset_object_fail();
 
   noggit::ui::selected_texture::texture.reset();
 
@@ -3043,7 +3043,7 @@ void MapView::save(save_mode mode)
 {
   bool save = true;
 
-  if (AsyncLoader::instance().important_object_failed_loading())
+  if (AsyncLoader::instance->important_object_failed_loading())
   {
     save = false;
     QPushButton *yes, *no;
@@ -3110,9 +3110,9 @@ void MapView::save(save_mode mode)
     case save_mode::current: _world->mapIndex.saveTile(tile_index(_camera.position), _world.get()); break;
     case save_mode::changed: _world->mapIndex.saveChanged(_world.get()); break;
     case save_mode::all:     _world->mapIndex.saveall(_world.get()); break;
-    }    
+    }
 
-    AsyncLoader::instance().reset_object_fail();
+    AsyncLoader::instance->reset_object_fail();
 
 
     _main_window->statusBar()->showMessage("Map saved", 2000);

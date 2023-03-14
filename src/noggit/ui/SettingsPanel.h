@@ -45,6 +45,7 @@ namespace noggit
       QSpinBox* _adt_unload_dist;
       QSpinBox* _adt_unload_check_interval;
       QSpinBox* _adt_loading_radius;
+      QSpinBox* _async_loader_thread_count;
       QCheckBox* _uid_cb;
 
       QCheckBox* tabletModeCheck;

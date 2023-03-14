@@ -7,6 +7,15 @@
 #include <algorithm>
 #include <list>
 
+AsyncLoader* AsyncLoader::instance;
+
+void AsyncLoader::setup(int threads)
+{
+  // make sure there's always at least
+  // one thread otherwise nothing can load
+  instance = new AsyncLoader(std::max(1, threads));
+}
+
 void AsyncLoader::process()
 {
   AsyncObject* object = nullptr;
@@ -15,10 +24,10 @@ void AsyncLoader::process()
 
   while (!_stop)
   {
-    {    
+    {
       std::unique_lock<std::mutex> lock (_guard);
 
-      _state_changed.wait 
+      _state_changed.wait
       ( lock
       , [&]
         {
@@ -99,7 +108,7 @@ void AsyncLoader::ensure_deletable (AsyncObject* object)
     {
       auto& to_load = _to_load[(size_t)object->loading_priority()];
       auto const& it = std::find (to_load.begin(), to_load.end(), object);
-      
+
       // don't load it if it's just to delete it afterward
       if (it != to_load.end())
       {

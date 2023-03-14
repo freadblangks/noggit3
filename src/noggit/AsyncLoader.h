@@ -14,16 +14,16 @@
 class AsyncLoader
 {
 public:
-  static AsyncLoader& instance()
-  {
-    static AsyncLoader async_loader(2);
-    return async_loader;
-  }
+  // use regular pointer because unique_ptr was causing
+  // a significant performance hit
+  static AsyncLoader* instance;
 
-  //! Ownership is _not_ transferred. Call ensure_deletable to ensure 
+  static void setup(int threads);
+
+  //! Ownership is _not_ transferred. Call ensure_deletable to ensure
   //! that a previously enqueued object can be destroyed.
   void queue_for_load (AsyncObject*);
-  
+
   void ensure_deletable (AsyncObject*);
 
   AsyncLoader(int numThreads);

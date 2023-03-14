@@ -145,7 +145,7 @@ void Noggit::loadMPQs()
       {
         path.replace(location, 1, std::string(&j, 1));
         if (boost::filesystem::exists(path))
-          MPQArchive::loadMPQ (&AsyncLoader::instance(), path, true);
+          MPQArchive::loadMPQ (AsyncLoader::instance, path, true);
       }
     }
     else if (path.find("{character}") != std::string::npos)
@@ -156,12 +156,12 @@ void Noggit::loadMPQs()
       {
         path.replace(location, 1, std::string(&c, 1));
         if (boost::filesystem::exists(path))
-          MPQArchive::loadMPQ (&AsyncLoader::instance(), path, true);
+          MPQArchive::loadMPQ (AsyncLoader::instance, path, true);
       }
     }
     else
       if (boost::filesystem::exists(path))
-        MPQArchive::loadMPQ (&AsyncLoader::instance(), path, true);
+        MPQArchive::loadMPQ (AsyncLoader::instance, path, true);
   }
 }
 
@@ -213,9 +213,10 @@ Noggit::Noggit(int argc, char *argv[])
 
   NOGGIT_LOG << "Noggit Studio - " << STRPRODUCTVER << std::endl;
 
+  AsyncLoader::setup(NoggitSettings.value("async_thread_count", 3).toInt());
+
   doAntiAliasing = NoggitSettings.value("antialiasing", false).toBool();
   fullscreen = NoggitSettings.value("fullscreen", false).toBool();
-
 
   srand(::time(nullptr));
   QDir path (NoggitSettings.value ("project/game_path").toString());
