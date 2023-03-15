@@ -181,12 +181,10 @@ struct ModelRenderPass : ModelTexUnit
   uint16_t uv_animations[2];
   boost::optional<ModelPixelShader> pixel_shader;
 
-  GLuint ubo = -1;
-
   m2_render_pass_ubo_data ubo_data;
   bool need_ubo_data_update = true;
 
-  bool prepare_draw(opengl::scoped::use_program& m2_shader, Model *m, bool animate);
+  bool prepare_draw(opengl::scoped::use_program& m2_shader, Model *m, bool animate, int index);
   void after_draw();
   void init_uv_types(Model* m);
 
@@ -238,7 +236,6 @@ public:
   }
 
   Model(const std::string& name);
-  ~Model();
 
   void draw( math::matrix_4x4 const& model_view
            , ModelInstance& instance
@@ -352,15 +349,16 @@ private:
   std::vector<math::vector_3d> _vertex_box_points;
 
   // buffers;
-  opengl::scoped::deferred_upload_buffers<3> _buffers;
+  opengl::scoped::deferred_upload_buffers<4> _buffers;
   opengl::scoped::deferred_upload_vertex_arrays<2> _vertex_arrays;
 
   GLuint const& _vao = _vertex_arrays[0];
   GLuint const& _transform_buffer = _buffers[0];
   GLuint const& _vertices_buffer = _buffers[1];
+  GLuint const& _ubo = _buffers[2];
 
   GLuint const& _box_vao = _vertex_arrays[1];
-  GLuint const& _box_vbo = _buffers[2];
+  GLuint const& _box_vbo = _buffers[3];
 
   // ===============================
   // Geometry

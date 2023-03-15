@@ -23,17 +23,6 @@ Model::Model(const std::string& filename_)
   memset(&header, 0, sizeof(ModelHeader));
 }
 
-Model::~Model()
-{
-  for (ModelRenderPass& p : _render_passes)
-  {
-    if (p.ubo != -1)
-    {
-      gl.deleteBuffers(1, &p.ubo);
-    }
-  }
-}
-
 void Model::finishLoading()
 {
   MPQFile f(filename);
@@ -614,13 +603,8 @@ ModelRenderPass::ModelRenderPass(ModelTexUnit const& tex_unit, Model* m)
 {
 }
 
-bool ModelRenderPass::prepare_draw(opengl::scoped::use_program& m2_shader, Model *m, bool animate)
+bool ModelRenderPass::prepare_draw(opengl::scoped::use_program& m2_shader, Model *m, bool animate, int index)
 {
-  if (!m->showGeosets[submesh] || !pixel_shader)
-  {
-    return false;
-  }
-
   auto const& renderflag(m->_render_flags[renderflag_index]);
 
   if (animate || need_ubo_data_update)
@@ -785,7 +769,7 @@ bool ModelRenderPass::prepare_draw(opengl::scoped::use_program& m2_shader, Model
     ubo_data.pixel_shader = static_cast<GLint>(pixel_shader.get());
     ubo_data.mesh_color = mesh_color;
 
-    gl.bufferData<GL_UNIFORM_BUFFER>(ubo, sizeof(m2_render_pass_ubo_data), &ubo_data, GL_STATIC_DRAW);
+    gl.bufferSubData(GL_UNIFORM_BUFFER, sizeof(m2_render_pass_ubo_data) * index, sizeof(m2_render_pass_ubo_data), &ubo_data);
 
     need_ubo_data_update = false;
   }
@@ -839,12 +823,7 @@ bool ModelRenderPass::prepare_draw(opengl::scoped::use_program& m2_shader, Model
     {
       gl.depthMask(GL_TRUE);
     }
-
-    ubo_data.unfogged = renderflag.flags.unfogged;
-    ubo_data.unlit = renderflag.flags.unlit;
   }
-
-  gl.bindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
 
   return true;
 }
@@ -1464,12 +1443,19 @@ void Model::draw( math::matrix_4x4 const& model_view
 
   m2_shader.uniform("transform", instance.transform_matrix_transposed());
 
+  gl.bindBufferBase(GL_UNIFORM_BUFFER, 0, _ubo);
+
+  int index = 0;
+
   for (ModelRenderPass& p : _render_passes)
   {
-    if (p.prepare_draw(m2_shader, this, draw_particles))
+    if (p.prepare_draw(m2_shader, this, draw_particles, index))
     {
+      m2_shader.uniform("index", index);
       gl.drawElements(GL_TRIANGLES, p.index_count, _indices, sizeof (_indices[0]) * p.index_start);
       p.after_draw();
+
+      index++;
     }
   }
 
@@ -1569,12 +1555,20 @@ void Model::draw ( math::matrix_4x4 const& model_view
     _need_transform_buffer_update = false;
   }
 
+  gl.bindBufferBase(GL_UNIFORM_BUFFER, 0, _ubo);
+
+  int index = 0;
+
   for (ModelRenderPass& p : _render_passes)
   {
-    if (p.prepare_draw(m2_shader, this, draw_particles))
+    if (p.prepare_draw(m2_shader, this, draw_particles, index))
     {
+      m2_shader.uniform("index", index);
+
       gl.drawElementsInstanced(GL_TRIANGLES, p.index_count, _instance_visible, _indices, sizeof (_indices[0]) * p.index_start);
       p.after_draw();
+
+      index++;
     }
   }
 
@@ -1704,10 +1698,11 @@ void Model::upload(noggit::texture_array_handler& texture_handler)
     gl.bufferData (GL_ARRAY_BUFFER, _vertex_box_points.size() * sizeof (math::vector_3d), _vertex_box_points.data(), GL_STATIC_DRAW);
   }
 
-  for (ModelRenderPass& p : _render_passes)
   {
-    gl.genBuffers(1, &p.ubo);
+    opengl::scoped::buffer_binder<GL_UNIFORM_BUFFER> const binder(_ubo);
+    gl.bufferData(GL_UNIFORM_BUFFER, _render_passes.size() * sizeof(m2_render_pass_ubo_data), NULL, GL_STATIC_DRAW);
   }
+
 
   _finished_upload = true;
 }

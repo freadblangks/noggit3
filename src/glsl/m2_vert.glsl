@@ -40,10 +40,13 @@ struct m2_data
   int padding;
 };
 
-layout (std140) uniform chunk_data
+uniform int index;
+
+layout (std140) uniform render_data
 {
-  m2_data data;
+  m2_data data[128];
 };
+
 
 // code from https://wowdev.wiki/M2/.skin#Environment_mapping
 vec2 sphere_map(vec3 vert, vec3 norm)
@@ -63,11 +66,11 @@ vec2 get_texture_uv(int tex_unit_lookup, vec3 vert, vec3 norm)
   }
   else if(tex_unit_lookup == 1)
   {
-    return (transpose(data.tex_matrix_1) * vec4(texcoord1, 0.0, 1.0)).xy;
+    return (transpose(data[index].tex_matrix_1) * vec4(texcoord1, 0.0, 1.0)).xy;
   }
   else if(tex_unit_lookup == 2)
   {
-    return (transpose(data.tex_matrix_2) * vec4(texcoord2, 0.0, 1.0)).xy;
+    return (transpose(data[index].tex_matrix_2) * vec4(texcoord2, 0.0, 1.0)).xy;
   }
   else
   {
@@ -82,8 +85,8 @@ void main()
   // important to normalize because of the scaling !!
   norm = normalize(mat3(transform) * normal);
 
-  uv1 = get_texture_uv(data.tex_unit_lookup_1, vertex.xyz, norm);
-  uv2 = get_texture_uv(data.tex_unit_lookup_2, vertex.xyz, norm);
+  uv1 = get_texture_uv(data[index].tex_unit_lookup_1, vertex.xyz, norm);
+  uv2 = get_texture_uv(data[index].tex_unit_lookup_2, vertex.xyz, norm);
 
   camera_dist = -vertex.z;
   gl_Position = projection * vertex;
