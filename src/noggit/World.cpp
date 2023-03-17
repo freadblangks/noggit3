@@ -91,7 +91,7 @@ bool World::IsEditableWorld(int pMapId)
 World::World(const std::string& name, int map_id)
   : _model_instance_storage(this)
   , _tile_update_queue(this)
-  , _tileset_handler(2)
+  , _tileset_handler(1)
   , _model_texture_handler(0)
   , mapIndex (name, map_id, this)
   , horizon(name, &mapIndex)
@@ -906,6 +906,23 @@ void World::draw ( math::matrix_4x4 const& model_view
           , { GL_FRAGMENT_SHADER, opengl::shader::src_from_qrc("terrain_fs") }
           }
       );
+
+    opengl::scoped::use_program mcnk_shader{ *_mcnk_program.get() };
+
+    mcnk_shader.uniform("alphamap", 0);
+
+    for (int i = 0; i < 14; ++i)
+    {
+      mcnk_shader.uniform("texture_arrays[" + std::to_string(i) + "]", i + 1);
+    }
+
+    mcnk_shader.uniform("wireframe_type", NoggitSettings.value("wireframe/type", 0).toInt());
+    mcnk_shader.uniform("wireframe_radius", NoggitSettings.value("wireframe/radius", 1.5f).toFloat());
+    mcnk_shader.uniform("wireframe_width", NoggitSettings.value("wireframe/width", 1.f).toFloat());
+    // !\ todo store the color somewhere ?
+    QColor c = NoggitSettings.value("wireframe/color").value<QColor>();
+    math::vector_4d wireframe_color(c.redF(), c.greenF(), c.blueF(), c.alphaF());
+    mcnk_shader.uniform("wireframe_color", wireframe_color);
   }
   if (!_mfbo_program)
   {
@@ -1037,22 +1054,14 @@ void World::draw ( math::matrix_4x4 const& model_view
   {
     opengl::scoped::use_program mcnk_shader{ *_mcnk_program.get() };
 
-    mcnk_shader.uniform("model_view", model_view);
-    mcnk_shader.uniform("projection", projection);
+    mcnk_shader.uniform("mvp", mvp);
 
     mcnk_shader.uniform ("draw_lines", (int)draw_lines);
     mcnk_shader.uniform ("draw_hole_lines", (int)draw_hole_lines);
-    mcnk_shader.uniform("draw_areaid_overlay", (int)draw_areaid_overlay);
+    mcnk_shader.uniform ("draw_areaid_overlay", (int)draw_areaid_overlay);
     mcnk_shader.uniform ("draw_terrain_height_contour", (int)draw_contour);
 
     mcnk_shader.uniform ("draw_wireframe", (int)draw_wireframe);
-    mcnk_shader.uniform ("wireframe_type", NoggitSettings.value("wireframe/type", 0).toInt());
-    mcnk_shader.uniform ("wireframe_radius", NoggitSettings.value("wireframe/radius", 1.5f).toFloat());
-    mcnk_shader.uniform ("wireframe_width", NoggitSettings.value ("wireframe/width", 1.f).toFloat());
-    // !\ todo store the color somewhere ?
-    QColor c = NoggitSettings.value("wireframe/color").value<QColor>();
-    math::vector_4d wireframe_color(c.redF(), c.greenF(), c.blueF(), c.alphaF());
-    mcnk_shader.uniform ("wireframe_color", wireframe_color);
 
     mcnk_shader.uniform ("draw_fog", (int)draw_fog);
     mcnk_shader.uniform ("fog_color", math::vector_4d(skies->color_set[FOG_COLOR], 1));
@@ -1081,15 +1090,10 @@ void World::draw ( math::matrix_4x4 const& model_view
       mcnk_shader.uniform ("draw_cursor_circle", 0);
     }
 
-    mcnk_shader.uniform("alphamap", 0);
-    mcnk_shader.uniform("shadow_map", 1);
-
-    for (int i = 0; i < _tileset_handler.array_count(); ++i)
-    {
-      mcnk_shader.uniform("texture_arrays[" + std::to_string(i) + "]", i + 2);
-    }
-
     _tileset_handler.bind();
+
+    // used for the alphamap/shadowmap combo
+    opengl::texture::set_active_texture(0);
 
     for (MapTile* tile : mapIndex.loaded_tiles())
     {

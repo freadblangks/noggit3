@@ -370,8 +370,7 @@ void MapTile::draw ( math::frustum const& frustum
 
   if (!_alphamap_created)
   {
-    create_alphamap();
-    create_shadowmap();
+    create_combined_alpha_shadow_map();
 
     upload();
 
@@ -397,20 +396,15 @@ void MapTile::draw ( math::frustum const& frustum
 
     _need_chunk_data_update = true;
     need_visibility_update = true;
+
+    // need to set it back after loading tilesets
+    opengl::texture::set_active_texture(0);
   }
 
-  if (_use_shadowmap)
-  {
-    opengl::texture::set_active_texture(1);
-    _shadowmap->bind();
-  }
-
-  opengl::texture::set_active_texture(0);
   _adt_alphamap.bind();
 
   gl.bindBufferBase(GL_UNIFORM_BUFFER, 0, _chunks_data_ubo);
-
-  opengl::scoped::vao_binder const _ (_vao);
+  gl.bindVertexArray(_vao);
 
   // iterate over all chunks this way as it seems to be
   // the fastest way when iterating over all of them
@@ -1010,56 +1004,29 @@ void MapTile::add_model(uint32_t uid)
   }
 }
 
-void MapTile::create_alphamap()
+void MapTile::create_combined_alpha_shadow_map()
 {
   opengl::texture::set_active_texture(0);
   _adt_alphamap.bind();
 
-  gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB, 64, 64, 256, 0, GL_RGB, GL_FLOAT, NULL);
   gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
+  // todo: add toggle or use GL_RGBA8 for tiles close to the camera on big alpha maps (alpha stored as 4bits otherwise)
+  gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB5_A1, 64, 64, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
   for (size_t i = 0; i < 16; i++)
   {
     for (size_t j = 0; j < 16; j++)
     {
-      mChunks[i][j]->update_alphamap();
+      mChunks[i][j]->update_alpha_shadow_map();
     }
   }
 
   _alphamap_created = true;
-}
-
-void MapTile::create_shadowmap()
-{
-  if (!_use_shadowmap || _shadowmap_created)
-  {
-    return;
-  }
-
-  opengl::texture::set_active_texture(1);
-  _shadowmap = std::make_unique<opengl::texture_array>();
-  _shadowmap->bind();
-
-  gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RED, 64, 64, 256, 0, GL_RED, GL_FLOAT, NULL);
-  gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-  for (size_t i = 0; i < 16; i++)
-  {
-    for (size_t j = 0; j < 16; j++)
-    {
-      mChunks[i][j]->update_shadows();
-    }
-  }
-
-  _shadowmap_created = true;
 }
 
 void MapTile::upload()

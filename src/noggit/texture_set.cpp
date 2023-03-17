@@ -7,6 +7,7 @@
 #include <noggit/TextureManager.h> // TextureManager, Texture
 #include <noggit/World.h>
 #include <noggit/texture_set.hpp>
+#include <noggit/MapCHunk.h>
 
 #include <algorithm>    // std::min
 #include <iostream>     // std::cout
@@ -20,6 +21,7 @@ TextureSet::TextureSet ( MapChunkHeader const& header
                        , bool use_big_alphamaps
                        , bool do_not_fix_alpha_map
                        , bool do_not_convert_alphamaps
+                       , chunk_shadow* shadow
                        )
   : nTextures(header.nLayers)
   , _do_not_convert_alphamaps(do_not_convert_alphamaps)
@@ -62,6 +64,34 @@ TextureSet::TextureSet ( MapChunkHeader const& header
       convertToBigAlpha();
     }
 
+
+    if (nTextures)
+    {
+      _setup_amap_data = std::make_unique<std::array<std::uint8_t, 4 * 64 * 64>>();
+      std::uint8_t* amap = _setup_amap_data.get()->data();
+      std::uint8_t const* alpha_ptr[3];
+
+      bool use_shadow = shadow != nullptr;
+
+      for (int i = 0; i < nTextures - 1; ++i)
+      {
+        alpha_ptr[i] = alphamaps[i]->getAlpha();
+      }
+
+      for (int i = 0; i < 64 * 64; ++i)
+      {
+        for (int alpha_id = 0; alpha_id < 3; ++alpha_id)
+        {
+          amap[i * 4 + alpha_id] = ((alpha_id < nTextures - 1)
+            ? *(alpha_ptr[alpha_id]++)
+            : 0
+            );
+        }
+
+        amap[i * 4 + 3] = use_shadow ? ((shadow->data[i / 64] >> (i % 64)) & 1) * 255 : 0;
+      }
+      _first_amap_setup = true;
+    }
     _need_amap_update = true;
   }
 }
@@ -1020,32 +1050,42 @@ void TextureSet::create_temporary_alphamaps_if_needed()
   }
 }
 
-void TextureSet::update_adt_alphamap_if_necessary(int chunk_x, int chunk_y)
+void TextureSet::update_alpha_shadow_map_if_needed(int chunk_x, int chunk_y, chunk_shadow* shadow)
 {
   if (_need_amap_update)
   {
     opengl::texture::set_active_texture(0);
 
+    bool use_shadow = (shadow != nullptr);
+
     if (nTextures)
     {
-      if (tmp_edit_values)
+      if (_first_amap_setup)
       {
-        std::vector<float> amap(3 * 64 * 64);
+        gl.texSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, chunk_x + 16 * chunk_y, 64, 64, 1, GL_RGBA, GL_UNSIGNED_BYTE, _setup_amap_data->data());
+        _first_amap_setup = false;
+        _setup_amap_data.reset();
+      }
+      else if (tmp_edit_values)
+      {
+        std::vector<float> amap(4 * 64 * 64);
         auto& tmp_amaps = *tmp_edit_values.get();
 
         for (int i = 0; i < 64 * 64; ++i)
         {
           for (int alpha_id = 0; alpha_id < 3; ++alpha_id)
           {
-            amap[i * 3 + alpha_id] = tmp_amaps[alpha_id + 1][i] / 255.f;
+            amap[i * 4 + alpha_id] = tmp_amaps[alpha_id + 1][i] / 255.f;
           }
+
+          amap[i * 4 + 3] = use_shadow ? (shadow->data[i / 64] >> (i % 64)) & 1 : 0;
         }
 
-        gl.texSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, chunk_x + 16 * chunk_y, 64, 64, 1, GL_RGB, GL_FLOAT, amap.data());
+        gl.texSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, chunk_x + 16 * chunk_y, 64, 64, 1, GL_RGBA, GL_FLOAT, amap.data());
       }
       else
       {
-        std::vector<uint8_t> amap(3 * 64 * 64);
+        std::vector<uint8_t> amap(4 * 64 * 64);
         uint8_t const* alpha_ptr[3];
 
         for (int i = 0; i < nTextures - 1; ++i)
@@ -1057,14 +1097,16 @@ void TextureSet::update_adt_alphamap_if_necessary(int chunk_x, int chunk_y)
         {
           for (int alpha_id = 0; alpha_id < 3; ++alpha_id)
           {
-            amap[i * 3 + alpha_id] = (alpha_id < nTextures - 1)
+            amap[i * 4 + alpha_id] = (alpha_id < nTextures - 1)
               ? *(alpha_ptr[alpha_id]++)
               : 0
               ;
           }
+
+          amap[i * 4 + 3] = use_shadow ? ((shadow->data[i / 64] >> (i % 64)) & 1) * 255 : 0;
         }
 
-        gl.texSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, chunk_x + 16 * chunk_y, 64, 64, 1, GL_RGB, GL_UNSIGNED_BYTE, amap.data());
+        gl.texSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, chunk_x + 16 * chunk_y, 64, 64, 1, GL_RGBA, GL_UNSIGNED_BYTE, amap.data());
       }
     }
 

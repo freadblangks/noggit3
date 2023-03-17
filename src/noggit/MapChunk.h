@@ -35,7 +35,7 @@ static const int mapbufsize = 9 * 9 + 8 * 8; // chunk size
 
 struct chunk_shadow
 {
-  uint8_t _shadow_map[64 * 64];
+  uint64_t data[64];
 };
 
 struct chunk_shader_data
@@ -63,7 +63,7 @@ class MapChunk
 public:
 
   static constexpr int max_indices_count_without_lod = 8 * 8 * 4 * 3; // 8x8 squares with 4 triangls
-  static constexpr int lod_count = 3; // max 4, last lod level is a single quad for the chunk (which doesn't look good)
+  static constexpr int lod_count = 4; // max 4, last lod level is a single quad for the chunk (which doesn't look good)
   static constexpr int indice_buffer_count = lod_count + 1;
   static constexpr std::array<int, 5> max_indices_per_lod_level = { 768, 384, 96, 24, 6 };
 
@@ -96,7 +96,6 @@ private:
   std::map<int, std::vector<chunk_indice>> _indice_strips;
   std::map<int, int> _indices_count_per_lod_level;
 
-  std::vector<uint8_t> compressed_shadow_map() const;
   bool shadow_map_is_empty() const;
 
   int indices_count(int lod_level) const;
@@ -109,9 +108,7 @@ private:
 
   void update_intersect_points();
 
-  int get_lod_level( math::vector_3d const& camera_pos
-                                    , display_mode display
-                                    ) const;
+  int get_lod_level(math::vector_3d const& camera_pos, display_mode display) const;
 
   bool _uploaded = false;
   bool _need_indice_buffer_update = true;
@@ -226,7 +223,6 @@ public:
   void eraseTextures();
   void change_texture_flag(scoped_blp_texture_reference const& tex, std::size_t flag, bool add);
 
-  void update_shadows();
   void clear_shadows();
 
   //! \todo implement Action stack for these
@@ -255,5 +251,5 @@ public:
 
   void selectVertex(math::vector_3d const& minPos, math::vector_3d const& maxPos, std::set<math::vector_3d*>& selected_vertices);
 
-  void update_alphamap();
+  void update_alpha_shadow_map();
 };

@@ -6,8 +6,7 @@ in vec3 normal;
 in vec3 mccv;
 in vec2 texcoord;
 
-uniform mat4 model_view;
-uniform mat4 projection;
+uniform mat4 mvp;
 
 out vec3 vary_position;
 out vec2 vary_texcoord;
@@ -19,7 +18,7 @@ flat out int chunk_id;
 
 void main()
 {
-  gl_Position = projection * model_view * vec4(position, 1.0);
+  gl_Position = mvp * vec4(position, 1.0);
   vary_normal = normal;
   vary_position = position;
   vary_texcoord = texcoord;

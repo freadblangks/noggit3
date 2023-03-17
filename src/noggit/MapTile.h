@@ -113,18 +113,11 @@ public:
 private:
   opengl::texture_array _adt_alphamap;
   bool _alphamap_created = false;
-  void create_alphamap();
-
-  bool _shadowmap_created = false;
-  bool _use_shadowmap = false;
-  void create_shadowmap();
-
-  std::unique_ptr<opengl::texture_array> _shadowmap;
+  void create_combined_alpha_shadow_map();
 
   void upload();
 
 public:
-  void set_shadowmap_required() { _use_shadowmap = true; }
   void chunk_height_changed() { _need_recalc_extents = true; _need_visibility_update = true; _need_chunk_data_update = true; }
   void need_chunk_data_update() { _need_chunk_data_update = true; }
 

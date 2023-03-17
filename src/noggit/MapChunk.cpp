@@ -61,8 +61,6 @@ MapChunk::MapChunk(MapTile *maintile, MPQFile *f, bool bigAlpha, tile_mode mode)
     vmax = math::vector_3d(-9999999.0f, -9999999.0f, -9999999.0f);
   }
 
-  texture_set = std::make_unique<TextureSet>(header, f, base, maintile, bigAlpha, !!header_flags.flags.do_not_fix_alpha_map, mode == tile_mode::uid_fix_all);
-
   // - MCVT ----------------------------------------------
   {
     f->seek(base + header.ofsHeight);
@@ -132,34 +130,22 @@ MapChunk::MapChunk(MapTile *maintile, MPQFile *f, bool bigAlpha, tile_mode mode)
 
     assert(fourcc == 'MCSH');
 
-    uint8_t compressed_shadow_map[64 * 64 / 8];
-
-    // shadow map 64 x 64
-    f->read(compressed_shadow_map, 0x200);
-    f->seekRelative(-0x200);
-
     _chunk_shadow = std::make_unique<chunk_shadow>();
 
-    uint8_t *p, *c;
-    p = _chunk_shadow->_shadow_map;
-    c = compressed_shadow_map;
-    for (int i = 0; i<64 * 8; ++i)
-    {
-      for (int b = 0x01; b != 0x100; b <<= 1)
-      {
-        *p++ = ((*c) & b) ? 85 : 0;
-      }
-      c++;
-    }
+    // shadow map 64 x 64
+    f->read(_chunk_shadow.get(), 0x200);
+    f->seekRelative(-0x200);
 
     if (!header_flags.flags.do_not_fix_alpha_map)
     {
+      auto& sh_map = _chunk_shadow->data;
+
       for (std::size_t i(0); i < 64; ++i)
       {
-        _chunk_shadow->_shadow_map[i * 64 + 63] = _chunk_shadow->_shadow_map[i * 64 + 62];
-        _chunk_shadow->_shadow_map[63 * 64 + i] = _chunk_shadow->_shadow_map[62 * 64 + i];
+        misc::set_bit(sh_map[i], 63, 0, (sh_map[i] >> 62 & 1));
+        misc::set_bit(sh_map[63], i, 0, (sh_map[62] >> i & 1));
       }
-      _chunk_shadow->_shadow_map[63 * 64 + 63] = _chunk_shadow->_shadow_map[62 * 64 + 62];
+      misc::set_bit(sh_map[63], 63, 0, (sh_map[62] >> 62 & 1));
     }
 
     // no need to use an empty shadowmap
@@ -167,11 +153,9 @@ MapChunk::MapChunk(MapTile *maintile, MPQFile *f, bool bigAlpha, tile_mode mode)
     {
       clear_shadows();
     }
-    else
-    {
-      mt->set_shadowmap_required();
-    }
   }
+
+  texture_set = std::make_unique<TextureSet>(header, f, base, maintile, bigAlpha, !!header_flags.flags.do_not_fix_alpha_map, mode == tile_mode::uid_fix_all, _chunk_shadow ? _chunk_shadow.get() : nullptr);
 
   // - MCCV ----------------------------------------------
   if(header.ofsMCCV)
@@ -256,6 +240,12 @@ void MapChunk::update_intersect_points()
 
 int MapChunk::get_lod_level(math::vector_3d const& camera_pos, display_mode display) const
 {
+  // use lod 4 (single quad) only for flat chunks without more than 1 textures
+  if (std::abs(vmin.y - vmax.y) < 0.1f && texture_set->nTextures < 2)
+  {
+    return std::min(lod_count, 4);
+  }
+
   float dist = display == display_mode::in_2D
              ? std::abs(camera_pos.y - vcenter.y)
              : (camera_pos - vcenter).length();
@@ -266,27 +256,9 @@ int MapChunk::get_lod_level(math::vector_3d const& camera_pos, display_mode disp
   }
   else
   {
-    // todo improve
-    return 1 + std::min(lod_count - 1, static_cast<int>(dist / 2000.f));
+    // limit lods level to 3 for non-flat/textured chunks
+    return std::min(3, 1 + std::min(lod_count - 1, static_cast<int>(dist / 2000.f)));
   }
-}
-
-std::vector<uint8_t> MapChunk::compressed_shadow_map() const
-{
-  std::vector<uint8_t> shadow_map(64 * 64 / 8);
-
-  if (_chunk_shadow)
-  {
-    for (int i = 0; i < 64 * 64; ++i)
-    {
-      if (_chunk_shadow->_shadow_map[i])
-      {
-        shadow_map[i / 8] |= 1 << i % 8;
-      }
-    }
-  }
-
-  return shadow_map;
 }
 
 bool MapChunk::shadow_map_is_empty() const
@@ -296,9 +268,9 @@ bool MapChunk::shadow_map_is_empty() const
     return true;
   }
 
-  for (int i = 0; i < 64 * 64; ++i)
+  for (int i = 0; i < 64; ++i)
   {
-    if (_chunk_shadow->_shadow_map[i])
+    if (_chunk_shadow->data[i])
     {
       return false;
     }
@@ -559,7 +531,7 @@ void MapChunk::update_shader_data ( bool show_unpaintable_chunks
 
   if (texture_count)
   {
-    texture_set->update_adt_alphamap_if_necessary(px, py);
+    update_alpha_shadow_map();
 
     for (int i = 0; i < texture_count; ++i)
     {
@@ -1112,19 +1084,8 @@ bool MapChunk::canPaintTexture(scoped_blp_texture_reference texture)
   return texture_set->canPaintTexture(texture);
 }
 
-void MapChunk::update_shadows()
-{
-  if (_chunk_shadow)
-  {
-    opengl::texture::set_active_texture(1);
-    gl.texSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, px + 16 * py, 64, 64, 1, GL_RED, GL_UNSIGNED_BYTE, _chunk_shadow->_shadow_map);
-  }
-}
-
 void MapChunk::clear_shadows()
 {
-  // todo trigger shadowmap update
-  // which would be deleting the shadowmap since we only clear the whole adt
   require_shader_data_update();
   _chunk_shadow.reset();
 }
@@ -1416,8 +1377,7 @@ void MapChunk::save(util::sExtendableArray &lADTFile, int &lCurrentPosition, int
 
     auto const lLayer = lADTFile.GetPointer<char>(lCurrentPosition + 8);
 
-    auto shadow_map = compressed_shadow_map();
-    memcpy(lLayer.get(), shadow_map.data(), 0x200);
+    memcpy(lLayer.get(), _chunk_shadow->data, 0x200);
 
     lCurrentPosition += 8 + lMCSH_Size;
     lMCNK_Size += 8 + lMCSH_Size;
@@ -1601,7 +1561,7 @@ liquid_chunk* MapChunk::liquid_chunk() const
   return mt->Water.getChunk(px, py);
 }
 
-void MapChunk::update_alphamap()
+void MapChunk::update_alpha_shadow_map()
 {
-  texture_set->update_adt_alphamap_if_necessary(px, py);
+  texture_set->update_alpha_shadow_map_if_needed(px, py, _chunk_shadow ? _chunk_shadow.get() : nullptr);
 }

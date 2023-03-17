@@ -22,7 +22,6 @@ layout (std140) uniform chunk_data
 
 // todo: move to opengl 4.1+ to be able to use the layout qualifier to be able to validate the program on creation
 uniform sampler2DArray alphamap;
-uniform sampler2DArray shadow_map;
 // todo: use a dynamically set define for the array size
 uniform sampler2DArray texture_arrays[14];
 
@@ -209,7 +208,7 @@ void main()
 
   if(ubo_data[chunk_id].has_shadow)
   {
-    out_color = vec4 (out_color.rgb * (1.0 - texture(shadow_map, vec3(vary_texcoord / 8.0, chunk_id + 0.1)).r) , 1.0);
+    out_color = vec4 (out_color.rgb * (1.0 - texture(alphamap, vec3(vary_texcoord / 8.0, chunk_id + 0.1)).a * 0.333) , 1.0);
   }  
 
   if (draw_terrain_height_contour)

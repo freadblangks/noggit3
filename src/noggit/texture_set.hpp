@@ -11,6 +11,7 @@
 
 class Brush;
 class MapTile;
+struct chunk_shadow;
 
 struct tmp_edit_alpha_values
 {
@@ -35,6 +36,7 @@ public:
             , bool use_big_alphamaps
             , bool do_not_fix_alpha_map
             , bool do_not_convert_alphamaps
+            , chunk_shadow* shadow
             );
 
   math::vector_3d anim_param(int layer) const;
@@ -80,7 +82,7 @@ public:
   size_t nTextures;
   std::unique_ptr<tmp_edit_alpha_values> tmp_edit_values;
 
-  void update_adt_alphamap_if_necessary(int chunk_x, int chunk_y);
+  void update_alpha_shadow_map_if_needed(int chunk_x, int chunk_y, chunk_shadow* shadow);
 
   std::string const& texture(int id) const { return _textures[id]; }
 
@@ -96,6 +98,10 @@ private:
 
   std::vector<std::string> _textures;
   std::array<std::unique_ptr<Alphamap>, 3> alphamaps;
+
+  // used on loading to prepare the alphamap data to upload in the async loader
+  std::unique_ptr<std::array<std::uint8_t, 4 * 64 * 64>> _setup_amap_data;
+  bool _first_amap_setup = false;
 
   bool _need_amap_update = true;
 
