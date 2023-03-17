@@ -46,9 +46,13 @@ class World
 private:
   int _model_display_mode = 0;
 
+  std::unordered_map<std::string, std::vector<WMOInstance*>> _wmos_by_filename;
   std::unordered_map<std::string, std::vector<ModelInstance*>> _models_by_filename;
   std::unordered_map<std::string, std::vector<ModelInstance*>> _wmo_doodads_by_filename;
   std::unordered_map<std::string, std::vector<ModelInstance*>> _models_by_filename_with_wmo_doodads;
+
+  std::vector<std::pair<wmo_liquid*, math::matrix_4x4>> _wmo_liquids_to_draw;
+
   noggit::world_model_instances_storage _model_instance_storage;
   noggit::world_tile_update_queue _tile_update_queue;
 
@@ -355,6 +359,11 @@ public:
 
 private:
   void update_models_by_filename();
+
+  bool _need_wmo_liquid_update = true;
+
+  bool _models_still_loading = true;
+  int _last_unloaded_doodad_check = 0;
 
   std::set<MapChunk*>& vertexBorderChunks();
 

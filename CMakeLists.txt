@@ -348,6 +348,7 @@ set ( noggit_root_headers
       src/noggit/tool_enums.hpp
       src/noggit/uid_storage.hpp
       src/noggit/wmo_liquid.hpp
+      src/noggit/wmo_headers.hpp
       src/noggit/world_model_instances_storage.hpp
       src/noggit/world_tile_update_queue.hpp
     )

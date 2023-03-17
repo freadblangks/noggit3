@@ -45,65 +45,6 @@ bool WMOInstance::is_a_duplicate_of(WMOInstance const& other)
       && misc::deg_vec3d_equals(dir, other.dir);
 }
 
-void WMOInstance::draw ( opengl::scoped::use_program& wmo_shader
-                       , math::matrix_4x4 const& model_view
-                       , math::matrix_4x4 const& projection
-                       , math::frustum const& frustum
-                       , const float& cull_distance
-                       , const math::vector_3d& camera
-                       , bool force_box
-                       , bool draw_doodads
-                       , bool draw_fog
-                       , liquid_render& render
-                       , std::vector<selection_type> selection
-                       , int animtime
-                       , bool world_has_skies
-                       , display_mode display
-                       , wmo_group_uniform_data& wmo_uniform_data
-                       , std::vector<std::pair<wmo_liquid*, math::matrix_4x4>>& wmo_liquids_to_draw
-                       )
-{
-  if (!wmo->finishedLoading() || wmo->loading_failed())
-  {
-    return;
-  }
-
-  const uint id = this->mUniqueID;
-  bool const is_selected = selection.size() > 0 &&
-                           std::find_if(selection.begin(), selection.end(), [id](selection_type type) {return type.type() == typeid(selected_wmo_type) && boost::get<selected_wmo_type>(type)->mUniqueID == id; }) != selection.end();
-
-  {
-    wmo_shader.uniform("transform", _transform_mat_transposed);
-
-    wmo->draw ( wmo_shader
-              , model_view
-              , projection
-              , _transform_mat
-              , _transform_mat_transposed
-              , is_selected
-              , frustum
-              , cull_distance
-              , camera
-              , draw_doodads
-              , draw_fog
-              , render
-              , animtime
-              , world_has_skies
-              , display
-              , wmo_uniform_data
-              , wmo_liquids_to_draw
-              );
-  }
-
-  if (force_box || is_selected)
-  {
-    gl.enable(GL_BLEND);
-    gl.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    math::vector_4d color = force_box ? math::vector_4d(0.0f, 0.0f, 1.0f, 1.0f) : math::vector_4d(0.0f, 1.0f, 0.0f, 1.0f);
-    opengl::primitives::wire_box (extents[0], extents[1]).draw (model_view, projection, math::matrix_4x4(math::matrix_4x4::unit), color);
-  }
-}
 
 void WMOInstance::update_transform_matrix()
 {
@@ -120,6 +61,8 @@ void WMOInstance::update_transform_matrix()
   _transform_mat = mat;
   _transform_mat_inverted = mat.inverted();
   _transform_mat_transposed = mat.transposed();
+
+  _need_doodadset_update = true;
 }
 
 void WMOInstance::intersect (math::ray const& ray, selection_result* results)
@@ -143,6 +86,7 @@ void WMOInstance::recalcExtents()
   // keep the old extents since they are saved in the adt
   if (wmo->loading_failed() || !wmo->finishedLoading())
   {
+    _need_recalc_extents = true;
     return;
   }
 
@@ -180,6 +124,13 @@ void WMOInstance::recalcExtents()
 
   extents[0] = wmo_aabb.min;
   extents[1] = wmo_aabb.max;
+
+  _aabb_center = (wmo_aabb.min + wmo_aabb.max) * 0.5f;
+  _aabb_radius = (wmo_aabb.max - _aabb_center).length();
+
+  wmo->require_transform_buffer_update();
+
+  _need_recalc_extents = false;
 }
 
 bool WMOInstance::isInsideRect(math::vector_3d rect[2]) const
@@ -204,19 +155,36 @@ void WMOInstance::change_doodadset(uint16_t doodad_set)
   _doodadset = doodad_set;
   _doodads_per_group = wmo->doodads_per_group(_doodadset);
   _need_doodadset_update = false;
+  _doodadset_loaded = true;
 
   update_doodads();
 }
 
 void WMOInstance::update_doodads()
 {
+  update_transform_matrix();
+
+  if (!_doodadset_loaded)
+  {
+    // it will call update_doodads again so return after that
+    change_doodadset(_doodadset);
+    return;
+  }
+
+  bool still_need_update = false;
+
   for (auto& group_doodads : _doodads_per_group)
   {
     for (auto& doodad : group_doodads.second)
     {
-      doodad.update_transform_matrix_wmo(this);
+      if (!doodad.update_transform_matrix_wmo(this))
+      {
+        still_need_update = true;
+      }
     }
   }
+
+  _need_doodadset_update = still_need_update;
 }
 
 void WMOInstance::resetDirection()
@@ -255,6 +223,20 @@ std::vector<wmo_doodad_instance*> WMOInstance::get_current_doodads()
   }
 
   return doodads;
+}
+
+bool WMOInstance::is_visible(math::frustum const& frustum, float const& cull_distance, math::vector_3d const& camera, display_mode display)
+{
+  if (!frustum.intersectsSphere(_aabb_center, _aabb_radius))
+  {
+    return false;
+  }
+
+  float dist = display == display_mode::in_3D
+    ? (_aabb_center - camera).length() - _aabb_radius
+    : std::abs(_aabb_center.y - camera.y) - _aabb_radius;
+
+  return (dist < cull_distance);
 }
 
 std::vector<wmo_doodad_instance*> WMOInstance::get_visible_doodads
@@ -299,4 +281,36 @@ std::vector<wmo_doodad_instance*> WMOInstance::get_visible_doodads
   }
 
   return doodads;
+}
+
+// todo: improve opengl::primitives to not recreate everything for each primitive
+//       or store the selected wmos' bbox data in a buffer
+void WMOInstance::draw_box_selected ( math::matrix_4x4 const& model_view
+                                    , math::matrix_4x4 const& projection
+                                    )
+{
+  opengl::primitives::wire_box(extents[0], extents[1])
+    .draw ( model_view
+          , projection
+          , math::matrix_4x4(math::matrix_4x4::unit)
+          , math::vector_4d(0.0f, 1.0f, 0.0f, 1.0f)
+          );
+
+  for (auto& group : wmo->groups)
+  {
+    opengl::primitives::wire_box(group.BoundingBoxMin, group.BoundingBoxMax)
+      .draw ( model_view
+            , projection
+            , _transform_mat_transposed
+            , {1.0f, 1.0f, 1.0f, 1.0f}
+            );
+  }
+
+  opengl::primitives::wire_box ( math::vector_3d(wmo->extents[0].x, wmo->extents[0].z, -wmo->extents[0].y)
+                               , math::vector_3d(wmo->extents[1].x, wmo->extents[1].z, -wmo->extents[1].y)
+                               ).draw ( model_view
+                                      , projection
+                                      , _transform_mat_transposed
+                                      , {1.0f, 0.0f, 0.0f, 1.0f}
+                                      );
 }

@@ -2194,7 +2194,7 @@ void MapView::tick (float dt)
           const unsigned int texture_count (std::min((unsigned int)(instance->wmo->textures.size()), 8U));
           for (unsigned int j = 0; j < texture_count; j++)
           {
-            select_info << "\n " << (j + 1) << ": " << instance->wmo->textures[j]->filename;
+            select_info << "\n " << (j + 1) << ": " << instance->wmo->textures[j];
           }
           if (instance->wmo->textures.size() > 25)
           {

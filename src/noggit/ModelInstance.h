@@ -97,8 +97,9 @@ public:
 
   virtual math::vector_3d get_pos() const { return pos; }
 
-  void recalcExtents();
+  bool recalcExtents();
   bool need_recalc_extents() const { return _need_recalc_extents; }
+  void require_extents_recalc() { _need_recalc_extents = true; }
   std::vector<math::vector_3d> const& extents();
 
 protected:
@@ -142,7 +143,7 @@ public:
   }
 
   bool need_matrix_update() const { return _need_matrix_update; }
-  void update_transform_matrix_wmo(WMOInstance* wmo);
+  bool update_transform_matrix_wmo(WMOInstance* wmo);
 
   virtual math::vector_3d get_pos() const { return world_pos; }
 

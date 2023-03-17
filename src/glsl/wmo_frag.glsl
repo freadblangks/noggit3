@@ -1,8 +1,9 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
 #version 330 core
 
-uniform sampler2D tex1;
-uniform sampler2D tex2;
+uniform sampler2DArray textures[32];
+
+uniform ivec4 tex_param;
 
 uniform bool use_vertex_color;
 
@@ -31,6 +32,138 @@ in vec2 f_texcoord_2;
 in vec4 f_vertex_color;
 
 out vec4 out_color;
+
+vec4 tex_color(ivec2 param, vec2 uv)
+{
+  if(param.x == 0)
+  {
+    return texture(textures[0], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 1)
+  {
+    return texture(textures[1], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 2)
+  {
+    return texture(textures[2], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 3)
+  {
+    return texture(textures[3], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 4)
+  {
+    return texture(textures[4], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 5)
+  {
+    return texture(textures[5], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 6)
+  {
+    return texture(textures[6], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 7)
+  {
+    return texture(textures[7], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 8)
+  {
+    return texture(textures[8], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 9)
+  {
+    return texture(textures[9], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 10)
+  {
+    return texture(textures[10], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 11)
+  {
+    return texture(textures[11], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 12)
+  {
+    return texture(textures[12], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 13)
+  {
+    return texture(textures[13], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 14)
+  {
+    return texture(textures[14], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 15)
+  {
+    return texture(textures[15], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 16)
+  {
+    return texture(textures[16], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 17)
+  {
+    return texture(textures[17], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 18)
+  {
+    return texture(textures[18], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 19)
+  {
+    return texture(textures[19], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 20)
+  {
+    return texture(textures[20], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 21)
+  {
+    return texture(textures[21], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 22)
+  {
+    return texture(textures[22], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 23)
+  {
+    return texture(textures[23], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 24)
+  {
+    return texture(textures[24], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 25)
+  {
+    return texture(textures[25], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 26)
+  {
+    return texture(textures[26], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 27)
+  {
+    return texture(textures[27], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 28)
+  {
+    return texture(textures[28], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 29)
+  {
+    return texture(textures[29], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 30)
+  {
+    return texture(textures[30], vec3(uv, param.y + 0.1));
+  }
+  else if(param.x == 31)
+  {
+    return texture(textures[31], vec3(uv, param.y + 0.1));
+  }
+}
 
 vec3 lighting(vec3 material)
 {
@@ -66,8 +199,8 @@ void main()
     return;
   }
 
-  vec4 tex = texture(tex1, f_texcoord);
-  vec4 tex_2 = texture(tex2, f_texcoord_2);
+  vec4 tex   = tex_color(tex_param.xy, f_texcoord);
+  vec4 tex_2 = tex_color(tex_param.zw, f_texcoord_2);
 
   if(tex.a < alpha_test)
   {

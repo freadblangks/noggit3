@@ -5,6 +5,8 @@
 #include <opengl/shader.fwd.hpp>
 #include <opengl/types.hpp>
 
+#include <math/vector_4d.hpp>
+
 #include <boost/optional.hpp>
 
 #include <initializer_list>
@@ -88,6 +90,7 @@ namespace opengl
       void uniform (std::string const& name, math::vector_2d const&);
       void uniform (std::string const& name, math::vector_3d const&);
       void uniform (std::string const& name, math::vector_4d const&);
+      void uniform (std::string const& name, math::vector_4i const&);
       void uniform (std::string const& name, math::matrix_4x4 const&);
       template<typename T> void uniform (std::string const&, T) = delete;
 
@@ -99,6 +102,7 @@ namespace opengl
       // Thus they ensure there is a VAO bound and the caller is aware of it being modified, by taking a reference to it.
 
       void attrib (vao_binder const&, std::string const& name, array_buffer_is_already_bound const&, math::matrix_4x4 const*, GLuint divisor = 0);
+      void attrib (vao_binder const&, std::string const& name, GLuint buffer, math::matrix_4x4 const*, GLuint divisor = 0);
       void attrib (vao_binder const&, std::string const& name, array_buffer_is_already_bound const&, GLsizei size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid* data);
       void attrib (vao_binder const&, std::string const& name, GLuint buffer, GLsizei size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid* data);
 

@@ -23,22 +23,30 @@ public:
   unsigned int mUniqueID;
   uint16_t mFlags;
   uint16_t mUnknown;
-  uint16_t mNameset; 
+  uint16_t mNameset;
+
+  bool need_doodads_update() const { return _need_doodadset_update; }
+  bool need_recalc_extents() const { return _need_recalc_extents; }
+  void require_extents_recalc() { _need_recalc_extents = true; }
 
   uint16_t doodadset() const { return _doodadset; }
   void change_doodadset(uint16_t doodad_set);
+  void update_doodads();
 
 private:
-  void update_doodads();
-  
   uint16_t _doodadset;
 
   std::map<uint32_t, std::vector<wmo_doodad_instance>> _doodads_per_group;
+  bool _doodadset_loaded = false;
   bool _need_doodadset_update = true;
+  bool _need_recalc_extents = true;
 
   math::matrix_4x4 _transform_mat = math::matrix_4x4::uninitialized;
   math::matrix_4x4 _transform_mat_inverted = math::matrix_4x4::uninitialized;
   math::matrix_4x4 _transform_mat_transposed = math::matrix_4x4::uninitialized;
+
+  float _aabb_radius;
+  math::vector_3d _aabb_center;
 
 public:
   WMOInstance(std::string const& filename, ENTRY_MODF const* d);
@@ -62,6 +70,8 @@ public:
     , _transform_mat(other._transform_mat)
     , _transform_mat_inverted(other._transform_mat_inverted)
     , _transform_mat_transposed(other._transform_mat_transposed)
+    , _aabb_radius(other._aabb_radius)
+    , _aabb_center(other._aabb_center)
   {
     std::swap (extents, other.extents);
   }
@@ -83,6 +93,8 @@ public:
     std::swap(_transform_mat, other._transform_mat);
     std::swap(_transform_mat_inverted, other._transform_mat_inverted);
     std::swap(_transform_mat_transposed, other._transform_mat_transposed);
+    std::swap(_aabb_radius, other._aabb_radius);
+    std::swap(_aabb_center, other._aabb_center);
     return *this;
   }
   /*
@@ -92,24 +104,6 @@ public:
   }*/
 
   bool is_a_duplicate_of(WMOInstance const& other);
-
-  void draw ( opengl::scoped::use_program& wmo_shader
-            , math::matrix_4x4 const& model_view
-            , math::matrix_4x4 const& projection
-            , math::frustum const& frustum
-            , const float& cull_distance
-            , const math::vector_3d& camera
-            , bool force_box
-            , bool draw_doodads
-            , bool draw_fog
-            , liquid_render& render
-            , std::vector<selection_type> selection
-            , int animtime
-            , bool world_has_skies
-            , display_mode display
-            , wmo_group_uniform_data& wmo_uniform_data
-            , std::vector<std::pair<wmo_liquid*, math::matrix_4x4>>& wmo_liquids_to_draw
-            );
 
   void update_transform_matrix();
 
@@ -126,10 +120,16 @@ public:
 
   std::vector<wmo_doodad_instance*> get_current_doodads();
 
+  bool is_visible(math::frustum const& frustum, float const& cull_distance, math::vector_3d const& camera, display_mode display);
+
   std::vector<wmo_doodad_instance*> get_visible_doodads( math::frustum const& frustum
                                                        , float const& cull_distance
                                                        , math::vector_3d const& camera
                                                        , bool draw_hidden_models
                                                        , display_mode display
                                                        );
+
+    void draw_box_selected ( math::matrix_4x4 const& model_view
+                           , math::matrix_4x4 const& projection
+                           );
 };

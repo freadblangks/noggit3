@@ -184,6 +184,10 @@ namespace opengl
     {
       gl.uniform4fv (uniform_location (name), 1, value);
     }
+    void use_program::uniform (std::string const& name, math::vector_4i const& value)
+    {
+      gl.uniform4iv (uniform_location (name), 1, value);
+    }
     void use_program::uniform (std::string const& name, math::matrix_4x4 const& value)
     {
       gl.uniformMatrix4fv (uniform_location (name), 1, GL_FALSE, value);
@@ -205,6 +209,19 @@ namespace opengl
     {
       GLuint const location (attrib_location (name));
       math::vector_4d const* vec4_ptr = reinterpret_cast<math::vector_4d const*>(data);
+
+      for (GLuint i = 0; i < 4; ++i)
+      {
+        gl.enableVertexAttribArray (location + i);
+        gl.vertexAttribPointer (location + i, 4, GL_FLOAT, GL_FALSE, sizeof(math::matrix_4x4), vec4_ptr + i);
+        gl.vertexAttribDivisor(location + i, divisor);
+      }
+    }
+    void use_program::attrib (vao_binder const&, std::string const& name, GLuint buffer, math::matrix_4x4 const* data, GLuint divisor)
+    {
+      GLuint const location (attrib_location (name));
+      math::vector_4d const* vec4_ptr = reinterpret_cast<math::vector_4d const*>(data);
+      scoped::buffer_binder<GL_ARRAY_BUFFER> const bind(buffer);
 
       for (GLuint i = 0; i < 4; ++i)
       {

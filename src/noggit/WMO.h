@@ -13,6 +13,7 @@
 #include <noggit/texture_array_handler.hpp>
 #include <noggit/tool_enums.hpp>
 #include <noggit/wmo_liquid.hpp>
+#include <noggit/wmo_headers.hpp>
 
 #include <boost/optional.hpp>
 
@@ -28,78 +29,6 @@ class WMOInstance;
 class WMOManager;
 class wmo_liquid;
 class Model;
-
-struct wmo_batch
-{
-  int8_t unused[12];
-
-  uint32_t index_start;
-  uint16_t index_count;
-  uint16_t vertex_start;
-  uint16_t vertex_end;
-
-  uint8_t flags;
-  uint8_t texture;
-};
-
-union wmo_group_flags
-{
-  uint32_t value;
-  struct
-  {
-    uint32_t has_bsp_tree : 1; // 0x1
-    uint32_t has_light_map : 1; // 0x2
-    uint32_t has_vertex_color : 1; // 0x4
-    uint32_t exterior : 1; // 0x8
-    uint32_t flag_0x10 : 1;
-    uint32_t flag_0x20 : 1;
-    uint32_t exterior_lit : 1; // 0x40
-    uint32_t unreacheable : 1; // 0x80
-    uint32_t flag_0x100: 1;
-    uint32_t has_light : 1; // 0x200
-    uint32_t flag_0x400 : 1;
-    uint32_t has_doodads : 1; // 0x800
-    uint32_t has_water : 1; // 0x1000
-    uint32_t indoor : 1; // 0x2000
-    uint32_t flag_0x4000 : 1;
-    uint32_t flag_0x8000 : 1;
-    uint32_t always_draw : 1; // 0x10000
-    uint32_t has_mori_morb : 1; // 0x20000, cata+ only (?)
-    uint32_t skybox : 1; // 0x40000
-    uint32_t ocean : 1; // 0x80000
-    uint32_t flag_0x100000 : 1;
-    uint32_t mount_allowed : 1; // 0x200000
-    uint32_t flag_0x400000 : 1;
-    uint32_t flag_0x800000 : 1;
-    uint32_t use_mocv2_for_texture_blending : 1; // 0x1000000
-    uint32_t has_two_motv : 1; // 0x2000000
-    uint32_t antiportal : 1; // 0x4000000
-    uint32_t unk : 1; // 0x8000000 requires intBatchCount == 0, extBatchCount == 0, UNREACHABLE. 
-    uint32_t unused : 4;
-  };
-};
-static_assert ( sizeof (wmo_group_flags) == sizeof (std::uint32_t)
-              , "bitfields shall be implemented packed"
-              );
-
-struct wmo_group_header
-{
-  uint32_t group_name; // offset into MOGN
-  uint32_t descriptive_group_name; // offset into MOGN
-  wmo_group_flags flags;
-  float box1[3];
-  float box2[3];
-  uint16_t portal_start;
-  uint16_t portal_count;
-  uint16_t transparency_batches_count;
-  uint16_t interior_batch_count;
-  uint16_t exterior_batch_count;
-  uint16_t padding_or_batch_type_d; // probably padding, but might be data?
-  uint8_t fogs[4];
-  uint32_t group_liquid; // used for MLIQ
-  uint32_t id;
-  int32_t unk2, unk3;
-};
 
 struct wmo_group_uniform_data
 {
@@ -119,6 +48,8 @@ public:
 
   void load();
 
+  void setup_global_buffer_data(std::vector<wmo_vertex>& vertices, std::vector<std::uint32_t>& indices);
+
   void draw( opengl::scoped::use_program& wmo_shader
            , math::frustum const& frustum
            , const float& cull_distance
@@ -126,6 +57,7 @@ public:
            , bool draw_fog
            , bool world_has_skies
            , wmo_group_uniform_data& wmo_uniform_data
+           , int instance_count
            );
 
   void setupFog (bool draw_fog, std::function<void (bool)> setup_fog);
@@ -177,24 +109,16 @@ private:
   std::vector<::math::vector_4d> _vertex_colors;
   std::vector<uint16_t> _indices;
 
-  opengl::scoped::deferred_upload_vertex_arrays<1> _vertex_array;
-  GLuint const& _vao = _vertex_array[0];
-  opengl::scoped::deferred_upload_buffers<6> _buffers;
-  GLuint const& _vertices_buffer = _buffers[0];
-  GLuint const& _normals_buffer = _buffers[1];
-  GLuint const& _texcoords_buffer = _buffers[2];
-  GLuint const& _texcoords_buffer_2 = _buffers[3];
-  GLuint const& _vertex_colors_buffer = _buffers[4];
-  GLuint const& _indices_buffer = _buffers[5];
 
   bool _uploaded = false;
   bool _vao_is_setup = false;
 
-  void upload();
-  void setup_vao(opengl::scoped::use_program& wmo_shader);
+  int _vertex_offset = 0;
+  int _index_offset = 0;
 };
 
-struct WMOLight {
+struct WMOLight
+{
   uint32_t flags, color;
   math::vector_3d pos;
   float intensity;
@@ -209,22 +133,8 @@ struct WMOLight {
   static void setupOnce(GLint light, math::vector_3d dir, math::vector_3d light_color);
 };
 
-struct WMOPV {
-  math::vector_3d a, b, c, d;
-};
-
-struct WMOPR {
-  int16_t portal, group, dir, reserved;
-};
-
-struct WMODoodadSet {
-  char name[0x14];
-  int32_t start;
-  int32_t size;
-  int32_t unused;
-};
-
-struct WMOFog {
+struct WMOFog
+{
   unsigned int flags;
   math::vector_3d pos;
   float r1, r2, fogend, fogstart;
@@ -238,45 +148,33 @@ struct WMOFog {
   void setup();
 };
 
-union mohd_flags
-{
-  std::uint16_t flags;
-  struct
-  {
-    std::uint16_t do_not_attenuate_vertices_based_on_distance_to_portal : 1;
-    std::uint16_t use_unified_render_path : 1;
-    std::uint16_t use_liquid_type_dbc_id : 1;
-    std::uint16_t do_not_fix_vertex_color_alpha : 1;
-    std::uint16_t unused : 12;
-  };
-};
-static_assert ( sizeof (mohd_flags) == sizeof (std::uint16_t)
-              , "bitfields shall be implemented packed"
-              );
-
 class WMO : public AsyncObject
 {
 public:
   explicit WMO(const std::string& name);
 
-  void draw ( opengl::scoped::use_program& wmo_shader
-            , math::matrix_4x4 const& model_view
-            , math::matrix_4x4 const& projection
-            , math::matrix_4x4 const& transform_matrix
-            , math::matrix_4x4 const& transform_matrix_transposed
-            , bool boundingbox
-            , math::frustum const& frustum
-            , const float& cull_distance
-            , const math::vector_3d& camera
-            , bool draw_doodads
-            , bool draw_fog
-            , liquid_render& render
-            , int animtime
-            , bool world_has_skies
-            , display_mode display
-            , wmo_group_uniform_data& wmo_uniform_data
-            , std::vector<std::pair<wmo_liquid*, math::matrix_4x4>>& wmo_liquids_to_draw
-            );
+  void draw_instanced ( opengl::scoped::use_program& wmo_shader
+                      , math::matrix_4x4 const& model_view
+                      , math::matrix_4x4 const& projection
+                      , std::vector<WMOInstance*>& instances
+                      , bool boundingbox
+                      , math::frustum const& frustum
+                      , const float& cull_distance
+                      , const math::vector_3d& camera
+                      , bool draw_doodads
+                      , bool draw_fog
+                      , liquid_render& render
+                      , int animtime
+                      , bool world_has_skies
+                      , display_mode display
+                      , wmo_group_uniform_data& wmo_uniform_data
+                      , std::vector<std::pair<wmo_liquid*, math::matrix_4x4>>& wmo_liquids_to_draw
+                      , noggit::texture_array_handler& texture_handler
+                      , bool update_transform_matrix_buffer
+                      );
+
+  void draw_boxes_instanced(opengl::scoped::use_program& wmo_box_shader);
+
   bool draw_skybox( math::matrix_4x4 const& model_view
                   , math::vector_3d const& camera_pos
                   , opengl::scoped::use_program& m2_shader
@@ -303,7 +201,8 @@ public:
   std::vector<WMOGroup> groups;
   std::vector<WMOMaterial> materials;
   math::vector_3d extents[2];
-  std::vector<scoped_blp_texture_reference> textures;
+  std::vector<std::string> textures;
+  std::vector<std::pair<int, int>> texture_array_params;
   std::vector<std::string> models;
   std::vector<wmo_doodad_instance> modelis;
   std::vector<math::vector_3d> model_nearest_light_vector;
@@ -328,8 +227,34 @@ public:
     return true;
   }
 
+  void require_transform_buffer_update() { _need_transform_buffer_update = true; }
+
+  bool has_liquids() const { return _has_liquids; }
+
 private:
+  bool _has_liquids = false;
+
   bool _hidden = false;
+  bool _need_transform_buffer_update = true;
+
+  bool _uploaded = false;
+  bool _bbox_uploaded = false;
+
+  int _instance_visible = 0;
+
+  opengl::scoped::deferred_upload_buffers<6> _buffers;
+  opengl::scoped::deferred_upload_vertex_arrays<2> _vertex_arrays;
+
+  GLuint const& _vao = _vertex_arrays[0];
+
+  GLuint const& _transform_buffer = _buffers[0];
+  GLuint const& _vertices_buffer = _buffers[1];
+  GLuint const& _indices_buffer = _buffers[2];
+  GLuint const& _ubo = _buffers[3];
+
+  GLuint const& _bbox_vao = _vertex_arrays[1];
+  GLuint const& _bbox_vertices = _buffers[4];
+  GLuint const& _bbox_indices = _buffers[5];
 };
 
 class WMOManager

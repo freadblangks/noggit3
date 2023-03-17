@@ -6,6 +6,38 @@
 
 namespace math
 {
+  struct vector_4i
+  {
+    union
+    {
+      int _data[4];
+      struct
+      {
+        int x;
+        int y;
+        int z;
+        int w;
+      };
+    };
+
+    vector_4i() : vector_4i(0, 0, 0, 0) {}
+    vector_4i(int x_, int y_, int z_, int w_)
+      : x(x_)
+      , y(y_)
+      , z(z_)
+      , w(w_)
+    { }
+
+    operator const int* () const
+    {
+      return _data;
+    }
+    operator int* ()
+    {
+      return _data;
+    }
+  };
+
   struct vector_4d
   {
     union

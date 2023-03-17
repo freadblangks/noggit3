@@ -170,6 +170,7 @@ namespace opengl
     void uniform1iv (GLint location, GLsizei count, GLint const* value);
     void uniform2fv (GLint location, GLsizei count, GLfloat const* value);
     void uniform3fv (GLint location, GLsizei count, GLfloat const* value);
+    void uniform4iv(GLint location, GLsizei count, GLint const* value);
     void uniform4fv (GLint location, GLsizei count, GLfloat const* value);
     void uniformMatrix4fv (GLint location, GLsizei count, GLboolean transpose, GLfloat const* value);
 

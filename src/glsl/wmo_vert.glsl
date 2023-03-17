@@ -3,9 +3,11 @@
 
 in vec4 position;
 in vec3 normal;
-in vec4 vertex_color;
-in vec2 texcoord;
-in vec2 texcoord_2;
+in vec4 color;
+in vec2 uv1;
+in vec2 uv2;
+
+in mat4 transform;
 
 out vec3 f_position;
 out vec3 f_normal;
@@ -15,7 +17,7 @@ out vec4 f_vertex_color;
 
 uniform mat4 model_view;
 uniform mat4 projection;
-uniform mat4 transform;
+
 
 uniform int shader_id;
 
@@ -31,14 +33,14 @@ void main()
   // Env and EnvMetal
   if(shader_id == 3 || shader_id == 5)
   {
-    f_texcoord = texcoord;
+    f_texcoord = uv1;
     f_texcoord_2 = reflect(normalize(view_space_pos.xyz), f_normal).xy;
   }
   else
   {
-    f_texcoord = texcoord;
-    f_texcoord_2 = texcoord_2;
+    f_texcoord = uv1;
+    f_texcoord_2 = uv2;
   }
   
-  f_vertex_color = vertex_color;
+  f_vertex_color = color;
 }

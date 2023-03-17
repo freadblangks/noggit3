@@ -190,19 +190,19 @@ bool ModelInstance::is_visible( math::frustum const& frustum
   return _is_visible;
 }
 
-void ModelInstance::recalcExtents()
+bool ModelInstance::recalcExtents()
 {
   if (!model->finishedLoading())
   {
     _need_recalc_extents = true;
-    return;
+    return false;
   }
 
   if (model->loading_failed())
   {
     _extents[0] = _extents[1] = pos;
     _need_recalc_extents = false;
-    return;
+    return true;
   }
 
   update_transform_matrix();
@@ -236,6 +236,8 @@ void ModelInstance::recalcExtents()
   // trigger model transform buffer update when
   // one instance has moved
   model->require_transform_buffer_update();
+
+  return true;
 }
 
 
@@ -277,11 +279,12 @@ wmo_doodad_instance::wmo_doodad_instance(std::string const& filename, MPQFile* f
   light_color = math::vector_3d(color.bgra.r / 255.f, color.bgra.g / 255.f, color.bgra.b / 255.f);
 }
 
-void wmo_doodad_instance::update_transform_matrix_wmo(WMOInstance* wmo)
+bool wmo_doodad_instance::update_transform_matrix_wmo(WMOInstance* wmo)
 {
   if (!model->finishedLoading())
   {
-    return;
+    _need_matrix_update = true;
+    return false;
   }
 
   world_pos = wmo->transform_matrix() * pos;
@@ -306,4 +309,6 @@ void wmo_doodad_instance::update_transform_matrix_wmo(WMOInstance* wmo)
   recalcExtents();
 
   _need_matrix_update = false;
+
+  return true;
 }

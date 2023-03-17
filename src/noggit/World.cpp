@@ -822,14 +822,16 @@ void World::draw ( math::matrix_4x4 const& model_view
                  , display_mode display
                  )
 {
-  static int max_texture_unit = 16;
+  // opengl 3.x garanties 16 texture unit per shader stage
+  // but should be 32 for most computers for the fragment shader
+  static int fragment_shader_max_texture_unit = 16;
 
   if (!_display_initialized)
   {
     initDisplay();
     _display_initialized = true;
 
-    gl.getIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &max_texture_unit);
+    gl.getIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &fragment_shader_max_texture_unit);
   }
 
   math::matrix_4x4 const mvp(model_view * projection);
@@ -848,8 +850,7 @@ void World::draw ( math::matrix_4x4 const& model_view
 
     opengl::scoped::use_program m2_shader{ *_m2_program.get() };
 
-    // opengl garanties 16 texture unit
-    for (int i = 0; i < max_texture_unit; ++i)
+    for (int i = 0; i < fragment_shader_max_texture_unit; ++i)
     {
       m2_shader.uniform("textures[" + std::to_string(i) + "]", i);
     }
@@ -865,8 +866,7 @@ void World::draw ( math::matrix_4x4 const& model_view
 
     opengl::scoped::use_program m2_shader{ *_m2_instanced_program.get() };
 
-    // opengl garanties 16 texture unit
-    for (int i = 0; i < max_texture_unit; ++i)
+    for (int i = 0; i < fragment_shader_max_texture_unit; ++i)
     {
       m2_shader.uniform("textures[" + std::to_string(i) + "]", i);
     }
@@ -928,6 +928,14 @@ void World::draw ( math::matrix_4x4 const& model_view
           , { GL_FRAGMENT_SHADER, opengl::shader::src_from_qrc("wmo_fs") }
           }
       );
+
+
+    opengl::scoped::use_program wmo_shader{ *_wmo_program.get() };
+
+    for (int i = 0; i < fragment_shader_max_texture_unit; ++i)
+    {
+      wmo_shader.uniform("textures[" + std::to_string(i) + "]", i);
+    }
   }
 
   gl.disable(GL_DEPTH_TEST);
@@ -1152,6 +1160,7 @@ void World::draw ( math::matrix_4x4 const& model_view
   bool draw_doodads_wmo = draw_wmo && draw_wmo_doodads;
 
   std::unordered_map<Model*, std::size_t> model_with_particles;
+  bool update_transform_buffers = camera_moved;
 
   // M2s / models
   if (draw_models || draw_doodads_wmo)
@@ -1161,7 +1170,6 @@ void World::draw ( math::matrix_4x4 const& model_view
       ModelManager::resetAnim();
     }
 
-    bool update_transform_buffers = camera_moved;
     int models_display_mode = (draw_models ? 1 : 0) + (draw_doodads_wmo ? 2 : 0);
 
     if (models_display_mode != _model_display_mode)
@@ -1174,7 +1182,8 @@ void World::draw ( math::matrix_4x4 const& model_view
       (draw_models && draw_doodads_wmo) ? &_models_by_filename_with_wmo_doodads :
       (draw_models ? &_models_by_filename : &_wmo_doodads_by_filename);
 
-    if (need_model_updates)
+    // don't check every frame when models are loading to avoid big performance drop
+    if (need_model_updates || (_models_still_loading && _last_unloaded_doodad_check++ > 60))
     {
       update_models_by_filename();
       update_transform_buffers = true;
@@ -1262,17 +1271,25 @@ void World::draw ( math::matrix_4x4 const& model_view
     }
   }
 
-  std::vector<std::pair<wmo_liquid*, math::matrix_4x4>> wmo_liquids_to_draw;
+
 
   // WMOs / map objects
   if (draw_wmo || mapIndex.hasAGlobalWMO())
   {
+    // updating liquids require a full transform buffer update
+    // with the current implemetation or it duplicate the liquids
+    // visually until the camera moves when moving a wmo with liquids
+    if (need_model_updates || _need_wmo_liquid_update)
+    {
+      update_models_by_filename();
+      update_transform_buffers = true;
+      _need_wmo_liquid_update = false;
+    }
+
     opengl::scoped::use_program wmo_program {*_wmo_program.get()};
 
     wmo_program.uniform("model_view", model_view);
     wmo_program.uniform("projection", projection);
-    wmo_program.uniform("tex1", 0);
-    wmo_program.uniform("tex2", 1);
 
     wmo_program.uniform("draw_fog", (int)draw_fog);
 
@@ -1290,34 +1307,87 @@ void World::draw ( math::matrix_4x4 const& model_view
 
     wmo_group_uniform_data wmo_uniform_data;
 
-    _model_instance_storage.for_each_wmo_instance([&] (WMOInstance& wmo)
+    _model_texture_handler.bind();
+
+    // liquid list updated only when the transform buffers are updated
+    if (update_transform_buffers)
     {
-      bool is_hidden = wmo.wmo->is_hidden();
-      if (draw_hidden_models || !is_hidden)
+      _wmo_liquids_to_draw.clear();
+    }
+
+    for (auto& it : _wmos_by_filename)
+    {
+      WMO* wmo = it.second[0]->wmo.get();
+
+      if (draw_hidden_models || !wmo->is_hidden())
       {
-        wmo.draw( wmo_program
-                , model_view
-                , projection
-                , frustum
-                , culldistance
-                , camera_pos
-                , is_hidden
-                , draw_wmo_doodads
-                , draw_fog
-                , _liquid_render.get()
-                , current_selection()
-                , animtime
-                , skies->hasSkies()
-                , display
-                , wmo_uniform_data
-                , wmo_liquids_to_draw
-                );
+        wmo->draw_instanced ( wmo_program
+                            , model_view
+                            , projection
+                            , it.second
+                            , false
+                            , frustum
+                            , culldistance
+                            , camera_pos
+                            , draw_wmo_doodads
+                            , draw_fog
+                            , _liquid_render.get()
+                            , animtime
+                            , skies->hasSkies()
+                            , display
+                            , wmo_uniform_data
+                            , _wmo_liquids_to_draw
+                            , _model_texture_handler
+                            , update_transform_buffers
+                            );
       }
-    });
+    }
 
     gl.enable(GL_BLEND);
     gl.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     gl.enable(GL_CULL_FACE);
+
+    if (draw_models_with_box || draw_hidden_models)
+    {
+      // use the same shader for m2s and wmos
+      opengl::scoped::use_program wmo_box_shader{ *_m2_box_program.get() };
+
+      wmo_box_shader.uniform("model_view", model_view);
+      wmo_box_shader.uniform("projection", projection);
+
+      opengl::scoped::bool_setter<GL_LINE_SMOOTH, GL_TRUE> const line_smooth;
+      gl.hint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+
+      for (auto& it : _wmos_by_filename)
+      {
+        bool hidden = it.second[0]->wmo->is_hidden();
+
+        if (hidden && !draw_hidden_models)
+        {
+          continue;
+        }
+
+        math::vector_4d color = hidden
+          ? math::vector_4d(0.f, 0.f, 1.f, 1.f)
+          : math::vector_4d(0.75f, 0.75f, 0.75f, 1.f)
+          ;
+
+        wmo_box_shader.uniform("color", color);
+        it.second[0]->wmo->draw_boxes_instanced(wmo_box_shader);
+      }
+    }
+
+    for (auto& selection : current_selection())
+    {
+      if (selection.which() == eEntry_WMO)
+      {
+        auto wmo = boost::get<selected_wmo_type>(selection);
+
+        {
+          wmo->draw_box_selected(model_view, projection);
+        }
+      }
+    }
   }
 
   // model particles
@@ -1412,11 +1482,14 @@ void World::draw ( math::matrix_4x4 const& model_view
                       );
     }
 
-    water_shader.uniform("use_transform", 1);
-
-    for (auto& it : wmo_liquids_to_draw)
+    if (draw_wmo)
     {
-      it.first->draw(it.second, _liquid_render.get());
+      water_shader.uniform("use_transform", 1);
+
+      for (auto& it : _wmo_liquids_to_draw)
+      {
+        it.first->draw(it.second, _liquid_render.get());
+      }
     }
 
     gl.bindVertexArray(0);
@@ -1979,6 +2052,7 @@ void World::unload_every_model_and_wmo_instance()
 
   _model_instance_storage.clear();
 
+  _wmos_by_filename.clear();
   _models_by_filename.clear();
   _wmo_doodads_by_filename.clear();
   _models_by_filename_with_wmo_doodads.clear();
@@ -2048,14 +2122,14 @@ WMOInstance* World::addWMO ( std::string const& filename
   wmo_instance.wmo->wait_until_loaded();
   wmo_instance.recalcExtents();
 
-  for (auto& doodad : wmo_instance.get_current_doodads())
-  {
-    _wmo_doodads_by_filename[doodad->model->filename].push_back(doodad);
-    _models_by_filename_with_wmo_doodads[doodad->model->filename].push_back(doodad);
-  }
+  std::uint32_t uid = _model_instance_storage.add_wmo_instance(std::move(wmo_instance), true);
+  auto wmo = _model_instance_storage.get_wmo_instance(uid).get();
 
-  auto uid = _model_instance_storage.add_wmo_instance(std::move(wmo_instance), true);
-  return _model_instance_storage.get_wmo_instance(uid).get();
+  _wmos_by_filename[filename].push_back(wmo);
+
+  need_model_updates = true;
+
+  return wmo;
 }
 
 std::uint32_t World::add_model_instance(ModelInstance model_instance, bool from_reloading)
@@ -2120,6 +2194,10 @@ void World::updateTilesWMO(WMOInstance* wmo, model_update type)
 {
   _tile_update_queue.queue_update(wmo, type);
 
+  if (wmo->wmo->has_liquids())
+  {
+    _need_wmo_liquid_update = true;
+  }
   if (type == model_update::doodadset)
   {
     need_model_updates = true;
@@ -2527,9 +2605,12 @@ std::set<MapChunk*>& World::vertexBorderChunks()
 
 void World::update_models_by_filename()
 {
+  _wmos_by_filename.clear();
   _models_by_filename.clear();
   _wmo_doodads_by_filename.clear();
   _models_by_filename_with_wmo_doodads.clear();
+
+  _models_still_loading = false;
 
   _model_instance_storage.for_each_m2_instance([&] (ModelInstance& model_instance)
   {
@@ -2539,16 +2620,45 @@ void World::update_models_by_filename()
     // to make sure the transform matrix are up to date
     if(model_instance.need_recalc_extents())
     {
-      model_instance.recalcExtents();
+      if (!model_instance.recalcExtents())
+      {
+        _models_still_loading = true;
+      }
     }
   });
 
+
+  _last_unloaded_doodad_check = 0;
+
   _model_instance_storage.for_each_wmo_instance([&](WMOInstance& wmo_instance)
   {
+    _wmos_by_filename[wmo_instance.wmo->filename].push_back(&wmo_instance);
+
+    if (wmo_instance.need_recalc_extents())
+    {
+      wmo_instance.recalcExtents();
+    }
+
+    if(wmo_instance.need_doodads_update())
+    {
+      wmo_instance.update_doodads();
+    }
+
     for (auto& doodad : wmo_instance.get_current_doodads())
     {
+      if (!doodad->model->finishedLoading())
+      {
+        _models_still_loading = true;
+        continue;
+      }
+
       _wmo_doodads_by_filename[doodad->model->filename].push_back(doodad);
       _models_by_filename_with_wmo_doodads[doodad->model->filename].push_back(doodad);
+
+      if (doodad->need_matrix_update())
+      {
+        doodad->update_transform_matrix_wmo(&wmo_instance);
+      }
     }
   });
 

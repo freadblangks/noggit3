@@ -1,5 +1,6 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
 
+#include <math/bounding_box.hpp>
 #include <math/frustum.hpp>
 #include <noggit/AsyncLoader.h>
 #include <noggit/Log.h> // LogDebug
@@ -314,82 +315,185 @@ void WMO::finishLoading ()
   }
 
   for (auto& group : groups)
+  {
     group.load();
+
+    if (group.liquid)
+    {
+      _has_liquids = true;
+    }
+  }
 
   finished = true;
   _state_changed.notify_all();
 }
 
-void WMO::draw ( opengl::scoped::use_program& wmo_shader
-               , math::matrix_4x4 const& model_view
-               , math::matrix_4x4 const& projection
-               , math::matrix_4x4 const& transform_matrix
-               , math::matrix_4x4 const& transform_matrix_transposed
-               , bool boundingbox
-               , math::frustum const& frustum
-               , const float& cull_distance
-               , const math::vector_3d& camera
-               , bool // draw_doodads
-               , bool draw_fog
-               , liquid_render& render
-               , int animtime
-               , bool world_has_skies
-               , display_mode display
-               , wmo_group_uniform_data& wmo_uniform_data
-               , std::vector<std::pair<wmo_liquid*, math::matrix_4x4>>& wmo_liquids_to_draw
-               )
+
+void WMO::draw_instanced( opengl::scoped::use_program& wmo_shader
+                        , math::matrix_4x4 const& model_view
+                        , math::matrix_4x4 const& projection
+                        , std::vector<WMOInstance*>& instances
+                        , bool boundingbox
+                        , math::frustum const& frustum
+                        , const float& cull_distance
+                        , const math::vector_3d& camera
+                        , bool draw_doodads
+                        , bool draw_fog
+                        , liquid_render& render
+                        , int animtime
+                        , bool world_has_skies
+                        , display_mode display
+                        , wmo_group_uniform_data& wmo_uniform_data
+                        , std::vector<std::pair<wmo_liquid*, math::matrix_4x4>>& wmo_liquids_to_draw
+                        , noggit::texture_array_handler& texture_handler
+                        , bool update_transform_matrix_buffer
+                        )
 {
+  if (!finishedLoading() || loading_failed())
+  {
+    return;
+  }
+
+  if (!_uploaded)
+  {
+    for (auto const& tex : textures)
+    {
+      texture_array_params.push_back(texture_handler.get_texture_position_normalize_filename(tex));
+    }
+
+    _vertex_arrays.upload();
+    _buffers.upload();
+
+    opengl::scoped::vao_binder const _ (_vao);
+
+    wmo_shader.attrib(_, "position", _vertices_buffer, 3, GL_FLOAT, GL_FALSE, sizeof(wmo_vertex), (void*)offsetof(wmo_vertex, position));
+    wmo_shader.attrib(_, "normal",  _vertices_buffer, 3, GL_FLOAT, GL_FALSE, sizeof(wmo_vertex), (void*)offsetof(wmo_vertex, normal));
+    wmo_shader.attrib(_, "color", _vertices_buffer, 4, GL_FLOAT, GL_FALSE, sizeof(wmo_vertex), (void*)offsetof(wmo_vertex, color));
+    wmo_shader.attrib(_, "uv1", _vertices_buffer, 2, GL_FLOAT, GL_FALSE, sizeof(wmo_vertex), (void*)offsetof(wmo_vertex, uv1));
+    wmo_shader.attrib(_, "uv2", _vertices_buffer, 2, GL_FLOAT, GL_FALSE, sizeof(wmo_vertex), (void*)offsetof(wmo_vertex, uv2));
+    wmo_shader.attrib(_, "transform", _transform_buffer, static_cast<math::matrix_4x4*> (nullptr), 1);
+
+    std::vector<wmo_vertex> vertices_data;
+    std::vector<std::uint32_t> indices_data;
+
+    for (auto& group : groups)
+    {
+      group.setup_global_buffer_data(vertices_data, indices_data);
+    }
+
+    gl.bindBuffer(GL_ARRAY_BUFFER, _vertices_buffer);
+    gl.bufferData(GL_ARRAY_BUFFER, sizeof(wmo_vertex) * vertices_data.size(), vertices_data.data(), GL_STATIC_DRAW);
+    gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, _indices_buffer);
+    gl.bufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(std::uint32_t) * indices_data.size(), indices_data.data(), GL_STATIC_DRAW);
+
+    _uploaded = true;
+  }
+
+  std::vector<math::matrix_4x4> transform_matrix;
+
+  if (update_transform_matrix_buffer || _need_transform_buffer_update)
+  {
+    transform_matrix.reserve(instances.size());
+
+    for (WMOInstance* mi : instances)
+    {
+      if (mi->is_visible(frustum, cull_distance, camera, display))
+      {
+        transform_matrix.push_back(mi->transform_matrix_transposed());
+      }
+    }
+
+    _instance_visible = transform_matrix.size();
+  }
+
+  if (_instance_visible == 0)
+  {
+    return;
+  }
+
+  if (update_transform_matrix_buffer || _need_transform_buffer_update)
+  {
+    opengl::scoped::buffer_binder<GL_ARRAY_BUFFER> const transform_binder(_transform_buffer);
+    gl.bufferData(GL_ARRAY_BUFFER, _instance_visible * sizeof(::math::matrix_4x4), transform_matrix.data(), GL_STATIC_DRAW);
+
+    _need_transform_buffer_update = false;
+  }
+
+  opengl::scoped::vao_binder const _ (_vao);
+
   wmo_shader.uniform("ambient_color", ambient_light_color.xyz());
 
   for (auto& group : groups)
   {
-    if (!group.is_visible(transform_matrix, frustum, cull_distance, camera, display))
-    {
-      group.visible = false;
-      continue;
-    }
+    group.draw( wmo_shader
+              , frustum
+              , cull_distance
+              , camera
+              , draw_fog
+              , world_has_skies
+              , wmo_uniform_data
+              , _instance_visible
+              );
 
-    group.visible = true;
-
-    group.draw ( wmo_shader
-               , frustum
-               , cull_distance
-               , camera
-               , draw_fog
-               , world_has_skies
-               , wmo_uniform_data
-               );
 
     if (group.liquid)
     {
-      wmo_liquids_to_draw.emplace_back(group.liquid.get(), transform_matrix_transposed);
+      for (math::matrix_4x4 const& m : transform_matrix)
+      {
+        wmo_liquids_to_draw.emplace_back(group.liquid.get(), m);
+      }
     }
   }
+}
 
-  if (boundingbox)
+void WMO::draw_boxes_instanced(opengl::scoped::use_program& wmo_box_shader)
+{
+  if (!_instance_visible)
   {
-    opengl::scoped::bool_setter<GL_BLEND, GL_TRUE> const blend;
-    gl.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    return;
+  }
 
-    for (auto& group : groups)
+  opengl::scoped::vao_binder const _ (_bbox_vao);
+
+  if (!_bbox_uploaded)
+  {
+    static std::array<std::uint16_t, 16> const indices
+        {{5, 7, 3, 2, 0, 1, 3, 1, 5, 4, 0, 4, 6, 2, 6, 7}};
+
+    std::vector<math::vector_3d> bbox_vertices;
+    std::vector<std::uint16_t> bbox_indices;
+
+    bbox_vertices.reserve(groups.size() * 8);
+    bbox_indices.reserve(groups.size() * 16);
+
+    for (int i=0; i<groups.size(); ++i)
     {
-      opengl::primitives::wire_box(group.BoundingBoxMin, group.BoundingBoxMax)
-        .draw( model_view
-             , projection
-             , transform_matrix_transposed
-             , {1.0f, 1.0f, 1.0f, 1.0f}
-             );
+      auto& group = groups[i];
+
+      auto group_bbox_vertices(math::box_points(group.BoundingBoxMin, group.BoundingBoxMax));
+      bbox_vertices.insert(bbox_vertices.begin() + i * 8, group_bbox_vertices.begin(), group_bbox_vertices.end());
+
+      std::uint16_t offset = i * 16;
+      for (std::uint16_t indice : indices)
+      {
+        bbox_indices.push_back(indice + offset);
+      }
     }
 
-    opengl::primitives::wire_box ( math::vector_3d(extents[0].x, extents[0].z, -extents[0].y)
-                                 , math::vector_3d(extents[1].x, extents[1].z, -extents[1].y)
-                                 ).draw ( model_view
-                                        , projection
-                                        , transform_matrix_transposed
-                                        , {1.0f, 0.0f, 0.0f, 1.0f}
-                                        );
+    gl.bufferData<GL_ARRAY_BUFFER, math::vector_3d>(_bbox_vertices, bbox_vertices, GL_STATIC_DRAW);
+    gl.bufferData<GL_ELEMENT_ARRAY_BUFFER, std::uint16_t>(_bbox_indices, bbox_indices, GL_STATIC_DRAW);
 
+    wmo_box_shader.attrib(_, "position", _bbox_vertices, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    wmo_box_shader.attrib(_, "transform", _transform_buffer, static_cast<math::matrix_4x4*> (nullptr), 1);
+
+    gl.bindBuffer(GL_ARRAY_BUFFER, _bbox_vertices);
+    gl.bindBuffer(GL_ARRAY_BUFFER, _transform_buffer);
+    gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, _bbox_indices);
+
+    _bbox_uploaded = true;
   }
+
+  gl.drawElementsInstanced(GL_LINE_STRIP, 16 * groups.size(), _instance_visible, GL_UNSIGNED_SHORT, opengl::index_buffer_is_already_bound{}, 0);
 }
 
 std::vector<float> WMO::intersect (math::ray const& ray) const
@@ -592,75 +696,6 @@ namespace
     b = (col & 0x000000FF);
     return math::vector_4d(r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f);
   }
-}
-
-void WMOGroup::upload()
-{
-  _vertex_array.upload();
-  _buffers.upload();
-
-  gl.bufferData<GL_ARRAY_BUFFER> ( _vertices_buffer
-                                 , _vertices.size() * sizeof (*_vertices.data())
-                                 , _vertices.data()
-                                 , GL_STATIC_DRAW
-                                 );
-
-  gl.bufferData<GL_ARRAY_BUFFER> ( _normals_buffer
-                                 , _normals.size() * sizeof (*_normals.data())
-                                 , _normals.data()
-                                 , GL_STATIC_DRAW
-                                 );
-
-  gl.bufferData<GL_ARRAY_BUFFER> ( _texcoords_buffer
-                                 , _texcoords.size() * sizeof (*_texcoords.data())
-                                 , _texcoords.data()
-                                 , GL_STATIC_DRAW
-                                 );
-
-  gl.bufferData<GL_ELEMENT_ARRAY_BUFFER, std::uint16_t>(_indices_buffer, _indices, GL_STATIC_DRAW);
-  
-  if (header.flags.has_two_motv)
-  {
-    gl.bufferData<GL_ARRAY_BUFFER, math::vector_2d> ( _texcoords_buffer_2
-                                                    , _texcoords_2
-                                                    , GL_STATIC_DRAW
-                                                    );
-  }
-
-  gl.bufferData<GL_ARRAY_BUFFER> ( _vertex_colors_buffer
-                                 , _vertex_colors.size() * sizeof (*_vertex_colors.data())
-                                 , _vertex_colors.data()
-                                 , GL_STATIC_DRAW
-                                 );
-
-  _uploaded = true;
-}
-
-void WMOGroup::setup_vao(opengl::scoped::use_program& wmo_shader)
-{
-  opengl::scoped::index_buffer_manual_binder indices (_indices_buffer);
-  {
-    opengl::scoped::vao_binder const _ (_vao);
-
-    wmo_shader.attrib(_, "position", _vertices_buffer, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    wmo_shader.attrib(_, "normal", _normals_buffer, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    wmo_shader.attrib(_, "texcoord", _texcoords_buffer, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-    if (header.flags.has_two_motv)
-    {
-      wmo_shader.attrib(_, "texcoord_2", _texcoords_buffer_2, 2, GL_FLOAT, GL_FALSE, 0, 0);
-    }
-
-    // even if the 2 flags are set there's only one vertex color vector, the 2nd chunk is used for alpha only
-    if (header.flags.has_vertex_color || header.flags.use_mocv2_for_texture_blending)
-    {
-      wmo_shader.attrib(_, "vertex_color", _vertex_colors_buffer, 4, GL_FLOAT, GL_FALSE, 0, 0);
-    }
-
-    indices.bind();
-  }
-
-  _vao_is_setup = true;
 }
 
 void WMOGroup::load()
@@ -1107,6 +1142,34 @@ bool WMOGroup::is_visible( math::matrix_4x4 const& transform
   return (dist < cull_distance);
 }
 
+void WMOGroup::setup_global_buffer_data(std::vector<wmo_vertex>& vertices, std::vector<std::uint32_t>& indices)
+{
+  _vertex_offset = vertices.size();
+  _index_offset = indices.size();
+
+  bool mocv = _vertex_colors.size() > 0;
+  bool uv2 = _texcoords_2.size() > 0;
+
+  for (int i = 0; i < _vertices.size(); ++i)
+  {
+    wmo_vertex v;
+
+    v.position = _vertices[i];
+    v.normal = _normals[i];
+    v.color = mocv ? _vertex_colors[i] : math::vector_4d();
+    v.uv1 = _texcoords[i];
+    v.uv2 = uv2 ? _texcoords_2[i] : math::vector_2d();
+
+    vertices.push_back(v);
+  }
+
+  for (std::uint16_t index : _indices)
+  {
+    // shift the indices to match the vertex positions in the global buffer
+    indices.push_back(index + _vertex_offset);
+  }
+}
+
 void WMOGroup::draw( opengl::scoped::use_program& wmo_shader
                    , math::frustum const& // frustum
                    , const float& //cull_distance
@@ -1114,18 +1177,9 @@ void WMOGroup::draw( opengl::scoped::use_program& wmo_shader
                    , bool // draw_fog
                    , bool // world_has_skies
                    , wmo_group_uniform_data& wmo_uniform_data
+                   , int instance_count
                    )
 {
-  if (!_uploaded)
-  {
-    upload();
-  }
-
-  if (!_vao_is_setup)
-  {
-    setup_vao(wmo_shader);
-  }
-
   int exterior_lit = header.flags.exterior_lit | header.flags.exterior;
   int has_mocv = header.flags.has_vertex_color | header.flags.use_mocv2_for_texture_blending;
 
@@ -1139,9 +1193,6 @@ void WMOGroup::draw( opengl::scoped::use_program& wmo_shader
     wmo_shader.uniform("exterior_lit", exterior_lit);
     wmo_uniform_data.exterior_lit = exterior_lit;
   }
-  
-
-  opengl::scoped::vao_binder const _ (_vao);
 
   for (wmo_batch& batch : _batches)
   {
@@ -1212,17 +1263,24 @@ void WMOGroup::draw( opengl::scoped::use_program& wmo_shader
       gl.enable(GL_CULL_FACE);
     }
 
-    opengl::texture::set_active_texture(0);
-    wmo->textures.at(mat.texture1)->bind();
+    auto& p1 = wmo->texture_array_params.at(mat.texture1);
+
+    math::vector_4i tex_param;
+    tex_param.x = p1.first;
+    tex_param.y = p1.second;
 
     // only shaders using 2 textures in wotlk
     if (mat.shader == 6 || mat.shader == 5 || mat.shader == 3)
     {
-      opengl::texture::set_active_texture(1);
-      wmo->textures.at(mat.texture2)->bind();
+      auto& p2 = wmo->texture_array_params.at(mat.texture2);
+
+      tex_param.w = p2.first;
+      tex_param.z = p2.second;
     }
 
-    gl.drawRangeElements (GL_TRIANGLES, batch.vertex_start, batch.vertex_end, batch.index_count, GL_UNSIGNED_SHORT, opengl::index_buffer_is_already_bound{}, sizeof (std::uint16_t) * batch.index_start);
+    wmo_shader.uniform("tex_param", tex_param);
+
+    gl.drawElementsInstanced(GL_TRIANGLES, batch.index_count, instance_count, GL_UNSIGNED_INT, opengl::index_buffer_is_already_bound{}, sizeof(std::uint32_t) * (batch.index_start + _index_offset));
   }
 }
 
