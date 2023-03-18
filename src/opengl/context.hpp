@@ -48,6 +48,8 @@ namespace opengl
     QOpenGLContext* _current_context = nullptr;
     QOpenGLFunctions_4_1_Core* _4_1_core_func = nullptr;
 
+    bool has_extension(std::string const& name);
+
     void enable (GLenum);
     void disable (GLenum);
     GLboolean isEnabled (GLenum);

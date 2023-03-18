@@ -174,6 +174,11 @@ namespace opengl
     }
   }
 
+  bool context::has_extension(std::string const& name)
+  {
+    return _current_context->hasExtension(QByteArray::fromStdString(name));
+  }
+
   void context::enable (GLenum target)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
