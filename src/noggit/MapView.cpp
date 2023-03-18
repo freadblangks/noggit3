@@ -1074,6 +1074,29 @@ void MapView::createGUI()
                }
              );
 
+
+  view_menu->addSeparator();
+  view_menu->addAction(createTextSeparator("Camera Modes"));
+  view_menu->addSeparator();
+
+  ADD_TOGGLE_NS(view_menu, "Debug cam", _debug_cam_mode);
+  connect ( &_debug_cam_mode, &noggit::bool_toggle_property::changed
+          , [this]
+            {
+              _debug_cam = noggit::camera(_camera.position, _camera.yaw(), _camera.pitch());
+            }
+          );
+
+  ADD_ACTION_NS ( view_menu
+                , "Go to debug camera"
+                , [this]
+                  {
+                    _camera = noggit::camera(_debug_cam.position, _debug_cam.yaw(), _debug_cam.pitch());
+                  }
+                );
+
+  ADD_TOGGLE_NS(view_menu, "FPS camera", _fps_mode);
+
   addHotkey ( Qt::Key_T
             , MOD_none
             , [&]
@@ -1326,6 +1349,7 @@ MapView::MapView( math::degrees camera_yaw0
                 , bool from_bookmark
                 )
   : _camera (camera_pos, camera_yaw0, camera_pitch0)
+  , _debug_cam (camera_pos, camera_yaw0, camera_pitch0)
   , _world (std::move (world))
   , mTimespeed(0.0f)
   , _uid_fix (uid_fix)
@@ -1546,6 +1570,15 @@ void MapView::paintGL()
   const qreal now(_startup_time.elapsed() / 1000.0);
 
   _last_frame_durations.emplace_back (now - _last_update);
+
+  if (_fps_mode.get())
+  {
+    auto h = _world->get_exact_height_at(_camera.position);
+    if (h)
+    {
+      _camera.position.y = *h + 2.f;
+    }
+  }
 
   gl.clear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -2382,11 +2415,11 @@ void MapView::update_cursor_pos()
   }
 }
 
-math::matrix_4x4 MapView::model_view() const
+math::matrix_4x4 MapView::model_view(bool use_debug_cam) const
 {
   if (_display_mode == display_mode::in_2D)
   {
-    math::vector_3d eye = _camera.position;
+    math::vector_3d eye = use_debug_cam ? _debug_cam.position : _camera.position;
     math::vector_3d target = eye;
     target.y -= 1.f;
     target.z -= 0.001f;
@@ -2395,7 +2428,14 @@ math::matrix_4x4 MapView::model_view() const
   }
   else
   {
-    return _camera.look_at_matrix();
+    if (use_debug_cam)
+    {
+      return _debug_cam.look_at_matrix();
+    }
+    else
+    {
+      return _camera.look_at_matrix();
+    }
   }
 }
 math::matrix_4x4 MapView::projection() const
@@ -2411,7 +2451,7 @@ math::matrix_4x4 MapView::projection() const
   }
   else
   {
-    return math::perspective(_camera.fov(), aspect_ratio(), 1.f, far_z);
+    return math::perspective(_camera.fov(), aspect_ratio(), _fps_mode.get() ? 0.1f : 1.f, far_z);
   }
 }
 
@@ -2466,8 +2506,13 @@ void MapView::draw_map()
     doSelection(true);
   }
 
+  bool debug_cam = _debug_cam_mode.get();
+
+  math::frustum frustum(model_view(debug_cam).transposed() * projection().transposed());
+
   _world->draw ( model_view().transposed()
                , projection().transposed()
+               , frustum
                , _cursor_pos
                , terrainMode == editing_mode::mccv ? shader_color : cursor_color
                , cursor_type.get()
@@ -2484,8 +2529,8 @@ void MapView::draw_map()
                , terrainMode == editing_mode::flags
                , terrainMode == editing_mode::areaid
                , terrainMode
-               , _camera.position
-               , _camera_moved_since_last_draw
+               , debug_cam ? _debug_cam.position : _camera.position
+               , debug_cam ? false : _camera_moved_since_last_draw
                , _draw_mfbo.get()
                , _draw_wireframe.get()
                , _draw_lines.get()

@@ -96,6 +96,7 @@ public:
   void update_models_emitters(float dt);
   void draw ( math::matrix_4x4 const& model_view
             , math::matrix_4x4 const& projection
+            , math::frustum const& frustum
             , math::vector_3d const& cursor_pos
             , math::vector_4d const& cursor_color
             , int cursor_type

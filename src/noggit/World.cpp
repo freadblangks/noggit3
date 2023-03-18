@@ -785,6 +785,7 @@ void World::initDisplay()
 
 void World::draw ( math::matrix_4x4 const& model_view
                  , math::matrix_4x4 const& projection
+                 , math::frustum const& frustum
                  , math::vector_3d const& cursor_pos
                  , math::vector_4d const& cursor_color
                  , int cursor_type
@@ -835,7 +836,6 @@ void World::draw ( math::matrix_4x4 const& model_view
   }
 
   math::matrix_4x4 const mvp(model_view * projection);
-  math::frustum const frustum (mvp);
 
   cursor_mode cursor = static_cast<cursor_mode>(cursor_type);
 

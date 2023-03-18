@@ -1,4 +1,5 @@
 #include <noggit/camera.hpp>
+#include <noggit/settings.hpp>
 
 #include <math/projection.hpp>
 
@@ -13,7 +14,7 @@ namespace noggit
     , _roll (0.0f)
     , _yaw (0.f)
     , _pitch (0.f)
-    , _fov (math::degrees (54.f))
+    , _fov (math::degrees (NoggitSettings.value("fov", 54.f).toFloat()))
   {
     //! \note ensure ranges
     yaw (yaw_);

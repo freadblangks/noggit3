@@ -86,6 +86,10 @@ private:
   float moving, strafing, updown, mousedir, turn, lookat;
   math::vector_3d _cursor_pos;
 
+  noggit::camera _debug_cam;
+  noggit::bool_toggle_property _debug_cam_mode = { false };
+  noggit::bool_toggle_property _fps_mode = { false };
+
   bool look, freelook;
   bool ui_hidden = false;
 
@@ -117,7 +121,7 @@ private:
 
   display_mode _display_mode;
 
-  math::matrix_4x4 model_view() const;
+  math::matrix_4x4 model_view(bool use_debug_cam = false) const;
   math::matrix_4x4 projection() const;
 
   void draw_map();
