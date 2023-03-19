@@ -233,6 +233,8 @@ private:
   void addHotkey(Qt::Key key, size_t modifiers, std::function<void()> function, std::function<bool()> condition = [] { return true; });
 
   QElapsedTimer _startup_time;
+  // int because the timer only accept integer values
+  int _target_frametime;
   qreal _last_update = 0.f;
   std::list<qreal> _last_frame_durations;
 

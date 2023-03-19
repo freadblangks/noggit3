@@ -1464,9 +1464,17 @@ MapView::MapView( math::degrees camera_yaw0
 
   _tablet_active = true;
 
+  _target_frametime = NoggitSettings.value("target_frametime", 5).toInt();
+
+  float fps = 1000.f / static_cast<float>(_target_frametime);
+  LogDebug << "Target frametime:" << _target_frametime << "ms (" << std::setprecision(3) << fps << "fps)" << std::endl;
+
   _startup_time.start();
-  _update_every_event_loop.start (0);
-  connect (&_update_every_event_loop, &QTimer::timeout, [this] { update(); });
+  _update_every_event_loop.start(_target_frametime);
+  connect (&_update_every_event_loop, &QTimer::timeout, [this]
+  {
+    update();
+  });
 }
 
 void MapView::tabletEvent(QTabletEvent* event)
