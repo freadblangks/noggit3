@@ -617,6 +617,12 @@ uid_fix_status MapIndex::fixUIDs (World* world, bool cancel_on_model_loading_err
 
       std::stringstream filename;
       filename << "World\\Maps\\" << basename << "\\" << basename << "_" << x << "_" << z << ".adt";
+
+      if (!MPQFile::exists(filename.str()))
+      {
+        continue;
+      }
+
       MPQFile file(filename.str());
 
       if (file.isEof())
