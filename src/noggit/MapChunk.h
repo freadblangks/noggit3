@@ -165,24 +165,18 @@ public:
   void require_shader_data_update();
   void texture_set_changed() { _texture_set_need_update = true; require_shader_data_update(); }
 
-  void update_shader_data ( bool show_unpaintable_chunks
-                          , bool draw_paintability_overlay
-                          , bool draw_chunk_flag_overlay
-                          , bool draw_areaid_overlay
+  void update_shader_data ( bool selected_texture_changed
+                          , std::string const& current_texture
                           , std::map<int, misc::random_color>& area_id_colors
-                          , int animtime
                           , noggit::tileset_array_handler& tileset_handler
                           , bool force_update = false
                           );
 
   void prepare_draw( const math::vector_3d& camera
                    , bool need_visibility_update
-                   , bool show_unpaintable_chunks
-                   , bool draw_paintability_overlay
-                   , bool draw_chunk_flag_overlay
-                   , bool draw_areaid_overlay
+                   , bool selected_texture_changed
+                   , std::string const& current_texture
                    , std::map<int, misc::random_color>& area_id_colors
-                   , int animtime
                    , display_mode display
                    , noggit::tileset_array_handler& tileset_handler
                    , std::vector<void*>& indices_offsets
@@ -217,7 +211,7 @@ public:
   //! \todo implement Action stack for these
   bool paintTexture(math::vector_3d const& pos, Brush *brush, float strength, float pressure, scoped_blp_texture_reference texture);
   bool replaceTexture(math::vector_3d const& pos, float radius, scoped_blp_texture_reference const& old_texture, scoped_blp_texture_reference new_texture);
-  bool canPaintTexture(scoped_blp_texture_reference texture);
+  bool canPaintTexture(std::string const& texture);
   int addTexture(scoped_blp_texture_reference texture);
   void switchTexture(scoped_blp_texture_reference const& oldTexture, scoped_blp_texture_reference newTexture);
   void eraseTextures();

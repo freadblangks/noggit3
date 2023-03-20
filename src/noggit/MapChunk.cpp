@@ -515,12 +515,9 @@ void MapChunk::require_shader_data_update()
   mt->need_chunk_data_update();
 }
 
-void MapChunk::update_shader_data ( bool show_unpaintable_chunks
-                                  , bool draw_paintability_overlay
-                                  , bool draw_chunk_flag_overlay
-                                  , bool draw_areaid_overlay
+void MapChunk::update_shader_data ( bool selected_texture_changed
+                                  , std::string const& current_texture
                                   , std::map<int, misc::random_color>& area_id_colors
-                                  , int animtime
                                   , noggit::tileset_array_handler& tileset_handler
                                   , bool force_update
                                   )
@@ -541,57 +538,49 @@ void MapChunk::update_shader_data ( bool show_unpaintable_chunks
 
         csd.tex_array_index[i] = param.first;
         csd.tex_index_in_array[i] = param.second;
+        csd.tex_animations[i] = math::vector_4d(texture_set->anim_param(i), 0.f);
       }
       else // no change, reuse the old values
       {
         csd.tex_array_index[i] = _shader_data.tex_array_index[i];
         csd.tex_index_in_array[i] = _shader_data.tex_index_in_array[i];
+        csd.tex_animations[i] = _shader_data.tex_animations[i];
       }
-
-      csd.tex_animations[i] = math::vector_4d(texture_set->anim_param(i), 0.f);
     }
   }
 
-  // normalize values "bool" values
+  // normalize "bool" values
   csd.is_textured = texture_count ? 1 : 0;
   csd.has_shadow = _chunk_shadow ? 1 : 0;
 
   // todo: only check if the textures have changed on the chunk
   // or the current selected texture has changed
-  if (show_unpaintable_chunks && draw_paintability_overlay)
+  if (selected_texture_changed || !_uploaded)
   {
-    bool cant_paint = texture_count == 4
-                   && noggit::ui::selected_texture::get()
-                   && !canPaintTexture(*noggit::ui::selected_texture::get());
+    bool cant_paint = texture_count == 4 && !canPaintTexture(current_texture);
 
     csd.cant_paint = cant_paint ? 1 : 0;
   }
   else
   {
-    csd.cant_paint = 0;
+    csd.cant_paint = _shader_data.cant_paint;
   }
 
-  csd.draw_impassible_flag = (draw_chunk_flag_overlay && header_flags.flags.impass) ? 1 : 0;
-
-  if (draw_areaid_overlay)
-  {
-    csd.areaid_color = (math::vector_4d)area_id_colors[areaID];
-  }
+  csd.draw_impassible_flag = header_flags.flags.impass ? 1 : 0;
+  csd.areaid_color = (math::vector_4d)area_id_colors[areaID];
 
   gl.bufferSubData(GL_UNIFORM_BUFFER, (sizeof(chunk_shader_data) * (py * 16 + px)), sizeof(chunk_shader_data), &csd);
 
+  _uploaded = true;
   _shader_data_need_update = false;
   _shader_data = csd;
 }
 
 void MapChunk::prepare_draw ( const math::vector_3d& camera
                             , bool need_visibility_update
-                            , bool show_unpaintable_chunks
-                            , bool draw_paintability_overlay
-                            , bool draw_chunk_flag_overlay
-                            , bool draw_areaid_overlay
+                            , bool selected_texture_changed
+                            , std::string const& current_texture
                             , std::map<int, misc::random_color>& area_id_colors
-                            , int animtime
                             , display_mode display
                             , noggit::tileset_array_handler& tileset_handler
                             , std::vector<void*>& indices_offsets
@@ -610,14 +599,11 @@ void MapChunk::prepare_draw ( const math::vector_3d& camera
     }
   }
 
-  if(_shader_data_need_update)
+  if(_shader_data_need_update || selected_texture_changed)
   {
-    update_shader_data( show_unpaintable_chunks
-                      , draw_paintability_overlay
-                      , draw_chunk_flag_overlay
-                      , draw_areaid_overlay
+    update_shader_data( selected_texture_changed
+                      , current_texture
                       , area_id_colors
-                      , animtime
                       , tileset_handler
                       );
   }
@@ -1079,7 +1065,7 @@ bool MapChunk::replaceTexture(math::vector_3d const& pos, float radius, scoped_b
   return texture_set->replace_texture(xbase, zbase, pos.x, pos.z, radius, old_texture, std::move (new_texture));
 }
 
-bool MapChunk::canPaintTexture(scoped_blp_texture_reference texture)
+bool MapChunk::canPaintTexture(std::string const& texture)
 {
   return texture_set->canPaintTexture(texture);
 }
@@ -1113,6 +1099,8 @@ void MapChunk::setHole(math::vector_3d const& pos, bool big, bool add)
 void MapChunk::setAreaID(int ID)
 {
   areaID = ID;
+
+  require_shader_data_update();
 }
 
 int MapChunk::getAreaID()
@@ -1131,6 +1119,8 @@ void MapChunk::setFlag(bool changeto, uint32_t flag)
   {
     header_flags.value &= ~flag;
   }
+
+  require_shader_data_update();
 }
 
 void MapChunk::save(util::sExtendableArray &lADTFile, int &lCurrentPosition, int &lMCIN_Position, std::map<std::string, int> &lTextures, std::vector<WMOInstance> &lObjectInstances, std::vector<ModelInstance>& lModelInstances)

@@ -57,7 +57,7 @@ public:
                       , scoped_blp_texture_reference const& texture_to_replace
                       , scoped_blp_texture_reference replacement_texture
                       );
-  bool canPaintTexture(scoped_blp_texture_reference const& texture);
+  bool canPaintTexture(std::string const& texture);
 
   size_t const& num() const { return nTextures; }
   unsigned int flag(size_t id);

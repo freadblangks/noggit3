@@ -791,6 +791,7 @@ void World::draw ( math::matrix_4x4 const& model_view
                  , int cursor_type
                  , float brush_radius
                  , bool show_unpaintable_chunks
+                 , std::string const& current_texture
                  , bool draw_contour
                  , float inner_radius_ratio
                  , math::vector_3d const& ref_pos
@@ -798,7 +799,6 @@ void World::draw ( math::matrix_4x4 const& model_view
                  , float orientation
                  , bool use_ref_pos
                  , bool angled_mode
-                 , bool draw_paintability_overlay
                  , bool draw_chunk_flag_overlay
                  , bool draw_areaid_overlay
                  , editing_mode terrainMode
@@ -911,7 +911,7 @@ void World::draw ( math::matrix_4x4 const& model_view
 
     mcnk_shader.uniform("alphamap", 0);
 
-    for (int i = 0; i < 14; ++i)
+    for (int i = 0; i < fragment_shader_max_texture_unit-1; ++i)
     {
       mcnk_shader.uniform("texture_arrays[" + std::to_string(i) + "]", i + 1);
     }
@@ -1054,12 +1054,21 @@ void World::draw ( math::matrix_4x4 const& model_view
   {
     opengl::scoped::use_program mcnk_shader{ *_mcnk_program.get() };
 
+    bool selected_texture_changed = false;
+    if (_last_selected_texture != current_texture)
+    {
+      _last_selected_texture = current_texture;
+      selected_texture_changed = true;
+    }
+
     mcnk_shader.uniform("mvp", mvp);
 
     mcnk_shader.uniform ("draw_lines", (int)draw_lines);
     mcnk_shader.uniform ("draw_hole_lines", (int)draw_hole_lines);
     mcnk_shader.uniform ("draw_areaid_overlay", (int)draw_areaid_overlay);
     mcnk_shader.uniform ("draw_terrain_height_contour", (int)draw_contour);
+    mcnk_shader.uniform ("draw_impassible_flag", (int)draw_chunk_flag_overlay);
+    mcnk_shader.uniform ("show_unpaintable_chunks", (int)show_unpaintable_chunks);
 
     mcnk_shader.uniform ("draw_wireframe", (int)draw_wireframe);
 
@@ -1103,12 +1112,9 @@ void World::draw ( math::matrix_4x4 const& model_view
                  , culldistance
                  , camera_pos
                  , camera_moved
-                 , show_unpaintable_chunks
-                 , draw_paintability_overlay
-                 , draw_chunk_flag_overlay
-                 , draw_areaid_overlay
+                 , selected_texture_changed
+                 , _last_selected_texture
                  , area_id_colors
-                 , animtime
                  , display
                  , _tileset_handler
                  );

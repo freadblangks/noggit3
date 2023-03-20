@@ -63,12 +63,9 @@ public:
             , const float& cull_distance
             , const math::vector_3d& camera
             , bool need_visibility_update
-            , bool show_unpaintable_chunks
-            , bool draw_paintability_overlay
-            , bool draw_chunk_flag_overlay
-            , bool draw_areaid_overlay
+            , bool selected_texture_changed
+            , std::string const& current_texture
             , std::map<int, misc::random_color>& area_id_colors
-            , int animtime
             , display_mode display
             , noggit::tileset_array_handler& tileset_handler
             );

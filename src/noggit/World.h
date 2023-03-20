@@ -59,6 +59,8 @@ private:
   noggit::tileset_array_handler _tileset_handler;
   noggit::texture_array_handler _model_texture_handler;
 
+  std::string _last_selected_texture = "";
+
 public:
   MapIndex mapIndex;
   noggit::map_horizon horizon;
@@ -102,6 +104,7 @@ public:
             , int cursor_type
             , float brush_radius
             , bool show_unpaintable_chunks
+            , std::string const& current_texture
             , bool draw_contour
             , float inner_radius_ratio
             , math::vector_3d const& ref_pos
@@ -109,7 +112,6 @@ public:
             , float orientation
             , bool use_ref_pos
             , bool angled_mode
-            , bool draw_paintability_overlay
             , bool draw_chunk_flag_overlay
             , bool draw_areaid_overlay
             //! \todo passing editing_mode is _so_ wrong, I don't believe I'm doing this

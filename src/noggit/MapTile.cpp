@@ -337,12 +337,9 @@ void MapTile::draw ( math::frustum const& frustum
                    , const float& cull_distance
                    , const math::vector_3d& camera
                    , bool need_visibility_update
-                   , bool show_unpaintable_chunks
-                   , bool draw_paintability_overlay
-                   , bool draw_chunk_flag_overlay
-                   , bool draw_areaid_overlay
+                   , bool selected_texture_changed
+                   , std::string const& current_texture
                    , std::map<int, misc::random_color>& area_id_colors
-                   , int animtime
                    , display_mode display
                    , noggit::tileset_array_handler& tileset_handler
                    )
@@ -406,9 +403,7 @@ void MapTile::draw ( math::frustum const& frustum
   gl.bindBufferBase(GL_UNIFORM_BUFFER, 0, _chunks_data_ubo);
   gl.bindVertexArray(_vao);
 
-  // iterate over all chunks this way as it seems to be
-  // the fastest way when iterating over all of them
-  if (_need_chunk_data_update)
+  if (_need_chunk_data_update || selected_texture_changed)
   {
     gl.bindBuffer(GL_ARRAY_BUFFER, _vertices_vbo);
     gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, _indices_vbo);
@@ -419,12 +414,9 @@ void MapTile::draw ( math::frustum const& frustum
       {
         mChunks[z][x]->prepare_draw( camera
                                    , need_visibility_update
-                                   , show_unpaintable_chunks
-                                   , draw_paintability_overlay
-                                   , draw_chunk_flag_overlay
-                                   , draw_areaid_overlay
+                                   , selected_texture_changed
+                                   , current_texture
                                    , area_id_colors
-                                   , animtime
                                    , display
                                    , tileset_handler
                                    , _indices_offsets

@@ -6,7 +6,7 @@ struct chunk_shader_data
   bool has_shadow;
   bool is_textured;
   bool cant_paint;
-  bool draw_impassible_flag;
+  bool impassible_flag;
 
   vec3 tex_anim[4]; // direction + speed
   vec4 areaid_color;
@@ -23,9 +23,11 @@ layout (std140) uniform chunk_data
 // todo: move to opengl 4.1+ to be able to use the layout qualifier to be able to validate the program on creation
 uniform sampler2DArray alphamap;
 // todo: use a dynamically set define for the array size
-uniform sampler2DArray texture_arrays[14];
+uniform sampler2DArray texture_arrays[31];
 
 
+uniform bool show_unpaintable_chunks;
+uniform bool draw_impassible_flag;
 uniform bool draw_areaid_overlay;
 uniform bool draw_terrain_height_contour;
 uniform bool draw_lines;
@@ -130,6 +132,74 @@ vec3 texture_color(int array_index, int index_in_array, vec2 anim_uv)
   {
     return texture(texture_arrays[13], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
   }
+  else if(array_index == 14)
+  {
+    return texture(texture_arrays[1], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 15)
+  {
+    return texture(texture_arrays[1], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 16)
+  {
+    return texture(texture_arrays[1], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 17)
+  {
+    return texture(texture_arrays[1], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 18)
+  {
+    return texture(texture_arrays[1], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 19)
+  {
+    return texture(texture_arrays[1], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 20)
+  {
+    return texture(texture_arrays[2], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 21)
+  {
+    return texture(texture_arrays[2], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 22)
+  {
+    return texture(texture_arrays[2], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 23)
+  {
+    return texture(texture_arrays[2], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 24)
+  {
+    return texture(texture_arrays[2], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 25)
+  {
+    return texture(texture_arrays[2], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 26)
+  {
+    return texture(texture_arrays[2], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 27)
+  {
+    return texture(texture_arrays[2], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 28)
+  {
+    return texture(texture_arrays[2], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 29)
+  {
+    return texture(texture_arrays[29], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
+  else if(array_index == 30)
+  {
+    return texture(texture_arrays[30], vec3(vary_texcoord + anim_uv, index_in_array)).rgb;
+  }
 }
 
 vec2 anim_uv(int index)
@@ -191,7 +261,7 @@ void main()
   // diffuse + ambient lighting
   out_color.rgb *= vec3(clamp (diffuse_color * max(dot(vary_normal, light_dir), 0.0), 0.0, 1.0)) + ambient_color;
 
-  if(ubo_data[chunk_id].cant_paint)
+  if(show_unpaintable_chunks && ubo_data[chunk_id].cant_paint)
   {
     out_color *= vec4(1.0, 0.0, 0.0, 1.0);
   }
@@ -201,7 +271,7 @@ void main()
     out_color = out_color * 0.3 + ubo_data[chunk_id].areaid_color;
   }
 
-  if(ubo_data[chunk_id].draw_impassible_flag)
+  if(draw_impassible_flag && ubo_data[chunk_id].impassible_flag)
   {
     out_color.rgb = mix(vec3(1.0), out_color.rgb, 0.5);
   }

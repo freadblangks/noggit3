@@ -269,13 +269,13 @@ void TextureSet::eraseTexture(size_t id)
   require_update();
 }
 
-bool TextureSet::canPaintTexture(scoped_blp_texture_reference const& texture)
+bool TextureSet::canPaintTexture(std::string const& texture)
 {
   if (nTextures)
   {
     for (size_t k = 0; k < nTextures; ++k)
     {
-      if (_textures[k] == texture->filename)
+      if (_textures[k] == texture)
       {
         return true;
       }

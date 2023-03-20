@@ -2525,7 +2525,8 @@ void MapView::draw_map()
                , terrainMode == editing_mode::mccv ? shader_color : cursor_color
                , cursor_type.get()
                , radius
-               , texturingTool->show_unpaintable_chunks()
+               , texturingTool->show_unpaintable_chunks() && terrainMode == editing_mode::paint
+               , noggit::ui::selected_texture::texture ? noggit::ui::selected_texture::texture.get()->filename : ""
                , _draw_contour.get()
                , inner_radius
                , ref_pos
@@ -2533,7 +2534,6 @@ void MapView::draw_map()
                , orientation
                , use_ref_pos
                , angled_mode
-               , terrainMode == editing_mode::paint
                , terrainMode == editing_mode::flags
                , terrainMode == editing_mode::areaid
                , terrainMode
