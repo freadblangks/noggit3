@@ -306,6 +306,9 @@ void MapTile::finishLoading()
     _use_no_alpha_alphamap = true;
   }
 
+  // otherwise lods have visual issues from underground vertices being at "max" depth
+  Water.update_underground_vertices_depth();
+
   // - Really done. --------------------------------------
 
   LogDebug << "Done loading tile " << index.x << "," << index.z << "." << std::endl;

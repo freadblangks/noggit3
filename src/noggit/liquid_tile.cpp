@@ -99,6 +99,19 @@ void liquid_tile::autoGen(float factor)
   }
 }
 
+void liquid_tile::update_underground_vertices_depth()
+{
+  _need_buffer_update = true;
+
+  for (int z = 0; z < 16; ++z)
+  {
+    for (int x = 0; x < 16; ++x)
+    {
+      chunks[z][x]->update_underground_vertices_depth(tile->getChunk(x, z));
+    }
+  }
+}
+
 void liquid_tile::saveToFile(util::sExtendableArray &lADTFile, int &lMHDR_Position, int &lCurrentPosition)
 {
   if (!hasData(0))
@@ -310,4 +323,12 @@ void liquid_tile::update_visibility ( const float& cull_distance
 
   _is_visible = dist < cull_distance && frustum.intersects(_intersect_points);
   _need_visibility_update = false;
+
+  for (int z = 0; z < 16; ++z)
+  {
+    for (int x = 0; x < 16; ++x)
+    {
+      chunks[z][x]->update_lod_level(camera, _indices_offsets, _indices_count);
+    }
+  }
 }

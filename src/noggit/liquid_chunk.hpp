@@ -48,6 +48,7 @@ public:
                   ) const;
 
   void autoGen(MapChunk* chunk, float factor);
+  void update_underground_vertices_depth(MapChunk* chunk);
   void CropWater(MapChunk* chunkTerrain);
 
   void setType(int type, size_t layer);
@@ -76,6 +77,7 @@ public:
   void upload_data(int& index_in_tile, liquid_render& render);
   void update_data(liquid_render& render);
   void update_indices_info(std::vector<void*>& indices_offsets, std::vector<int>& indices_count);
+  void update_lod_level(math::vector_3d const& camera_pos, std::vector<void*>& indices_offsets, std::vector<int>& indices_count);
 
   math::vector_3d const& min() { return vmin; }
   math::vector_3d const& max() { return vmax; }
@@ -98,6 +100,7 @@ private:
   MH2O_Attributes attributes;
 
   std::vector<liquid_layer> _layers;
+  int _layer_count = 0;
 
   liquid_tile* _liquid_tile;
 

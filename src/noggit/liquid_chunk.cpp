@@ -224,6 +224,13 @@ void liquid_chunk::autoGen(MapChunk *chunk, float factor)
   }
   update_layers();
 }
+void liquid_chunk::update_underground_vertices_depth(MapChunk *chunk)
+{
+  for (liquid_layer& layer : _layers)
+  {
+    layer.update_underground_vertices_depth(chunk);
+  }
+}
 
 
 void liquid_chunk::CropWater(MapChunk* chunkTerrain)
@@ -279,11 +286,13 @@ void liquid_chunk::update_layers()
   _intersect_points = misc::intersection_points(vmin, vmax);
 
   _liquid_tile->require_buffer_update();
+
+  _layer_count = _layers.size();
 }
 
 bool liquid_chunk::hasData(size_t layer) const
 {
-  return _layers.size() > layer;
+  return _layer_count > layer;
 }
 
 
@@ -427,5 +436,17 @@ void liquid_chunk::update_indices_info(std::vector<void*>& indices_offsets, std:
   for (liquid_layer& layer : _layers)
   {
     layer.update_indices_info(indices_offsets, indices_count);
+  }
+}
+void liquid_chunk::update_lod_level(math::vector_3d const& camera_pos, std::vector<void*>& indices_offsets, std::vector<int>& indices_count)
+{
+  if (hasData(0))
+  {
+    int lod = _layers[0].get_lod_level(camera_pos);
+
+    for (liquid_layer& layer : _layers)
+    {
+      layer.set_lod_level(lod, indices_offsets, indices_count);
+    }
   }
 }

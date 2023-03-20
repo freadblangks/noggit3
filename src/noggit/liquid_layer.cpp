@@ -31,6 +31,7 @@ liquid_layer::liquid_layer(math::vector_3d const& base, float height, int liquid
   create_vertices(height);
 
   changeLiquidID(_liquid_id);
+  update_min_max();
 }
 
 liquid_layer::liquid_layer(math::vector_3d const& base, mclq& liquid, int liquid_id)
@@ -75,6 +76,8 @@ liquid_layer::liquid_layer(math::vector_3d const& base, mclq& liquid, int liquid
       _vertices.push_back(lv);
     }
   }
+
+  update_min_max();
 }
 
 liquid_layer::liquid_layer(MPQFile &f, std::size_t base_pos, math::vector_3d const& base, MH2O_Information const& info, std::uint64_t infomask)
@@ -147,6 +150,7 @@ liquid_layer::liquid_layer(MPQFile &f, std::size_t base_pos, math::vector_3d con
   }
 
   changeLiquidID(_liquid_id); // to update the liquid type
+  update_min_max();
 }
 
 liquid_layer::liquid_layer(liquid_layer&& other)
@@ -509,6 +513,11 @@ void liquid_layer::update_indices()
       }
     }
   }
+
+  for (int i = 0; i < lod_count; ++i)
+  {
+    _indices_count_by_lod[i] = _indices_by_lod[i].size();
+  }
 }
 
 void liquid_layer::crop(MapChunk* chunk)
@@ -550,6 +559,33 @@ void liquid_layer::update_opacity(MapChunk* chunk, float factor)
     for (int x = 0; x < 9; ++x)
     {
       update_vertex_opacity(x, z, chunk, factor);
+    }
+  }
+}
+
+// todo: fix uvs so lava lods don't look weird
+void liquid_layer::update_underground_vertices_depth(MapChunk* chunk)
+{
+  for (int z = 0; z < 9; ++z)
+  {
+    for (int x = 0; x < 9; ++x)
+    {
+      float diff = _vertices[z * 9 + x].position.y - chunk->vertices[z * 17 + x].position.y;
+
+      if (diff < 0.f)
+      {
+        _vertices[z * 9 + x].depth = 0.f;
+      }
+      else
+      {
+        if (x < 8 && z < 8 && !hasSubchunk(x, z))
+        {
+          _vertices[z * 9 + x].depth = 0.f;
+          _vertices[z * 9 + x + 1].depth = 0.f;
+          _vertices[(z + 1) * 9 + x].depth = 0.f;
+          _vertices[(z + 1) * 9 + (x + 1)].depth = 0.f;
+        }
+      }
     }
   }
 }
@@ -677,6 +713,8 @@ void liquid_layer::update_min_max()
     }
   }
 
+  _center = math::vector_3d(pos.x + CHUNKSIZE * 0.5f, (_maximum + _minimum) * 0.5f, pos.z + CHUNKSIZE * 0.5f);
+
   // lvf = 2 means the liquid height is 0, switch to lvf 0 when that's not the case
   if (_liquid_vertex_format == 2 && (!misc::float_equals(0.f, _minimum) || !misc::float_equals(0.f, _maximum)))
   {
@@ -709,18 +747,22 @@ void liquid_layer::update_vertex_opacity(int x, int z, MapChunk* chunk, float fa
 
 int liquid_layer::get_lod_level(math::vector_3d const& camera_pos) const
 {
-  auto const& center_vertex (_vertices[5 * 9 + 4].position);
-  auto const dist ((center_vertex - camera_pos).length());
+  auto const dist ((_center - camera_pos).length());
 
-  float f = std::min(1.f, dist / 4000.f);
-
-  return std::min(lod_count-1, static_cast<int>(f * lod_count));
+  float f = std::min(1.f, dist / (500.f * lod_count));
+  return std::clamp(static_cast<int>(f * lod_count), 0, lod_count - 1);
 }
 
-void liquid_layer::set_lod_level(int lod_level)
+void liquid_layer::set_lod_level(int lod_level, std::vector<void*>& indices_offsets, std::vector<int>& indices_count)
 {
-  _current_lod_level = lod_level;
-  _current_lod_indices_count = _indices_by_lod[lod_level].size();
+  if (lod_level != _current_lod_level)
+  {
+    _current_lod_level = lod_level;
+    _current_lod_indices_count = _indices_count_by_lod[_current_lod_level];
+
+    indices_count[_index_in_tile] = _indices_count_by_lod[_current_lod_level];
+    indices_offsets[_index_in_tile] = static_cast<char*>(0) + _index_in_tile * indice_buffer_size_required + lod_level_offset[_current_lod_level];
+  }
 }
 
 void liquid_layer::update_data(liquid_render& render)
@@ -728,16 +770,25 @@ void liquid_layer::update_data(liquid_render& render)
   update_indices();
 
   liquid_layer_data data = render.ubo_data(_liquid_id);
+  int offset = 0;
 
-  gl.bufferSubData(GL_ELEMENT_ARRAY_BUFFER, _index_in_tile * indice_buffer_size_required, _indices_by_lod.at(0).size() * sizeof(liquid_indice), _indices_by_lod.at(0).data());
+  for (int i = 0; i < lod_count; ++i)
+  {
+    gl.bufferSubData(GL_ELEMENT_ARRAY_BUFFER, _index_in_tile * indice_buffer_size_required + offset, _indices_by_lod.at(i).size() * sizeof(liquid_indice), _indices_by_lod.at(i).data());
+
+    offset += max_indices_per_lod_level[i] * sizeof(liquid_indice);
+  }
+
   gl.bufferSubData(GL_ARRAY_BUFFER, _index_in_tile * vertex_buffer_size_required, _vertices.size() * sizeof(liquid_vertex), _vertices.data());
   gl.bufferSubData(GL_UNIFORM_BUFFER, _index_in_tile * sizeof(liquid_layer_data), sizeof(liquid_layer_data), &data);
+
+  _indices_by_lod.clear();
 
   _need_data_update = false;
 }
 
 void liquid_layer::update_indices_info(std::vector<void*>& indices_offsets, std::vector<int>& indices_count)
 {
-  indices_count.push_back(_indices_by_lod[0].size());
-  indices_offsets.push_back(static_cast<char*>(0) + _index_in_tile * indice_buffer_size_required);
+  indices_count.push_back(_indices_count_by_lod[_current_lod_level]);
+  indices_offsets.push_back(static_cast<char*>(0) + _index_in_tile * indice_buffer_size_required + lod_level_offset[_current_lod_level]);
 }

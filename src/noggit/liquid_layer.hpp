@@ -36,6 +36,7 @@ public:
 
   void crop(MapChunk* chunk);
   void update_opacity(MapChunk* chunk, float factor);
+  void update_underground_vertices_depth(MapChunk* chunk);
 
 
   float min() const { return _minimum; }
@@ -69,8 +70,23 @@ public:
 
   void copy_subchunk_height(int x, int z, liquid_layer const& from);
 
+  static constexpr int lod_count = 3;
   static constexpr int vertex_buffer_size_required = 9 * 9 * sizeof(liquid_vertex);
-  static constexpr int indice_buffer_size_required = 8 * 8 * 2 * 3 * sizeof(liquid_indice); // 2 triangle per quad
+  static constexpr std::array<int, 4> max_indices_per_lod_level = 
+    { 8 * 8 * 2 * 3  // 2 triangles per quad
+    , 4 * 4 * 2 * 3
+    , 2 * 2 * 2 * 3 
+    , 1 * 1 * 2 * 3 
+    };
+  static constexpr std::array<int, 4> lod_level_offset =
+  { 0
+  , 64 * 6 * sizeof(liquid_indice)
+  , (64 + 16) * 6 * sizeof(liquid_indice)
+  , (64 + 16 + 4) * 6 * sizeof(liquid_indice)
+  };
+  static constexpr int max_total_indices = max_indices_per_lod_level[0] + max_indices_per_lod_level[1] 
+                                         + max_indices_per_lod_level[2];
+  static constexpr int indice_buffer_size_required = max_total_indices * sizeof(liquid_indice);
 
 
   void upload_data(int index_in_tile, liquid_render& render)
@@ -80,11 +96,12 @@ public:
   }
 
   void update_data(liquid_render& render);
-
   void update_indices_info(std::vector<void*>& indices_offsets, std::vector<int>& indices_count);
 
-  bool has_fatigue() const { return _fatigue_enabled; }
+  int get_lod_level(math::vector_3d const& camera_pos) const;
+  void set_lod_level(int lod_level, std::vector<void*>& indices_offsets, std::vector<int>& indices_count);
 
+  bool has_fatigue() const { return _fatigue_enabled; }
 private:
   bool check_fatigue() const;
   bool _fatigue_enabled = false;
@@ -98,12 +115,9 @@ private:
 
   void update_min_max();
   void update_vertex_opacity(int x, int z, MapChunk* chunk, float factor);
-  int get_lod_level(math::vector_3d const& camera_pos) const;
-  void set_lod_level(int lod_level);
 
-  static int const lod_count = 3;
 
-  int _current_lod_level = -1;
+  int _current_lod_level = 0;
   int _current_lod_indices_count = 0;
 
 
@@ -113,12 +127,14 @@ private:
   int _mclq_liquid_type;
   float _minimum;
   float _maximum;
+  math::vector_3d _center;
 
   std::uint64_t _subchunks;
 
   std::vector<liquid_vertex> _vertices;
 
   std::map<int, std::vector<liquid_indice>> _indices_by_lod;
+  std::map<int, int> _indices_count_by_lod;
 
 private:
   math::vector_3d pos;
