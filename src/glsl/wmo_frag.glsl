@@ -1,7 +1,11 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
-#version 330 core
-
-uniform sampler2DArray textures[32];
+#version 410 core
+#ifdef use_bindless
+#extension GL_ARB_bindless_texture : require
+#else
+uniform sampler2DArray array_0;
+uniform sampler2DArray array_1;
+#endif
 
 uniform bool draw_fog;
 uniform float fog_start;
@@ -12,18 +16,20 @@ uniform vec3 camera;
 
 struct batch_uniforms
 {
-  ivec4 texture_params;
+  uvec2 texture_1;
+  uvec2 padding_1;
+  uvec2 texture_2;
+  uvec2 padding_2;
 
+  int texture_index_1;
+  int texture_index_2;
   int use_vertex_color;
   int exterior_lit;
+
   int shader_id;
   int unfogged;
-
   int unlit;
   float alpha_test;
-  // padding
-  int unculled;
-  int blend_mode;
 };
 
 
@@ -47,138 +53,6 @@ in vec2 f_texcoord_2;
 in vec4 f_vertex_color;
 
 out vec4 out_color;
-
-vec4 tex_color(ivec2 param, vec2 uv)
-{
-  if(param.x == 0)
-  {
-    return texture(textures[0], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 1)
-  {
-    return texture(textures[1], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 2)
-  {
-    return texture(textures[2], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 3)
-  {
-    return texture(textures[3], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 4)
-  {
-    return texture(textures[4], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 5)
-  {
-    return texture(textures[5], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 6)
-  {
-    return texture(textures[6], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 7)
-  {
-    return texture(textures[7], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 8)
-  {
-    return texture(textures[8], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 9)
-  {
-    return texture(textures[9], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 10)
-  {
-    return texture(textures[10], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 11)
-  {
-    return texture(textures[11], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 12)
-  {
-    return texture(textures[12], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 13)
-  {
-    return texture(textures[13], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 14)
-  {
-    return texture(textures[14], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 15)
-  {
-    return texture(textures[15], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 16)
-  {
-    return texture(textures[16], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 17)
-  {
-    return texture(textures[17], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 18)
-  {
-    return texture(textures[18], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 19)
-  {
-    return texture(textures[19], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 20)
-  {
-    return texture(textures[20], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 21)
-  {
-    return texture(textures[21], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 22)
-  {
-    return texture(textures[22], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 23)
-  {
-    return texture(textures[23], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 24)
-  {
-    return texture(textures[24], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 25)
-  {
-    return texture(textures[25], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 26)
-  {
-    return texture(textures[26], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 27)
-  {
-    return texture(textures[27], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 28)
-  {
-    return texture(textures[28], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 29)
-  {
-    return texture(textures[29], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 30)
-  {
-    return texture(textures[30], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 31)
-  {
-    return texture(textures[31], vec3(uv, param.y + 0.1));
-  }
-}
 
 vec3 lighting(vec3 material)
 {
@@ -213,13 +87,29 @@ void main()
     out_color = vec4(fog_color, 1.);
     return;
   }
-
-  vec4 tex   = tex_color(data[index].texture_params.xy, f_texcoord);
-  vec4 tex_2 = tex_color(data[index].texture_params.zw, f_texcoord_2);
+#ifdef use_bindless
+  vec4 tex = texture(sampler2DArray(data[index].texture_1), vec3(f_texcoord, data[index].texture_index_1));
+#else
+  vec4 tex = texture(array_0, vec3(f_texcoord, data[index].texture_index_1));
+#endif
+  
+  vec4 tex_2 = vec4(0.);
 
   if(tex.a < data[index].alpha_test)
   {
     discard;
+  }
+
+  int shader = data[index].shader_id;
+
+  if(shader == 3 || shader == 6 || shader == 5)
+  {
+
+#ifdef use_bindless
+    tex_2 = texture(sampler2DArray(data[index].texture_2), vec3(f_texcoord_2, data[index].texture_index_2));
+#else
+    tex_2 = texture(array_1, vec3(f_texcoord_2, data[index].texture_index_2));
+#endif
   }
 
   vec4 vertex_color = vec4(0., 0., 0., 1.f);
@@ -230,19 +120,18 @@ void main()
     vertex_color = f_vertex_color;
   }
 
-
   // see: https://github.com/Deamon87/WebWowViewerCpp/blob/master/wowViewerLib/src/glsl/wmoShader.glsl
-  if(data[index].shader_id == 3) // Env
+  if(shader == 3) // Env
   {
     vec3 env = tex_2.rgb * tex.rgb;
     out_color = vec4(lighting(tex.rgb) + env, 1.);
   }
-  else if(data[index].shader_id == 5) // EnvMetal
+  else if(shader == 5) // EnvMetal
   {
     vec3 env = tex_2.rgb * tex.rgb * tex.a;
     out_color = vec4(lighting(tex.rgb) + env, 1.);
   }
-  else if(data[index].shader_id == 6) // TwoLayerDiffuse
+  else if(shader == 6) // TwoLayerDiffuse
   {
     vec3 layer2 = mix(tex.rgb, tex_2.rgb, tex_2.a);
     out_color = vec4(lighting(mix(layer2, tex.rgb, vertex_color.a)), 1.);

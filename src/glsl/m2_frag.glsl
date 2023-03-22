@@ -1,6 +1,11 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
 #version 410 core
-
+#ifdef use_bindless
+#extension GL_ARB_bindless_texture : require
+#else
+uniform sampler2DArray array_0;
+uniform sampler2DArray array_1;
+#endif
 
 struct m2_data
 {
@@ -14,19 +19,26 @@ struct m2_data
   mat4 tex_matrix_1;
   mat4 tex_matrix_2;
   
-  ivec4 tex_param;
+  uvec2 texture_handle_1;
+  uvec2 pad1;
+  uvec2 texture_handle_2;
+  uvec2 pad2;
+
+  int index_1;
+  int index_2;
+  ivec2 padding;
 
   float alpha_test;
   int tex_unit_lookup_1;
   int tex_unit_lookup_2;
-  int padding;
+  int tex_count;
 };
 
 uniform int index;
 
 layout (std140) uniform render_data
 {
-  m2_data data[128];
+  m2_data data[192];
 };
 
 in vec2 uv1;
@@ -35,8 +47,6 @@ in float camera_dist;
 in vec3 norm;
 
 out vec4 out_color;
-
-uniform sampler2DArray textures[32];
 
 uniform vec4 fog_color;
 uniform float fog_start;
@@ -47,137 +57,7 @@ uniform vec3 light_dir;
 uniform vec3 diffuse_color;
 uniform vec3 ambient_color;
 
-vec4 tex_color(ivec2 param, vec2 uv)
-{
-  if(param.x == 0)
-  {
-    return texture(textures[0], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 1)
-  {
-    return texture(textures[1], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 2)
-  {
-    return texture(textures[2], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 3)
-  {
-    return texture(textures[3], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 4)
-  {
-    return texture(textures[4], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 5)
-  {
-    return texture(textures[5], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 6)
-  {
-    return texture(textures[6], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 7)
-  {
-    return texture(textures[7], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 8)
-  {
-    return texture(textures[8], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 9)
-  {
-    return texture(textures[9], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 10)
-  {
-    return texture(textures[10], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 11)
-  {
-    return texture(textures[11], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 12)
-  {
-    return texture(textures[12], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 13)
-  {
-    return texture(textures[13], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 14)
-  {
-    return texture(textures[14], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 15)
-  {
-    return texture(textures[15], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 16)
-  {
-    return texture(textures[16], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 17)
-  {
-    return texture(textures[17], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 18)
-  {
-    return texture(textures[18], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 19)
-  {
-    return texture(textures[19], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 20)
-  {
-    return texture(textures[20], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 21)
-  {
-    return texture(textures[21], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 22)
-  {
-    return texture(textures[22], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 23)
-  {
-    return texture(textures[23], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 24)
-  {
-    return texture(textures[24], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 25)
-  {
-    return texture(textures[25], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 26)
-  {
-    return texture(textures[26], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 27)
-  {
-    return texture(textures[27], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 28)
-  {
-    return texture(textures[28], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 29)
-  {
-    return texture(textures[29], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 30)
-  {
-    return texture(textures[30], vec3(uv, param.y + 0.1));
-  }
-  else if(param.x == 31)
-  {
-    return texture(textures[31], vec3(uv, param.y + 0.1));
-  }
-}
+
 
 void main()
 {
@@ -188,9 +68,23 @@ void main()
     discard;
   }
 
-  vec4 texture1 = tex_color(data[index].tex_param.xy, uv1);
-  vec4 texture2 = tex_color(data[index].tex_param.zw, uv2);
+#ifdef use_bindless
+  vec4 texture1 = texture(sampler2DArray(data[index].texture_handle_1), vec3(uv1, data[index].index_1));
+#else
+  vec4 texture1 = texture(array_0, vec3(uv1, data[index].index_1));
+#endif
+
+  vec4 texture2 = vec4(0.);
   
+  if(data[index].tex_count > 1)
+  {
+#ifdef use_bindless
+  texture2 = texture(sampler2DArray(data[index].texture_handle_2), vec3(uv2, data[index].index_2));
+#else
+  texture2 = texture(array_1, vec3(uv2, data[index].index_2));
+#endif
+  }
+
   // code from Deamon87 and https://wowdev.wiki/M2/Rendering#Pixel_Shaders
   if (data[index].pixel_shader == 0) //Combiners_Opaque
   { 

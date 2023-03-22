@@ -6,6 +6,7 @@
 #include <opengl/types.hpp>
 
 #include <math/vector_4d.hpp>
+#include <math/vector_2d.hpp>
 
 #include <boost/optional.hpp>
 
@@ -88,6 +89,7 @@ namespace opengl
       void uniform (std::string const& name, GLint);
       void uniform (std::string const& name, GLfloat);
       void uniform (std::string const& name, math::vector_2d const&);
+      void uniform (std::string const& name, math::vector_2ui const&);
       void uniform (std::string const& name, math::vector_3d const&);
       void uniform (std::string const& name, math::vector_4d const&);
       void uniform (std::string const& name, math::vector_4i const&);

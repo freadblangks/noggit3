@@ -160,12 +160,19 @@ struct m2_render_pass_ubo_data
   math::matrix_4x4 tex_matrix_1 = math::matrix_4x4(math::matrix_4x4::unit);
   math::matrix_4x4 tex_matrix_2 = math::matrix_4x4(math::matrix_4x4::unit);
 
-  int texture_param[4];
+  std::uint64_t texture_1;
+  std::uint64_t pad1;
+  std::uint64_t texture_2;
+  std::uint64_t pad2;
+
+  int index_1;
+  int index_2;
+  int padding[2];
 
   float alpha_test;
   int tex_unit_lookup_1;
   int tex_unit_lookup_2;
-  int padding = 0;
+  int tex_count = 1;
 };
 
 struct ModelRenderPass : ModelTexUnit
@@ -185,7 +192,7 @@ struct ModelRenderPass : ModelTexUnit
   bool need_ubo_data_update = true;
   bool render = true;
 
-  bool prepare_draw(opengl::scoped::use_program& m2_shader, Model *m, bool animate, int index);
+  bool prepare_draw(opengl::scoped::use_program& m2_shader, Model *m, bool animate, int index, noggit::texture_array_handler& texture_handler);
   void after_draw();
   void init_uv_types(Model* m);
 
@@ -248,7 +255,7 @@ public:
            , bool draw_particles
            , bool all_boxes
            , display_mode display
-            , noggit::texture_array_handler& texture_handler
+           , noggit::texture_array_handler& texture_handler
            );
   void draw ( math::matrix_4x4 const& model_view
             , std::vector<ModelInstance*> instances
@@ -269,9 +276,11 @@ public:
   void draw_particles( math::matrix_4x4 const& model_view
                      , opengl::scoped::use_program& particles_shader
                      , std::size_t instance_count
+                     , noggit::texture_array_handler& texture_handler
                      );
   void draw_ribbons( opengl::scoped::use_program& ribbons_shader
                    , std::size_t instance_count
+                   , noggit::texture_array_handler& texture_handler
                    );
 
   void draw_box (opengl::scoped::use_program& m2_box_shader, std::size_t box_count);
@@ -303,7 +312,7 @@ public:
   // ===============================
   // Texture data
   // ===============================
-  std::vector<std::pair<int, int>> _textures_pos_in_array;
+  std::vector<std::pair<std::uint64_t, int>> _texture_array_params;
   std::vector<std::string> _textureFilenames;
   std::vector<int> _specialTextures;
   std::vector<bool> _useReplaceTextures;
@@ -318,7 +327,7 @@ public:
 
   float rad;
   float trans;
-  bool animcalc;  
+  bool animcalc;
 
 private:
   int _instance_visible = 0;

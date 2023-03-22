@@ -11,6 +11,7 @@ project(Noggit)
 option (NOGGIT_ALL_WARNINGS "Enable all warnings?" OFF)
 option (NOGGIT_LOGTOCONSOLE "Log to console instead of log.txt?" OFF)
 option (NOGGIT_OPENGL_ERROR_CHECK "Enable OpenGL error check ?" ON)
+option (NOGGIT_BINDLESS_TEXTURES "Use bindless textures ?" ON)
 option (USE_SQL "Enable sql uid save ? (require mysql installed)" OFF)
 option (VALIDATE_OPENGL_PROGRAMS "Validate Opengl programs" ON)
 
@@ -100,6 +101,10 @@ if( NOGGIT_ALL_WARNINGS )
   add_noggit_compiler_flag_if_supported (/W4)
   add_noggit_compiler_flag_if_supported (/Wall)
 endif( NOGGIT_ALL_WARNINGS )
+
+if(NOGGIT_BINDLESS_TEXTURES)
+  add_definitions (-DUSE_BINDLESS_TEXTURES)
+endif()
 
 option (USE_EXTRA_OPTIMIZATION "Use compiler optimization flags" ON)
 
@@ -446,6 +451,7 @@ set ( scripting_headers
   )
 
 set ( opengl_headers
+      src/opengl/arb_bindless_texture_ext.hpp
       src/opengl/context.hpp
       src/opengl/primitives.hpp
       src/opengl/scoped.hpp

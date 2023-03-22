@@ -143,6 +143,26 @@ GLint blp_texture::texture_format() const
   }
 }
 
+#ifdef USE_BINDLESS_TEXTURES
+GLuint64 blp_texture::get_resident_handle()
+{
+  if (!_handle)
+  {
+    if (!finished)
+    {
+      wait_until_loaded();
+    }
+
+    bind();
+    _handle = gl.getTextureHandleARB(_id);
+    gl.makeTextureHandleResidentARB(_handle.value());
+    gl.bindTexture(GL_TEXTURE_2D, 0);
+  }
+
+  return _handle.value();
+}
+#endif
+
 void blp_texture::loadFromUncompressedData(BLPHeader const* lHeader, char const* lData)
 {
   unsigned int const* pal = reinterpret_cast<unsigned int const*>(lData + sizeof(BLPHeader));

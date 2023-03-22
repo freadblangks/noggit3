@@ -22,18 +22,20 @@ uniform mat4 projection;
 
 struct batch_uniforms
 {
-  ivec4 texture_params;
+  uvec2 texture_1;
+  uvec2 padding_1;
+  uvec2 texture_2;
+  uvec2 padding_2;
 
+  int texture_index_1;
+  int texture_index_2;
   int use_vertex_color;
   int exterior_lit;
+
   int shader_id;
   int unfogged;
-
   int unlit;
   float alpha_test;
-  // padding
-  int unculled;
-  int blend_mode;
 };
 
 

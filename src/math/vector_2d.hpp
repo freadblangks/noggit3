@@ -61,4 +61,26 @@ namespace math
     rotate (around.x, around.y, &point.x, &point.y, angle);
     return point;
   }
+
+  struct vector_2ui
+  {
+    union
+    {
+      unsigned int _data[2];
+      struct
+      {
+        unsigned int x;
+        unsigned int y;
+      };
+    };
+
+    inline operator unsigned int* ()
+    {
+      return _data;
+    }
+    inline operator unsigned int const* () const
+    {
+      return _data;
+    }
+  };
 }

@@ -603,7 +603,7 @@ ModelRenderPass::ModelRenderPass(ModelTexUnit const& tex_unit, Model* m)
 {
 }
 
-bool ModelRenderPass::prepare_draw(opengl::scoped::use_program& m2_shader, Model *m, bool animate, int index)
+bool ModelRenderPass::prepare_draw(opengl::scoped::use_program& m2_shader, Model *m, bool animate, int index, noggit::texture_array_handler& texture_handler)
 {
   if (!render)
   {
@@ -722,22 +722,22 @@ bool ModelRenderPass::prepare_draw(opengl::scoped::use_program& m2_shader, Model
     ubo_data.unfogged = renderflag.flags.unfogged;
     ubo_data.unlit = renderflag.flags.unlit;
 
-    auto tex1_param = m->_textures_pos_in_array[m->_texture_lookup[textures[0]]];
-
-    ubo_data.texture_param[0] = tex1_param.first;
-    ubo_data.texture_param[1] = tex1_param.second;
+    auto& tex_param_1 = m->_texture_array_params[m->_texture_lookup[textures[0]]];
+    ubo_data.texture_1 = tex_param_1.first;
+    ubo_data.index_1 = tex_param_1.second;
 
     if (texture_count > 1)
     {
-      auto tex2_param = m->_textures_pos_in_array[m->_texture_lookup[textures[1]]];
-
-      ubo_data.texture_param[2] = tex2_param.first;
-      ubo_data.texture_param[3] = tex2_param.second;
+      auto& tex_param_2 = m->_texture_array_params[m->_texture_lookup[textures[1]]];
+      ubo_data.texture_2 = tex_param_2.first;
+      ubo_data.index_2 = tex_param_2.second;
+      ubo_data.tex_count = 2;
     }
     else
     {
-      ubo_data.texture_param[2] = 0;
-      ubo_data.texture_param[3] = 0;
+      ubo_data.tex_count = 1;
+      ubo_data.texture_2 = 0;
+      ubo_data.index_2 = 0;
     }
 
     GLint tu1 = static_cast<GLint>(tu_lookups[0]), tu2 = static_cast<GLint>(tu_lookups[1]);
@@ -829,6 +829,18 @@ bool ModelRenderPass::prepare_draw(opengl::scoped::use_program& m2_shader, Model
       gl.depthMask(GL_TRUE);
     }
   }
+
+#ifndef USE_BINDLESS_TEXTURES
+  auto& tex_param_1 = m->_texture_array_params[m->_texture_lookup[textures[0]]];
+
+  texture_handler.bind_layer(tex_param_1.first, 0);
+
+  if (texture_count > 1)
+  {
+    auto& tex_param_2 = m->_texture_array_params[m->_texture_lookup[textures[1]]];
+    texture_handler.bind_layer(tex_param_2.first, 1);
+  }
+#endif
 
   return true;
 }
@@ -1460,7 +1472,7 @@ void Model::draw( math::matrix_4x4 const& model_view
 
   for (ModelRenderPass& p : _render_passes)
   {
-    if (p.prepare_draw(m2_shader, this, draw_particles, index))
+    if (p.prepare_draw(m2_shader, this, draw_particles, index, texture_handler))
     {
       m2_shader.uniform("index", index);
       gl.drawElements(GL_TRIANGLES, p.index_count, _indices, sizeof (_indices[0]) * p.index_start);
@@ -1577,7 +1589,7 @@ void Model::draw ( math::matrix_4x4 const& model_view
 
   for (ModelRenderPass& p : _render_passes)
   {
-    if (p.prepare_draw(m2_shader, this, draw_particles, index))
+    if (p.prepare_draw(m2_shader, this, draw_particles, index, texture_handler))
     {
       m2_shader.uniform("index", index);
 
@@ -1596,21 +1608,23 @@ void Model::draw ( math::matrix_4x4 const& model_view
 void Model::draw_particles( math::matrix_4x4 const& model_view
                           , opengl::scoped::use_program& particles_shader
                           , std::size_t instance_count
+                          , noggit::texture_array_handler& texture_handler
                           )
 {
   for (auto& p : _particles)
   {
-    p.draw(model_view, particles_shader, _transform_buffer, instance_count);
+    p.draw(model_view, particles_shader, _transform_buffer, instance_count, texture_handler);
   }
 }
 
 void Model::draw_ribbons( opengl::scoped::use_program& ribbons_shader
                         , std::size_t instance_count
+                        , noggit::texture_array_handler& texture_handler
                         )
 {
   for (auto& r : _ribbons)
   {
-    r.draw(ribbons_shader, _transform_buffer, instance_count);
+    r.draw(ribbons_shader, _transform_buffer, instance_count, texture_handler);
   }
 }
 
@@ -1697,7 +1711,7 @@ void Model::upload(noggit::texture_array_handler& texture_handler)
 {
   for (std::string& texture : _textureFilenames)
   {
-    _textures_pos_in_array.push_back(texture_handler.get_texture_position_normalize_filename(texture));
+    _texture_array_params.push_back(texture_handler.get_texture_position(texture));
   }
 
   _buffers.upload();
@@ -1717,6 +1731,13 @@ void Model::upload(noggit::texture_array_handler& texture_handler)
   {
     opengl::scoped::buffer_binder<GL_UNIFORM_BUFFER> const binder(_ubo);
     gl.bufferData(GL_UNIFORM_BUFFER, _render_passes.size() * sizeof(m2_render_pass_ubo_data), NULL, GL_STATIC_DRAW);
+
+    // todo: use ssbo or setup a way to have it "dynamically" set in the shader
+    if (_render_passes.size() > 192)
+    {
+      LogError << "Render pass count higher than UBO array size for model " << filename << std::endl;
+      throw std::runtime_error("Render pass count higher than UBO array size for model " + filename);
+    }
   }
 
 

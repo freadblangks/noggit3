@@ -832,7 +832,16 @@ void World::draw ( math::matrix_4x4 const& model_view
     initDisplay();
     _display_initialized = true;
 
+    // valid only for the fragment shader, 16 for other stages
     gl.getIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &fragment_shader_max_texture_unit);
+
+    GLint max_layers;
+    gl.getIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &max_layers);
+
+    _model_texture_handler.set_max_array_size(max_layers);
+
+    LogDebug << "Max fragment shader sampler: " << fragment_shader_max_texture_unit << std::endl;
+    LogDebug << "Max texture array size: " << max_layers << std::endl;
   }
 
   math::matrix_4x4 const mvp(model_view * projection);
@@ -844,32 +853,28 @@ void World::draw ( math::matrix_4x4 const& model_view
     _m2_program.reset
       ( new opengl::program
           { { GL_VERTEX_SHADER,   opengl::shader::src_from_qrc("m2_vs") }
+#ifdef USE_BINDLESS_TEXTURES
+          , { GL_FRAGMENT_SHADER, opengl::shader::src_from_qrc("m2_fs", {"use_bindless"}) }
+#else
           , { GL_FRAGMENT_SHADER, opengl::shader::src_from_qrc("m2_fs") }
+#endif
           }
       );
-
-    opengl::scoped::use_program m2_shader{ *_m2_program.get() };
-
-    for (int i = 0; i < fragment_shader_max_texture_unit; ++i)
-    {
-      m2_shader.uniform("textures[" + std::to_string(i) + "]", i);
-    }
   }
   if (!_m2_instanced_program)
   {
     _m2_instanced_program.reset
       ( new opengl::program
           { { GL_VERTEX_SHADER,   opengl::shader::src_from_qrc("m2_vs", {"instanced"}) }
+#ifdef USE_BINDLESS_TEXTURES
+          , { GL_FRAGMENT_SHADER, opengl::shader::src_from_qrc("m2_fs", {"use_bindless"}) }
+#else
           , { GL_FRAGMENT_SHADER, opengl::shader::src_from_qrc("m2_fs") }
+#endif
           }
       );
 
     opengl::scoped::use_program m2_shader{ *_m2_instanced_program.get() };
-
-    for (int i = 0; i < fragment_shader_max_texture_unit; ++i)
-    {
-      m2_shader.uniform("textures[" + std::to_string(i) + "]", i);
-    }
   }
   if (!_m2_box_program)
   {
@@ -884,8 +889,13 @@ void World::draw ( math::matrix_4x4 const& model_view
   {
     _m2_ribbons_program.reset
       ( new opengl::program
+#ifdef USE_BINDLESS_TEXTURES
+        { { GL_VERTEX_SHADER,   opengl::shader::src_from_qrc("ribbon_vs", {"use_bindless"}) }
+        , { GL_FRAGMENT_SHADER, opengl::shader::src_from_qrc("ribbon_fs", {"use_bindless"}) }
+#else
         { { GL_VERTEX_SHADER,   opengl::shader::src_from_qrc("ribbon_vs") }
         , { GL_FRAGMENT_SHADER, opengl::shader::src_from_qrc("ribbon_fs") }
+#endif
         }
       );
   }
@@ -893,8 +903,13 @@ void World::draw ( math::matrix_4x4 const& model_view
   {
     _m2_particles_program.reset
       ( new opengl::program
+#ifdef USE_BINDLESS_TEXTURES
+          { { GL_VERTEX_SHADER,   opengl::shader::src_from_qrc("particle_vs", {"use_bindless"}) }
+          , { GL_FRAGMENT_SHADER, opengl::shader::src_from_qrc("particle_fs", {"use_bindless"}) }
+#else
           { { GL_VERTEX_SHADER,   opengl::shader::src_from_qrc("particle_vs") }
           , { GL_FRAGMENT_SHADER, opengl::shader::src_from_qrc("particle_fs") }
+#endif
           }
       );
   }
@@ -942,17 +957,13 @@ void World::draw ( math::matrix_4x4 const& model_view
     _wmo_program.reset
       ( new opengl::program
           { { GL_VERTEX_SHADER,   opengl::shader::src_from_qrc("wmo_vs") }
+#ifdef USE_BINDLESS_TEXTURES
+          , { GL_FRAGMENT_SHADER, opengl::shader::src_from_qrc("wmo_fs", {"use_bindless"}) }
+#else
           , { GL_FRAGMENT_SHADER, opengl::shader::src_from_qrc("wmo_fs") }
+#endif
           }
       );
-
-
-    opengl::scoped::use_program wmo_shader{ *_wmo_program.get() };
-
-    for (int i = 0; i < fragment_shader_max_texture_unit; ++i)
-    {
-      wmo_shader.uniform("textures[" + std::to_string(i) + "]", i);
-    }
   }
 
   gl.disable(GL_DEPTH_TEST);
@@ -987,7 +998,6 @@ void World::draw ( math::matrix_4x4 const& model_view
     bool hadSky = false;
 
     // todo: only bind the relevant textures ?
-    _model_texture_handler.bind();
 
     if (draw_wmo || mapIndex.hasAGlobalWMO())
     {
@@ -1217,7 +1227,6 @@ void World::draw ( math::matrix_4x4 const& model_view
       m2_shader.uniform("diffuse_color", diffuse_color);
       m2_shader.uniform("ambient_color", ambient_color);
 
-      _model_texture_handler.bind();
 
       for (auto& it : *models_to_draw)
       {
@@ -1317,7 +1326,6 @@ void World::draw ( math::matrix_4x4 const& model_view
 
     wmo_group_uniform_data wmo_uniform_data;
 
-    _model_texture_handler.bind();
 
     // liquid list updated only when the transform buffers are updated
     if (update_transform_buffers)
@@ -1409,12 +1417,15 @@ void World::draw ( math::matrix_4x4 const& model_view
     opengl::scoped::use_program particles_shader {*_m2_particles_program.get()};
 
     particles_shader.uniform("model_view_projection", mvp);
-    particles_shader.uniform("tex", 0);
+
+#ifndef USE_BINDLESS_TEXTURES
     opengl::texture::set_active_texture(0);
+    particles_shader.uniform("tex_array", 0);
+#endif
 
     for (auto& it : model_with_particles)
     {
-      it.first->draw_particles(model_view, particles_shader, it.second);
+      it.first->draw_particles(model_view, particles_shader, it.second, _model_texture_handler);
     }
   }
 
@@ -1426,13 +1437,17 @@ void World::draw ( math::matrix_4x4 const& model_view
     opengl::scoped::use_program ribbon_shader {*_m2_ribbons_program.get()};
 
     ribbon_shader.uniform("model_view_projection", mvp);
-    ribbon_shader.uniform("tex", 0);
+
+#ifndef USE_BINDLESS_TEXTURES
+    opengl::texture::set_active_texture(0);
+    ribbon_shader.uniform("tex_array", 0);
+#endif
 
     gl.blendFunc(GL_SRC_ALPHA, GL_ONE);
 
     for (auto& it : model_with_particles)
     {
-      it.first->draw_ribbons(ribbon_shader, it.second);
+      it.first->draw_ribbons(ribbon_shader, it.second, _model_texture_handler);
     }
   }
 

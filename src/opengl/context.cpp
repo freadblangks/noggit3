@@ -20,6 +20,10 @@
 
 opengl::context gl;
 
+#ifdef USE_BINDLESS_TEXTURES
+#include <opengl/arb_bindless_texture_ext.hpp>
+#endif
+
 namespace opengl
 {
   namespace
@@ -31,6 +35,12 @@ namespace opengl
     {
       static constexpr char const* const name = "GL_ARB_vertex_program";
     };
+#ifdef USE_BINDLESS_TEXTURES
+    template<> struct extension_traits<QOpenGLExtension_ARB_bindless_texture>
+    {
+      static constexpr char const* const name = "GL_ARB_bindless_texture";
+    };
+#endif
 
     struct verify_context_and_check_for_gl_errors
     {
@@ -335,7 +345,18 @@ namespace opengl
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
     return _current_context->functions()->glActiveTexture (target);
   }
-
+#ifdef USE_BINDLESS_TEXTURES
+  GLuint64 context::getTextureHandleARB(GLuint texture)
+  {
+    verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
+    return _.extension_functions<QOpenGLExtension_ARB_bindless_texture>()->glGetTextureHandleARB(texture);
+  }
+  void context::makeTextureHandleResidentARB(GLuint64 handle)
+  {
+    verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
+    _.extension_functions<QOpenGLExtension_ARB_bindless_texture>()->glMakeTextureHandleResidentARB(handle);
+  }
+#endif
   void context::texParameteri (GLenum target, GLenum pname, GLint param)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
@@ -733,6 +754,11 @@ namespace opengl
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
     return _current_context->functions()->glUniform2fv (location, count, value);
+  }
+  void context::uniform2uiv (GLint location, GLsizei count, GLuint const* value)
+  {
+    verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
+    return _4_1_core_func->glUniform2uiv (location, count, value);
   }
   void context::uniform3fv (GLint location, GLsizei count, GLfloat const* value)
   {

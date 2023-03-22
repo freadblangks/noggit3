@@ -264,6 +264,7 @@ void ParticleSystem::draw( math::matrix_4x4 const& model_view
                          , opengl::scoped::use_program& shader
                          , GLuint const& transform_vbo
                          , int instances_count
+                         , noggit::texture_array_handler& texture_handler
 )
 {
   if (!_uploaded)
@@ -297,7 +298,18 @@ void ParticleSystem::draw( math::matrix_4x4 const& model_view
     break;
   }
 
-  //model->_textures[_texture_id]->bind();
+  auto const& tex_p = model->_texture_array_params[_texture_id];
+
+#ifdef USE_BINDLESS_TEXTURES
+  math::vector_2ui tex_param;
+  std::memcpy(&tex_param, &tex_p.first, sizeof(std::uint64_t));
+
+  shader.uniform("tex_array", tex_param);
+#else
+  texture_handler.bind_layer(tex_p.first, 0);
+#endif
+
+  shader.uniform("index_in_array", tex_p.second);
 
   math::vector_3d vRight(1, 0, 0);
   math::vector_3d vUp(0, 1, 0);
@@ -874,6 +886,7 @@ void RibbonEmitter::setup(int anim, int time, int animtime)
 void RibbonEmitter::draw( opengl::scoped::use_program& shader
                         , GLuint const& transform_vbo
                         , int instances_count
+                        , noggit::texture_array_handler& texture_handler
                         )
 {
   if (!_uploaded)
@@ -885,7 +898,18 @@ void RibbonEmitter::draw( opengl::scoped::use_program& shader
   std::vector<math::vector_3d> vertices;
   std::vector<math::vector_2d> texcoords;
 
-  //model->_textures[_texture_ids[0]]->bind();
+  auto const& tex_p = model->_texture_array_params[_texture_ids[0]];
+
+#ifdef USE_BINDLESS_TEXTURES
+  math::vector_2ui tex_param;
+  std::memcpy(&tex_param, &tex_p.first, sizeof(std::uint64_t));
+
+  shader.uniform("tex_array", tex_param);
+#else
+  texture_handler.bind_layer(tex_p.first, 0);
+#endif
+
+  shader.uniform("index_in_array", tex_p.second);
 
   gl.enable(GL_BLEND);
   

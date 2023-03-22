@@ -31,20 +31,27 @@ struct m2_data
 
   mat4 tex_matrix_1;
   mat4 tex_matrix_2;
+  
+  uvec2 texture_handle_1;
+  uvec2 pad1;
+  uvec2 texture_handle_2;
+  uvec2 pad2;
 
-  ivec4 tex_param;
+  int index_1;
+  int index_2;
+  ivec2 padding;
 
   float alpha_test;
   int tex_unit_lookup_1;
   int tex_unit_lookup_2;
-  int padding;
+  int tex_count;
 };
 
 uniform int index;
 
 layout (std140) uniform render_data
 {
-  m2_data data[128];
+  m2_data data[192];
 };
 
 

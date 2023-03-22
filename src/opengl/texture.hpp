@@ -4,6 +4,8 @@
 
 #include <opengl/types.hpp>
 
+#include <optional>
+
 namespace opengl
 {
   class texture
@@ -32,5 +34,11 @@ namespace opengl
   {
   public:
     virtual void bind() override;
+
+#ifdef USE_BINDLESS_TEXTURES
+    GLuint64 get_resident_handle();
+#endif
+  private:
+    std::optional<GLuint64> _handle;
   };
 }

@@ -89,6 +89,10 @@ namespace opengl
     void generateMipmap (GLenum);
     void activeTexture (GLenum);
 
+#ifdef USE_BINDLESS_TEXTURES
+    GLuint64 getTextureHandleARB(GLuint texture);
+    void makeTextureHandleResidentARB(GLuint64 handle);
+#endif
     void texParameteri (GLenum target, GLenum pname, GLint param);
     void texParameterf (GLenum target, GLenum pname, GLfloat param);
     void texParameteriv (GLenum target, GLenum pname, GLint const* params);
@@ -172,6 +176,7 @@ namespace opengl
     void uniform1f (GLint location, GLfloat value);
     void uniform1iv (GLint location, GLsizei count, GLint const* value);
     void uniform2fv (GLint location, GLsizei count, GLfloat const* value);
+    void uniform2uiv (GLint location, GLsizei count, GLuint const* value);
     void uniform3fv (GLint location, GLsizei count, GLfloat const* value);
     void uniform4iv (GLint location, GLsizei count, GLint const* value);
     void uniform4fv (GLint location, GLsizei count, GLfloat const* value);

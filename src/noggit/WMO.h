@@ -46,18 +46,20 @@ struct wmo_render_batch
 
 struct wmo_ubo_data
 {
-  math::vector_4i texture_params;
+  std::uint64_t texture_1;
+  std::uint64_t padding_1;
+  std::uint64_t texture_2;
+  std::uint64_t padding_2;
 
+  int index_1;
+  int index_2;
   int use_vertex_color;
   int exterior_lit;
+
   int shader_id;
   int unfogged;
-
   int unlit;
   float alpha_test;
-  // padding, not used in the shader
-  int unculled;
-  int blend_mode;
 };
 
 class WMOGroup
@@ -79,6 +81,7 @@ public:
            , bool world_has_skies
            , wmo_group_uniform_data& wmo_uniform_data
            , int instance_count
+           , noggit::texture_array_handler& texture_handler
            );
 
   void setupFog (bool draw_fog, std::function<void (bool)> setup_fog);
@@ -224,8 +227,9 @@ public:
   std::vector<WMOGroup> groups;
   std::vector<WMOMaterial> materials;
   math::vector_3d extents[2];
+
+  std::vector<std::pair<std::uint64_t, int>> _textures_array_params;
   std::vector<std::string> textures;
-  std::vector<std::pair<int, int>> texture_array_params;
   std::vector<std::string> models;
   std::vector<wmo_doodad_instance> modelis;
   std::vector<math::vector_3d> model_nearest_light_vector;

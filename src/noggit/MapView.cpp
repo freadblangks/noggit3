@@ -351,7 +351,7 @@ void MapView::createGUI()
   connect(this, &QObject::destroyed, guidetailInfos, &QObject::deleteLater);
 
   _keybindings = new noggit::ui::help(this);
-  _keybindings->hide(); 
+  _keybindings->hide();
   connect(this, &QObject::destroyed, _keybindings, &QObject::deleteLater);
 
   TexturePicker = new noggit::ui::texture_picker(texturingTool->_current_texture, this);
@@ -400,8 +400,8 @@ void MapView::createGUI()
 
     connect(dock, &QDockWidget::topLevelChanged
       , this
-      , [=] 
-      { 
+      , [=]
+      {
         dock->adjustSize();
 
         for (auto dock_ : _tool_properties_docks)
@@ -443,7 +443,7 @@ void MapView::createGUI()
   }
 
   connect(this, &QObject::destroyed, _texture_palette_dock, &QObject::deleteLater);
-   
+
   // create toolbar
 
   _toolbar = new noggit::ui::toolbar([this] (editing_mode mode) { set_editing_mode (mode); });
@@ -514,7 +514,7 @@ void MapView::createGUI()
   ADD_ACTION (file_menu, "Save current tile", "Ctrl+Shift+S", [this] { save(save_mode::current); });
   ADD_ACTION (file_menu, "Save changed tiles", QKeySequence::Save, [this] { save(save_mode::changed); });
   ADD_ACTION (file_menu, "Save all tiles", "Ctrl+Shift+A", [this] { save(save_mode::all); });
-  
+
   ADD_ACTION ( file_menu
              , "Reload tile"
              , "Shift+J"
@@ -773,7 +773,7 @@ void MapView::createGUI()
     _toolbar->setVisible(ui_hidden);
 
     ui_hidden = !ui_hidden;
-    
+
     setToolPropertyWidgetVisibility(terrainMode);
 
   };
@@ -801,8 +801,8 @@ void MapView::createGUI()
           );
   ADD_TOGGLE (view_menu, "Texture palette", Qt::Key_X, _show_texture_palette_window);
   connect ( &_show_texture_palette_window, &noggit::bool_toggle_property::changed
-          , TexturePalette, [this] 
-                            { 
+          , TexturePalette, [this]
+                            {
                               if (terrainMode == editing_mode::paint && !ui_hidden)
                               {
                                 TexturePalette->setVisible(_show_texture_palette_window.get());
@@ -1004,7 +1004,7 @@ void MapView::createGUI()
 
   addHotkey( Qt::Key_B
 	         , MOD_ctrl
-	         , [this] 
+	         , [this]
              {
                objectEditor->copy_current_selection(_world.get());
 	             objectEditor->pasteObject(_cursor_pos, _camera.position, _world.get(), &_object_paste_params);
@@ -1481,7 +1481,7 @@ void MapView::tabletEvent(QTabletEvent* event)
 {
   _tablet_pressure = event->pressure();
   event->setAccepted(true);
-    
+
 }
 
 void MapView::move_camera_with_auto_height (math::vector_3d const& pos)
@@ -1629,7 +1629,7 @@ MapView::~MapView()
     delete objectEditor;
     delete texturingTool;
   }
-  
+
   if (_force_uid_check)
   {
     uid_storage::remove_uid_for_map(_world->getMapID());
@@ -1670,7 +1670,7 @@ void MapView::tick (float dt)
       case editing_mode::object:
         update_cursor_pos();
         break;
-    }    
+    }
   }
   else
   {
@@ -2170,7 +2170,7 @@ void MapView::tick (float dt)
                         )
       / qreal (_last_frame_durations.size())
       );
-    _status_fps->setText ( "FPS: " + QString::number (int (1. / avg_frame_duration)) 
+    _status_fps->setText ( "FPS: " + QString::number (int (1. / avg_frame_duration))
                          + " - Average frame time: " + QString::number(avg_frame_duration*1000.0) + "ms"
                          );
 
@@ -2180,7 +2180,7 @@ void MapView::tick (float dt)
 
   guiWater->updatePos (_camera.position);
 
-  
+
   if (guidetailInfos->isVisible())
   {
     if(currentSelection.size() > 0)
@@ -2198,10 +2198,10 @@ void MapView::tick (float dt)
                       << "\nposition X/Y/Z: " << instance->pos.x << " / " << instance->pos.y << " / " << instance->pos.z
                       << "\nrotation X/Y/Z: " << instance->dir.x << " / " << instance->dir.y << " / " << instance->dir.z
                       << "\nscale: " << instance->scale
-		  
+
                       << "\nServer-side   position  X:  " << (ZEROPOINT - instance->pos.z) << "     Y:  " << (ZEROPOINT - instance->pos.x) << "     Z:  " << instance->pos.y
                       << "\nServer-side  orientation:  " << fabs(2 * math::constants::pi - math::constants::pi / 180.0 * (float(instance->dir.y) < 0 ? fabs(float(instance->dir.y)) + 180.0 : fabs(float(instance->dir.y) - 180.0)))
-		  
+
                       << "\ntextures Used: " << instance->model->header.nTextures
                       << "\nsize category: " << instance->size_cat;
 
@@ -2225,10 +2225,10 @@ void MapView::tick (float dt)
                       << "\nposition X/Y/Z: " << instance->pos.x << " / " << instance->pos.y << " / " << instance->pos.z
                       << "\nrotation X/Y/Z: " << instance->dir.x << " / " << instance->dir.y << " / " << instance->dir.z
                       << "\ndoodad set: " << instance->doodadset()
-		  
+
                       << "\nServer-side   position  X:  " << (ZEROPOINT - instance->pos.z) << "     Y:  " << (ZEROPOINT - instance->pos.x) << "     Z:  " << instance->pos.y
                       << "\nServer-side  orientation:  " << fabs(2 * math::constants::pi - math::constants::pi / 180.0 * (float(instance->dir.y) < 0 ? fabs(float(instance->dir.y)) + 180.0 : fabs(float(instance->dir.y) - 180.0)))
-		  
+
                       << "\ntextures used: " << instance->wmo->textures.size();
 
 
@@ -2293,7 +2293,7 @@ void MapView::tick (float dt)
           break;
         }
       }
-    
+
       guidetailInfos->setText(select_info.str());
     }
     else
@@ -2321,9 +2321,9 @@ math::ray MapView::intersect_ray() const
   {
     // during rendering we multiply perspective * view
     // so we need the same order here and then invert.
-    math::vector_3d const pos 
+    math::vector_3d const pos
     (
-      ( ( projection() 
+      ( ( projection()
         * model_view()
         ).inverted()
         * normalized_device_coords (mx, mz)
@@ -2339,7 +2339,7 @@ math::ray MapView::intersect_ray() const
     , _camera.position.y
     , _camera.position.z - (height() * 0.5f - mz) * _2d_zoom
     );
-    
+
     return { pos, math::vector_3d(0.f, -1.f, 0.f) };
   }
 }
@@ -2347,7 +2347,7 @@ math::ray MapView::intersect_ray() const
 selection_result MapView::intersect_result(bool terrain_only)
 {
   selection_result results
-  ( _world->intersect 
+  ( _world->intersect
     ( model_view().transposed()
     , intersect_ray()
     , terrain_only
@@ -2730,7 +2730,7 @@ void MapView::keyReleaseEvent (QKeyEvent* event)
   {
     updown  = 0.0f;
   }
-  
+
 
   if ((event->key() == Qt::Key_2 || event->key() == Qt::Key_8) && event->modifiers() & Qt::KeypadModifier)
   {
@@ -2993,8 +2993,8 @@ void MapView::wheelEvent (QWheelEvent* event)
     ( [&] (float range)
       {
         //! \note / 8.f for degrees, / 40.f for smoothness
-        return (_mod_ctrl_down ? 0.01f : 0.1f) 
-          * range 
+        return (_mod_ctrl_down ? 0.01f : 0.1f)
+          * range
           // alt = horizontal delta
           * (_mod_alt_down ? event->angleDelta().x() : event->angleDelta().y())
           / 320.f
@@ -3136,8 +3136,8 @@ void MapView::save(save_mode mode)
     }
   }
 
-  if ( mode == save_mode::current 
-    && save 
+  if ( mode == save_mode::current
+    && save
     && (QMessageBox::warning
           (nullptr
           , "Save current map tile only"

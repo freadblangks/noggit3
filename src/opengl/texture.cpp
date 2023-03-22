@@ -61,4 +61,19 @@ namespace opengl
     }
     gl.bindTexture(GL_TEXTURE_2D_ARRAY, _id);
   }
+
+#ifdef USE_BINDLESS_TEXTURES
+  GLuint64 texture_array::get_resident_handle()
+  {
+    if (!_handle)
+    {
+      bind();
+      _handle = gl.getTextureHandleARB(_id);
+      gl.makeTextureHandleResidentARB(_handle.value());
+      gl.bindTexture(GL_TEXTURE_2D_ARRAY, 0);
+    }
+
+    return _handle.value();
+  }
+#endif
 }

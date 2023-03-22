@@ -356,9 +356,9 @@ void WMO::draw_instanced( opengl::scoped::use_program& wmo_shader
 
   if (!_uploaded)
   {
-    for (auto const& tex : textures)
+    for (std::string& tex : textures)
     {
-      texture_array_params.push_back(texture_handler.get_texture_position_normalize_filename(tex));
+      _textures_array_params.push_back(texture_handler.get_texture_position(tex));
     }
 
     _vertex_arrays.upload();
@@ -435,6 +435,7 @@ void WMO::draw_instanced( opengl::scoped::use_program& wmo_shader
               , world_has_skies
               , wmo_uniform_data
               , _instance_visible
+              , texture_handler
               );
 
 
@@ -1235,7 +1236,9 @@ void WMOGroup::setup_ubo_data()
   int has_mocv = header.flags.has_vertex_color | header.flags.use_mocv2_for_texture_blending;
 
   std::vector<wmo_ubo_data> data(batch_count);
+#ifdef USE_BINDLESS_TEXTURES
   std::vector<wmo_render_batch> render_batches;
+#endif
 
   for (int i = 0; i < batch_count; ++i)
   {
@@ -1248,12 +1251,10 @@ void WMOGroup::setup_ubo_data()
     ubo_data.shader_id = mat.shader;
     ubo_data.unfogged = mat.flags.unfogged;
     ubo_data.unlit = mat.flags.unlit;
-    ubo_data.unculled = mat.flags.unculled;
-    ubo_data.blend_mode = mat.blend_mode;
 
     wmo_render_batch rbg;
     rbg.blend_mode = mat.blend_mode;
-    rbg.cull = !ubo_data.unculled;
+    rbg.cull = !mat.flags.unculled;
     rbg.index_start = batch.index_start;
     rbg.index_count = batch.index_count;
 
@@ -1271,28 +1272,41 @@ void WMOGroup::setup_ubo_data()
       ubo_data.alpha_test = 0.003921568f; // 1/255
     }
 
+#ifdef USE_BINDLESS_TEXTURES
     render_batches.push_back(rbg);
+#else
+    _render_batches.push_back(rbg);
+#endif
 
-    auto& p1 = wmo->texture_array_params.at(mat.texture1);
-    ubo_data.texture_params.x = p1.first;
-    ubo_data.texture_params.y = p1.second;
+    auto& t1_param = wmo->_textures_array_params.at(mat.texture1);
+#ifdef USE_BINDLESS_TEXTURES
+    ubo_data.texture_1 = t1_param.first;
+#else
+    ubo_data.texture_1 = mat.texture1;
+#endif
+    ubo_data.index_1 = t1_param.second;
 
     // only shaders using 2 textures in wotlk
     if (mat.shader == 6 || mat.shader == 5 || mat.shader == 3)
     {
-      auto& p2 = wmo->texture_array_params.at(mat.texture2);
-      ubo_data.texture_params.z = p2.first;
-      ubo_data.texture_params.w = p2.second;
+      auto& t2_param = wmo->_textures_array_params.at(mat.texture2);
+#ifdef USE_BINDLESS_TEXTURES
+      ubo_data.texture_2 = t2_param.first;
+#else
+      ubo_data.texture_2 = mat.texture2;
+#endif
+      ubo_data.index_2 = t2_param.second;
     }
     else
     {
-      ubo_data.texture_params.z = 0;
-      ubo_data.texture_params.w = 0;
+      ubo_data.texture_2 = 0;
+      ubo_data.index_2 = 0;
     }
 
     data[i] = ubo_data;
   }
 
+#ifdef USE_BINDLESS_TEXTURES
   if (!render_batches.empty())
   {
     wmo_render_batch batch = render_batches[0];
@@ -1311,9 +1325,9 @@ void WMOGroup::setup_ubo_data()
         batch = b;
       }
     }
-
     _render_batches.push_back(batch);
   }
+#endif
 
   gl.genBuffers(1, &_ubo);
   gl.bindBuffer(GL_UNIFORM_BUFFER, _ubo);
@@ -1329,9 +1343,14 @@ void WMOGroup::draw( opengl::scoped::use_program& wmo_shader
                    , bool // world_has_skies
                    , wmo_group_uniform_data& wmo_uniform_data
                    , int instance_count
+                   , noggit::texture_array_handler& texture_handler
                    )
 {
   gl.bindBufferBase(GL_UNIFORM_BUFFER, 0, _ubo);
+
+#ifndef USE_BINDLESS_TEXTURES
+  int batch_index = 0;
+#endif
 
   for(wmo_render_batch& batch : _render_batches)
   {
@@ -1382,6 +1401,17 @@ void WMOGroup::draw( opengl::scoped::use_program& wmo_shader
 
       wmo_uniform_data.cull = batch.cull;
     }
+
+#ifndef USE_BINDLESS_TEXTURES
+    WMOMaterial const& mat(wmo->materials.at(_batches[batch_index++].texture));
+
+    texture_handler.bind_layer(wmo->_textures_array_params[mat.texture1].first, 0);
+
+    if (mat.shader == 3 || mat.shader == 5 || mat.shader == 6)
+    {
+      texture_handler.bind_layer(wmo->_textures_array_params[mat.texture2].first, 1);
+    }
+#endif
 
     gl.drawElementsInstanced(GL_TRIANGLES, batch.index_count, instance_count, GL_UNSIGNED_INT, opengl::index_buffer_is_already_bound{}, sizeof(std::uint32_t) * (batch.index_start + _index_offset));
   }

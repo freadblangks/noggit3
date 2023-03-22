@@ -5,6 +5,7 @@
 #include <noggit/Animated.h> // Animation::M2Value
 #include <noggit/Model.h>
 #include <noggit/TextureManager.h>
+#include <noggit/texture_array_handler.hpp>
 #include <opengl/scoped.hpp>
 #include <opengl/shader.fwd.hpp>
 
@@ -95,6 +96,7 @@ public:
            , opengl::scoped::use_program& shader
            , GLuint const& transform_vbo
            , int instances_count
+           , noggit::texture_array_handler& texture_handler
            );
 
   friend class PlaneParticleEmitter;
@@ -161,6 +163,7 @@ public:
   void draw( opengl::scoped::use_program& shader
            , GLuint const& transform_vbo
            , int instances_count
+           , noggit::texture_array_handler& texture_handler
            );
 
 private:

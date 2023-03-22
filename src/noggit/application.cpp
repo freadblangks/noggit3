@@ -238,6 +238,10 @@ Noggit::Noggit(int argc, char *argv[])
 
   NOGGIT_LOG << "Noggit Studio - " << STRPRODUCTVER << std::endl;
 
+#ifdef USE_BINDLESS_TEXTURES
+  NOGGIT_LOG << "Bindless textures enabled." << std::endl;
+#endif
+
   AsyncLoader::setup(NoggitSettings.value("async_thread_count", 3).toInt());
 
   doAntiAliasing = NoggitSettings.value("antialiasing", false).toBool();

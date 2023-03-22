@@ -27,6 +27,9 @@ struct blp_texture : public opengl::texture, AsyncObject
   int layer_count() const { return _layer_count; }
   GLint texture_format() const;
 
+#ifdef USE_BINDLESS_TEXTURES
+  GLuint64 get_resident_handle();
+#endif
   void bind();
   void upload();
   void upload_to_currently_bound_array(GLint array_layer, int starting_level = 0);
@@ -44,6 +47,8 @@ private:
   int _width;
   int _height;
   int _layer_count;
+
+  std::optional<GLuint64> _handle;
 
 private:
   std::map<int, std::vector<uint32_t>> _data;
