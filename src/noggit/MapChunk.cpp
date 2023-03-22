@@ -515,6 +515,14 @@ void MapChunk::require_shader_data_update()
   mt->need_chunk_data_update();
 }
 
+void MapChunk::texture_set_changed()
+{
+  mt->require_regular_alphamap();
+  require_shader_data_update();
+
+  _texture_set_need_update = true;
+}
+
 void MapChunk::update_shader_data ( bool selected_texture_changed
                                   , std::string const& current_texture
                                   , std::map<int, misc::random_color>& area_id_colors
@@ -528,7 +536,10 @@ void MapChunk::update_shader_data ( bool selected_texture_changed
 
   if (texture_count)
   {
-    update_alpha_shadow_map();
+    if (!mt->use_no_alpha_alphamap())
+    {
+      update_alpha_shadow_map();
+    }
 
     for (int i = 0; i < texture_count; ++i)
     {

@@ -106,14 +106,16 @@ public:
   liquid_tile Water;
 
   bool tile_is_being_reloaded() const { return _tile_is_being_reloaded; }
-
+  bool use_no_alpha_alphamap() const { return _use_no_alpha_alphamap; }
+  void require_regular_alphamap();
 private:
   opengl::texture_array _adt_alphamap;
+  bool _use_no_alpha_alphamap = false;
   bool _alphamap_created = false;
   void create_combined_alpha_shadow_map();
 
   void upload();
-
+  bool _uploaded = false;
 public:
   void chunk_height_changed() { _need_recalc_extents = true; _need_visibility_update = true; _need_chunk_data_update = true; }
   void need_chunk_data_update() { _need_chunk_data_update = true; }

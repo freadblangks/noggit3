@@ -163,7 +163,7 @@ private:
   bool _texture_set_need_update = true;
 public:
   void require_shader_data_update();
-  void texture_set_changed() { _texture_set_need_update = true; require_shader_data_update(); }
+  void texture_set_changed();
 
   void update_shader_data ( bool selected_texture_changed
                           , std::string const& current_texture

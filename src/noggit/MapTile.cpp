@@ -306,6 +306,12 @@ void MapTile::finishLoading()
 
   theFile.close();
 
+  // no or one texture only means we don't need to generate an alphamap bigger than 1x1 per layer
+  if (mTextureFilenames.size() <= 1)
+  {
+    _use_no_alpha_alphamap = true;
+  }
+
   // - Really done. --------------------------------------
 
   LogDebug << "Done loading tile " << index.x << "," << index.z << "." << std::endl;
@@ -369,33 +375,37 @@ void MapTile::draw ( math::frustum const& frustum
   {
     create_combined_alpha_shadow_map();
 
-    upload();
-
-    // make sure all the textures are in the array
-    for (std::string const& tex : mTextureFilenames)
+    if (!_uploaded)
     {
-      tileset_handler.get_texture_position(tex);
+      upload();
+
+      // make sure all the textures are in the array
+      for (std::string const& tex : mTextureFilenames)
+      {
+        tileset_handler.get_texture_position(tex);
+      }
+
+      tileset_handler.bind();
+
+      _ubo.upload();
+      gl.bindBuffer(GL_UNIFORM_BUFFER, _chunks_data_ubo);
+      gl.bufferData(GL_UNIFORM_BUFFER, sizeof(chunk_shader_data) * 256, NULL, GL_STATIC_DRAW);
+      gl.bindBuffer(GL_UNIFORM_BUFFER, 0);
+
+      opengl::scoped::vao_binder const _(_vao);
+
+      mcnk_shader.attrib(_, "position", _vertices_vbo, 3, GL_FLOAT, GL_FALSE, sizeof(chunk_vertex), static_cast<char*>(0) + offsetof(chunk_vertex, position));
+      mcnk_shader.attrib(_, "normal", _vertices_vbo, 3, GL_FLOAT, GL_FALSE, sizeof(chunk_vertex), static_cast<char*>(0) + offsetof(chunk_vertex, normal));
+      mcnk_shader.attrib(_, "mccv", _vertices_vbo, 3, GL_FLOAT, GL_FALSE, sizeof(chunk_vertex), static_cast<char*>(0) + offsetof(chunk_vertex, color));
+      mcnk_shader.attrib(_, "texcoord", tex_coord_vbo, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+      need_visibility_update = true;
+
+      // need to set it back after loading tilesets
+      opengl::texture::set_active_texture(0);
     }
 
-    tileset_handler.bind();
-
-    _ubo.upload();
-    gl.bindBuffer(GL_UNIFORM_BUFFER, _chunks_data_ubo);
-    gl.bufferData(GL_UNIFORM_BUFFER, sizeof(chunk_shader_data) * 256, NULL, GL_STATIC_DRAW);
-    gl.bindBuffer(GL_UNIFORM_BUFFER, 0);
-
-    opengl::scoped::vao_binder const _ (_vao);
-
-    mcnk_shader.attrib(_, "position", _vertices_vbo, 3, GL_FLOAT, GL_FALSE, sizeof(chunk_vertex), static_cast<char*>(0) + offsetof(chunk_vertex, position));
-    mcnk_shader.attrib(_, "normal",   _vertices_vbo, 3, GL_FLOAT, GL_FALSE, sizeof(chunk_vertex), static_cast<char*>(0) + offsetof(chunk_vertex, normal));
-    mcnk_shader.attrib(_, "mccv",     _vertices_vbo, 3, GL_FLOAT, GL_FALSE, sizeof(chunk_vertex), static_cast<char*>(0) + offsetof(chunk_vertex, color));
-    mcnk_shader.attrib(_, "texcoord", tex_coord_vbo, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
     _need_chunk_data_update = true;
-    need_visibility_update = true;
-
-    // need to set it back after loading tilesets
-    opengl::texture::set_active_texture(0);
   }
 
   _adt_alphamap.bind();
@@ -996,6 +1006,15 @@ void MapTile::add_model(uint32_t uid)
   }
 }
 
+void MapTile::require_regular_alphamap()
+{
+  if (_use_no_alpha_alphamap)
+  {
+    _use_no_alpha_alphamap = false;
+    _alphamap_created = false;
+  }
+}
+
 void MapTile::create_combined_alpha_shadow_map()
 {
   opengl::texture::set_active_texture(0);
@@ -1007,14 +1026,23 @@ void MapTile::create_combined_alpha_shadow_map()
   gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-  // todo: add toggle or use GL_RGBA8 for tiles close to the camera on big alpha maps (alpha stored as 4bits otherwise)
-  gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB5_A1, 64, 64, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
-  for (size_t i = 0; i < 16; i++)
+  if (_use_no_alpha_alphamap)
   {
-    for (size_t j = 0; j < 16; j++)
+    std::vector<std::uint8_t> empty_amap_data(256 * 4, 0);
+    gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB5_A1, 1, 1, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, empty_amap_data.data());
+  }
+  else
+  {
+    // todo: add toggle or use GL_RGBA8 for tiles close to the camera on big alpha maps (alpha stored as 4bits otherwise)
+    gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB5_A1, 64, 64, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+    for (size_t i = 0; i < 16; i++)
     {
-      mChunks[i][j]->update_alpha_shadow_map();
+      for (size_t j = 0; j < 16; j++)
+      {
+        mChunks[i][j]->update_alpha_shadow_map();
+      }
     }
   }
 
@@ -1035,6 +1063,8 @@ void MapTile::upload()
     _indices_offsets.push_back(static_cast<char*>(0) + i * MapChunk::total_indices_count_with_lods() * sizeof(chunk_indice));
     _indices_count.push_back(mChunks[i / 16][i % 16]->indices_count());
   }
+
+  _uploaded = true;
 }
 
 void MapTile::recalc_extents()
