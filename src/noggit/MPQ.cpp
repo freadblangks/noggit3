@@ -188,8 +188,6 @@ MPQFile::MPQFile(std::string const& filename)
   if (filename.empty())
     throw std::runtime_error("MPQFile: filename empty");
 
-  boost::mutex::scoped_lock lock(gMPQFileMutex);
-
   std::ifstream input(_disk_path.string(), std::ios_base::binary | std::ios_base::in);
   if (input.is_open())
   {
@@ -205,6 +203,8 @@ MPQFile::MPQFile(std::string const& filename)
     input.close();
     return;
   }
+
+  boost::mutex::scoped_lock lock(gMPQFileMutex);
 
   for (ArchivesMap::reverse_iterator i = _openArchives.rbegin(); i != _openArchives.rend(); ++i)
   {
