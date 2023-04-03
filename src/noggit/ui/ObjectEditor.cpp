@@ -15,6 +15,8 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
+#include <QClipboard>
+#include <QGuiApplication>
 #include <QFormLayout>
 #include <QGridLayout>
 #include <QGroupBox>
@@ -503,6 +505,29 @@ namespace noggit
       {
         ss << "Multiple objects selected";
       }
+
+      // to avoid duplicates
+      std::unordered_set<std::string> files;
+      std::stringstream clipboard_text;
+
+      for (auto const& it : selected)
+      {
+        if (it.which() == eEntry_Model)
+        {
+          files.emplace(boost::get<selected_model_type>(it)->model->filename);
+        }
+        else if (it.which() == eEntry_WMO)
+        {
+          files.emplace(boost::get<selected_wmo_type>(it)->wmo->filename);
+        }
+      }
+
+      for (std::string const& filename : files)
+      {
+        clipboard_text << filename << std::endl;
+      }
+
+      QGuiApplication::clipboard()->setText(QString::fromStdString(clipboard_text.str()));
 
       _filename->setText(ss.str().c_str());
     }
