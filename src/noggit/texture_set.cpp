@@ -211,11 +211,11 @@ void TextureSet::eraseTextures()
       alphamaps[i - 1].reset();
     }
     _layers_info[i] = ENTRY_MCLY();
-    _textures[i] = {};
   }
 
   nTextures = 0;
 
+  _textures.clear();
   _lod_texture_map.resize(8 * 8);
   memset(_lod_texture_map.data(), 0, 64 * sizeof(std::uint8_t));
 
