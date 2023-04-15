@@ -176,6 +176,8 @@ public:
   void reset_selection();
   void delete_selected_models();
 
+  void raise_models_terrain_brush(math::vector_3d const& pos, float change, float radius, int BrushType, float inner_radius, bool follow_normals);
+
   enum class m2_scaling_type
   {
     set,
@@ -201,6 +203,8 @@ public:
   // Checks the normal of the terrain on model origin and rotates to that spot.
   void rotate_selected_models_to_ground_normal(bool smoothNormals);
 
+
+  std::optional<math::degrees::vec3> get_terrain_normal(math::vector_3d const& pos, bool smooth_normal);
   bool GetVertex(float x, float z, math::vector_3d *V) const;
   boost::optional<float> get_exact_height_at(math::vector_3d const& pos);
 

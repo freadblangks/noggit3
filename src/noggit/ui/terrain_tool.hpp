@@ -7,6 +7,7 @@
 #include <noggit/tool_enums.hpp>
 
 #include <QtWidgets/QButtonGroup>
+#include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDial>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QGroupBox>
@@ -87,6 +88,9 @@ namespace noggit
 
       QSlider* _angle_slider;
       QDial* _orientation_dial;
+
+      QCheckBox* _models_follow_ground;
+      QCheckBox* _models_follow_ground_normals;
     };
   }
 }

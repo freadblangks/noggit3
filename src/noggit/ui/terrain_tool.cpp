@@ -148,6 +148,17 @@ namespace noggit
       layout->addWidget (_vertex_type_group);
       _vertex_type_group->hide();
 
+      QGroupBox* model_follow_group = new QGroupBox("Models", this);
+      QFormLayout* model_layout(new QFormLayout(model_follow_group));
+
+      _models_follow_ground = new QCheckBox("Follow Ground", this);
+      model_layout->addWidget(_models_follow_ground);
+
+      _models_follow_ground_normals = new QCheckBox("Follow Ground Normals", this);
+      model_layout->addWidget(_models_follow_ground_normals);
+
+      layout->addWidget(model_follow_group);
+
       connect ( _type_button_group, qOverload<int> (&QButtonGroup::buttonClicked)
               , [&] (int id)
                 {
@@ -240,6 +251,11 @@ namespace noggit
       if(_edit_type != eTerrainType_Vertex)
       {
         world->changeTerrain(pos, dt*_speed, _radius, _edit_type, _inner_radius);
+
+        if (_models_follow_ground->isChecked())
+        {
+          world->raise_models_terrain_brush(pos, dt * _speed, _radius, _edit_type, _inner_radius, _models_follow_ground_normals->isChecked());
+        }
       }
       else
       {

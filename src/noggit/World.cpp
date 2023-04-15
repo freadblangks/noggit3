@@ -287,6 +287,92 @@ void World::delete_selected_models()
   reset_selection();
 }
 
+void World::raise_models_terrain_brush(math::vector_3d const& pos, float change, float radius, int BrushType, float inner_radius, bool follow_normals)
+{
+  std::vector<math::vector_3d*> model_positions;
+  std::vector<math::degrees::vec3*> model_rotations;
+
+  need_model_updates = true;
+
+  _model_instance_storage.for_each_m2_instance([&](ModelInstance& model_instance)
+  {
+    if((model_instance.pos  - pos).length() < radius)
+    {
+      model_positions.push_back(&model_instance.pos);
+      model_rotations.push_back(&model_instance.dir);
+      model_instance.require_extents_recalc();
+    }
+  });
+
+  _model_instance_storage.for_each_wmo_instance([&](WMOInstance& wmo_instance)
+  {
+    if ((wmo_instance.pos - pos).length() < radius)
+    {
+      model_positions.push_back(&wmo_instance.pos);
+      model_rotations.push_back(&wmo_instance.dir);
+
+      wmo_instance.require_extents_recalc();
+    }
+  });
+
+  for (int i = 0; i < model_positions.size(); ++i)
+  {
+    math::vector_3d& p = *model_positions[i];
+
+    float dist = (p - pos).length();
+
+    if (follow_normals)
+    {
+      math::degrees::vec3& rot = *model_rotations[i];
+
+      // todo: add smooth selection
+      auto normal = get_terrain_normal(p, true);
+
+      if (normal)
+      {
+        rot.x = normal->x;
+        //rot.y = normal->y;
+        rot.z = normal->z;
+      }
+    }
+
+    if (BrushType == eTerrainType_Quadra)
+    {
+      if ((std::abs(p.x - pos.x) < std::abs(radius / 2)) && (std::abs(p.z - pos.z) < std::abs(radius / 2)))
+      {
+        p.y += change * (1.0f - dist * inner_radius / radius);
+      }
+    }
+    else
+    {
+      switch (BrushType)
+      {
+      case eTerrainType_Flat:
+        p.y += change;
+        break;
+      case eTerrainType_Linear:
+        p.y += change * (1.0f - dist * (1.0f - inner_radius) / radius);
+        break;
+      case eTerrainType_Smooth:
+        p.y += change / (1.0f + dist / radius);
+        break;
+      case eTerrainType_Polynom:
+        p.y += change * ((dist / radius) * (dist / radius) + dist / radius + 1.0f);
+        break;
+      case eTerrainType_Trigo:
+        p.y += change * cos(dist / radius);
+        break;
+      case eTerrainType_Gaussian:
+        p.y += dist < radius* inner_radius ? change * std::exp(-(std::pow(radius * inner_radius / radius, 2) / (2 * std::pow(0.39f, 2)))) : change * std::exp(-(std::pow(dist / radius, 2) / (2 * std::pow(0.39f, 2))));
+        break;
+      default:
+        LogError << "Invalid terrain edit type (" << BrushType << ")" << std::endl;
+        break;
+      }
+    }
+  }
+}
+
 void World::snap_selected_models_to_the_ground()
 {
   for (auto& entry : _current_selection)
@@ -632,93 +718,21 @@ void World::rotate_selected_models_to_ground_normal(bool smoothNormals)
       : boost::get<selected_wmo_type>(entry)->dir
       ;
 
-    selection_result results;
-    for_chunk_at(rayPos, [&](MapChunk* chunk)
+    auto normal_vector = get_terrain_normal(rayPos, smoothNormals);
+
+    if (normal_vector)
     {
+      dir.x = normal_vector->x;
+      dir.z = normal_vector->z;
+
+      if (entry_is_m2)
       {
-        math::ray intersect_ray(rayPos, math::vector_3d(0.f, -1.f, 0.f));
-        chunk->intersect(intersect_ray, &results);
+        boost::get<selected_model_type>(entry)->recalcExtents();
       }
-      // object is below ground
-      if (results.empty())
+      else
       {
-        math::ray intersect_ray(rayPos, math::vector_3d(0.f, 1.f, 0.f));
-        chunk->intersect(intersect_ray, &results);
+        boost::get<selected_wmo_type>(entry)->recalcExtents();
       }
-    });
-
-    // !\ todo We shouldn't end up with empty ever (but we do, on completely flat ground)
-    if (results.empty())
-    {
-      // just to avoid models disappearing when this happens
-      updateTilesEntry(entry, model_update::add);
-      continue;
-    }
-
-    // We hit the terrain, now we take the normal of this position and use it to get the rotation we want.
-    auto const& hitChunkInfo = boost::get<selected_chunk_type>(results.front().second);
-
-    math::quaternion q;
-    math::vector_3d varnormal;
-
-    // Surface Normal
-    auto &p0 = hitChunkInfo.chunk->vertices[std::get<0>(hitChunkInfo.triangle)].position;
-    auto &p1 = hitChunkInfo.chunk->vertices[std::get<1>(hitChunkInfo.triangle)].position;
-    auto &p2 = hitChunkInfo.chunk->vertices[std::get<2>(hitChunkInfo.triangle)].position;
-
-    math::vector_3d v1 = p1 - p0;
-    math::vector_3d v2 = p2 - p0;
-
-    const auto tmpVec = v2 % v1;
-    varnormal.x = tmpVec.z;
-    varnormal.y = tmpVec.y;
-    varnormal.z = tmpVec.x;
-
-    // Smooth option, gradient the normal towards closest vertex
-    if (smoothNormals) // Vertex Normal
-    {
-      auto normalWeights = getBarycentricCoordinatesAt(p0, p1, p2, hitChunkInfo.position, varnormal);
-
-      const auto& vNormal0 = hitChunkInfo.chunk->vertices[std::get<0>(hitChunkInfo.triangle)].normal;
-      const auto& vNormal1 = hitChunkInfo.chunk->vertices[std::get<1>(hitChunkInfo.triangle)].normal;
-      const auto& vNormal2 = hitChunkInfo.chunk->vertices[std::get<2>(hitChunkInfo.triangle)].normal;
-
-      varnormal.x =
-        vNormal0.x * normalWeights.x +
-        vNormal1.x * normalWeights.y +
-        vNormal2.x * normalWeights.z;
-
-      varnormal.y =
-        vNormal0.y * normalWeights.x +
-        vNormal1.y * normalWeights.y +
-        vNormal2.y * normalWeights.z;
-
-      varnormal.z =
-        vNormal0.z * normalWeights.x +
-        vNormal1.z * normalWeights.y +
-        vNormal2.z * normalWeights.z;
-    }
-
-    math::vector_3d worldUp = math::vector_3d(0, 1, 0);
-    math::vector_3d a = worldUp % (varnormal);
-
-    q.x = a.x;
-    q.y = a.y;
-    q.z = a.z;
-    q.w = std::sqrt((worldUp.length_squared() * (varnormal.length_squared()))
-                    + (worldUp * varnormal));
-    q.normalize();
-
-    // To euler, because wow
-    dir = q.ToEulerAngles();
-
-    if (entry_is_m2)
-    {
-      boost::get<selected_model_type>(entry)->recalcExtents();
-    }
-    else
-    {
-      boost::get<selected_wmo_type>(entry)->recalcExtents();
     }
 
     updateTilesEntry(entry, model_update::add);
@@ -1677,6 +1691,85 @@ void World::setAreaID(math::vector_3d const& pos, int id, bool adt)
   {
     for_chunk_at(pos, [&](MapChunk* chunk) { chunk->setAreaID(id);});
   }
+}
+
+std::optional<math::degrees::vec3> World::get_terrain_normal(math::vector_3d const& pos, bool smooth_normal)
+{
+  selection_result results;
+
+  for_chunk_at(pos, [&](MapChunk* chunk)
+  {
+    {
+      math::ray intersect_ray(pos, math::vector_3d(0.f, -1.f, 0.f));
+      chunk->intersect(intersect_ray, &results);
+    }
+    // object is below ground
+    if (results.empty())
+    {
+      math::ray intersect_ray(pos, math::vector_3d(0.f, 1.f, 0.f));
+      chunk->intersect(intersect_ray, &results);
+    }
+  });
+
+  if (results.empty())
+  {
+    return std::nullopt;
+  }
+
+
+  // We hit the terrain, now we take the normal of this position and use it to get the rotation we want.
+  auto const& hitChunkInfo = boost::get<selected_chunk_type>(results.front().second);
+
+  math::quaternion q;
+  math::vector_3d normal;
+
+  // Surface Normal
+  auto& p0 = hitChunkInfo.chunk->vertices[std::get<0>(hitChunkInfo.triangle)].position;
+  auto& p1 = hitChunkInfo.chunk->vertices[std::get<1>(hitChunkInfo.triangle)].position;
+  auto& p2 = hitChunkInfo.chunk->vertices[std::get<2>(hitChunkInfo.triangle)].position;
+
+  math::vector_3d v1 = p1 - p0;
+  math::vector_3d v2 = p2 - p0;
+
+  const auto triangle_normal = v2 % v1;
+  normal.x = triangle_normal.z;
+  normal.y = triangle_normal.y;
+  normal.z = triangle_normal.x;
+
+  // Smooth option, gradient the normal towards closest vertex
+  if (smooth_normal)
+  {
+    auto normalWeights = getBarycentricCoordinatesAt(p0, p1, p2, hitChunkInfo.position, normal);
+
+    const auto& vNormal0 = hitChunkInfo.chunk->vertices[std::get<0>(hitChunkInfo.triangle)].normal;
+    const auto& vNormal1 = hitChunkInfo.chunk->vertices[std::get<1>(hitChunkInfo.triangle)].normal;
+    const auto& vNormal2 = hitChunkInfo.chunk->vertices[std::get<2>(hitChunkInfo.triangle)].normal;
+
+    normal.x =
+      vNormal0.x * normalWeights.x +
+      vNormal1.x * normalWeights.y +
+      vNormal2.x * normalWeights.z;
+
+    normal.y =
+      vNormal0.y * normalWeights.x +
+      vNormal1.y * normalWeights.y +
+      vNormal2.y * normalWeights.z;
+
+    normal.z =
+      vNormal0.z * normalWeights.x +
+      vNormal1.z * normalWeights.y +
+      vNormal2.z * normalWeights.z;
+  }
+
+  math::vector_3d a = math::vector_3d(0, 1, 0) % (normal);
+
+  q.x = a.x;
+  q.y = a.y;
+  q.z = a.z;
+  q.w = std::sqrt(normal.length_squared() + normal.y);
+  q.normalize();
+
+  return q.ToEulerAngles();
 }
 
 bool World::GetVertex(float x, float z, math::vector_3d *V) const
