@@ -15,6 +15,13 @@ enum eTerrainType
   eTerrainType_Count,
 };
 
+enum class terrain_edit_mode
+{
+  normal,
+  only_above_cursor,
+  only_below_cursor
+};
+
 enum eVertexMode
 {
   eVertexMode_Mouse,

@@ -237,7 +237,7 @@ public:
 
   void load_full_map();
 
-  void changeTerrain(math::vector_3d const& pos, float change, float radius, int BrushType, float inner_radius);
+  void changeTerrain(math::vector_3d const& pos, float change, float radius, int BrushType, float inner_radius, terrain_edit_mode edit_mode);
   void changeShader(math::vector_3d const& pos, math::vector_4d const& color, float change, float radius, bool editMode);
   math::vector_3d pickShaderColor(math::vector_3d const& pos);
   void flattenTerrain(math::vector_3d const& pos, float remain, float radius, int BrushType, flatten_mode const& mode, const math::vector_3d& origin, math::degrees angle, math::degrees orientation);

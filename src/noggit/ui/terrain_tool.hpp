@@ -79,6 +79,9 @@ namespace noggit
       QGroupBox* _speed_box;
       QGroupBox* _vertex_type_group;
 
+      QCheckBox* _only_affect_ground_below_cursor;
+      QCheckBox* _only_affect_ground_above_cursor;
+
       QSlider* _radius_slider;
       QSlider* _inner_radius_slider;
       QSlider* _speed_slider;

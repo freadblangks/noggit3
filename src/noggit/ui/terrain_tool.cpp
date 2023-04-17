@@ -64,6 +64,19 @@ namespace noggit
 
       layout->addWidget (terrain_type_group);
 
+      QGroupBox* settings_group = new QGroupBox("Edit Mode", this);
+      QFormLayout* settings_layout(new QFormLayout(settings_group));
+
+      _only_affect_ground_below_cursor = new QCheckBox("Below cursor", this);
+      _only_affect_ground_below_cursor->setToolTip("Only affect the ground under the cursor height (or over when lowering the ground)");
+      settings_layout->addWidget(_only_affect_ground_below_cursor);
+
+      _only_affect_ground_above_cursor = new QCheckBox("Above cursor", this);
+      _only_affect_ground_above_cursor->setToolTip("Only affect the ground above the cursor height (or under when lowering the ground)");
+      settings_layout->addWidget(_only_affect_ground_above_cursor);
+
+      layout->addWidget(settings_group);
+
       _radius_spin = new QDoubleSpinBox (this);
       _radius_spin->setRange (0.0f, 1000.0f);
       _radius_spin->setDecimals (2);
@@ -250,7 +263,18 @@ namespace noggit
     {
       if(_edit_type != eTerrainType_Vertex)
       {
-        world->changeTerrain(pos, dt*_speed, _radius, _edit_type, _inner_radius);
+        terrain_edit_mode edit_mode = terrain_edit_mode::normal;
+
+        if (_only_affect_ground_below_cursor->isChecked())
+        {
+          edit_mode = terrain_edit_mode::only_below_cursor;
+        }
+        else if(_only_affect_ground_above_cursor->isChecked())
+        {
+          edit_mode = terrain_edit_mode::only_above_cursor;
+        }
+
+        world->changeTerrain(pos, dt*_speed, _radius, _edit_type, _inner_radius, edit_mode);
 
         if (_models_follow_ground->isChecked())
         {

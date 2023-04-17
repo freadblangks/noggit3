@@ -1894,13 +1894,13 @@ math::vector_3d World::pickShaderColor(math::vector_3d const& pos)
   return color;
 }
 
-void World::changeTerrain(math::vector_3d const& pos, float change, float radius, int BrushType, float inner_radius)
+void World::changeTerrain(math::vector_3d const& pos, float change, float radius, int BrushType, float inner_radius, terrain_edit_mode edit_mode)
 {
   for_all_chunks_in_range
     ( pos, radius
     , [&] (MapChunk* chunk)
       {
-        return chunk->changeTerrain(pos, change, radius, BrushType, inner_radius);
+        return chunk->changeTerrain(pos, change, radius, BrushType, inner_radius, edit_mode);
       }
     , [this] (MapChunk* chunk)
       {

@@ -748,13 +748,31 @@ void MapChunk::recalcNorms (std::function<boost::optional<float> (float, float)>
    mt->need_chunk_data_update();
 }
 
-bool MapChunk::changeTerrain(math::vector_3d const& pos, float change, float radius, int BrushType, float inner_radius)
+bool MapChunk::changeTerrain(math::vector_3d const& pos, float change, float radius, int BrushType, float inner_radius, terrain_edit_mode edit_mode)
 {
   float dist, xdiff, zdiff;
   bool changed = false;
 
   for (int i = 0; i < mapbufsize; ++i)
   {
+    float height = vertices[i].position.y;
+
+    if (edit_mode == terrain_edit_mode::only_below_cursor)
+    {
+      if ((change > 0.f && height > pos.y + 0.05) || (change < 0.f && height < pos.y - 0.05))
+      {
+        continue;
+      }
+    }
+    else if (edit_mode == terrain_edit_mode::only_above_cursor)
+    {
+      if ((change > 0.f && height < pos.y + 0.05) || (change < 0.f && height > pos.y - 0.05))
+      {
+        continue;
+      }
+    }
+
+
     xdiff = vertices[i].position.x - pos.x;
     zdiff = vertices[i].position.z - pos.z;
     if (BrushType == eTerrainType_Quadra)
