@@ -349,6 +349,12 @@ namespace noggit
                                , int height
                                )
   {
+    if (!MPQFile::exists(blp_filename))
+    {
+      LogError << "Texture not found: " << blp_filename << std::endl;
+      return QPixmap(1, 1);
+    }
+
     opengl::context::save_current_context const context_save (::gl);
 
     QOpenGLContext context;
