@@ -134,10 +134,20 @@ namespace noggit
   }
   void world_tile_update_queue::queue_update(WMOInstance* instance, model_update type)
   {
-    std::lock_guard<std::mutex> const lock (_mutex);
+    {
+      std::lock_guard<std::mutex> const lock(_mutex);
 
-    _update_queue.emplace(new wmo_instance_update(instance, type));
-    _state_changed.notify_one();
+      _update_queue.emplace(new wmo_instance_update(instance, type));
+      _state_changed.notify_one();
+    }
+
+    // make sure deletion are done here
+    // otherwise the instance get deleted
+    if (type == model_update::remove)
+    {
+      // wait for all update to make sure they are done in the right order
+      wait_for_all_update();
+    }
   }
 
   void world_tile_update_queue::process_queue()
