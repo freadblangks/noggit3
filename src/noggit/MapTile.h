@@ -85,8 +85,14 @@ public:
 
   bool GetVertex(float x, float z, math::vector_3d *V);
 
-  void saveTile(World*);
 	void CropWater();
+
+  void saveTile(World* world);
+
+private:
+  void save(World* world, bool save_using_mclq_liquids);
+
+public:
 
   bool isTile(int pX, int pZ);
 

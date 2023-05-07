@@ -28,6 +28,7 @@ public:
   liquid_layer& operator=(liquid_layer const& other);
 
   void save(util::sExtendableArray& adt, int base_pos, int& info_pos, int& current_pos) const;
+  mclq to_mclq(MH2O_Attributes& attributes) const;
 
   void update_attributes(MH2O_Attributes& attributes);
   void update_indices();
@@ -40,6 +41,9 @@ public:
   float min() const { return _minimum; }
   float max() const { return _maximum; }
   int liquidID() const { return _liquid_id; }
+  int mclq_liquid_type() const { return _mclq_liquid_type; }
+  // order of the flag corresponding to the liquid type in the mcnk header
+  int mclq_flag_ordering() const;
 
   // used for fatigue calculation
   bool subchunk_at_max_depth(int x, int z) const;
@@ -80,6 +84,7 @@ public:
   void update_indices_info(std::vector<void*>& indices_offsets, std::vector<int>& indices_count);
 
   bool has_fatigue() const { return _fatigue_enabled; }
+
 private:
   bool check_fatigue() const;
   bool _fatigue_enabled = false;
@@ -105,6 +110,7 @@ private:
   int _liquid_id;
   int _liquid_type;
   int _liquid_vertex_format;
+  int _mclq_liquid_type;
   float _minimum;
   float _maximum;
 

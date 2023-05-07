@@ -159,10 +159,10 @@ bool MPQArchive::openFile(std::string const& file, HANDLE* fileHandle) const
 
 namespace
 {
-  boost::filesystem::path getDiskPath (std::string const& pFilename)
+  boost::filesystem::path getDiskPath (std::string const& normalized_filename)
   {
     return boost::filesystem::path (NoggitSettings.project_path())
-      / noggit::mpq::normalized_filename (pFilename);
+      / normalized_filename;
   }
 
   bool existsInMPQ (std::string const& filename)
@@ -183,7 +183,8 @@ MPQFile::MPQFile(std::string const& filename)
   : eof(true)
   , pointer(0)
   , External(false)
-  , _disk_path (getDiskPath (filename))
+  , _filename(noggit::mpq::normalized_filename(filename))
+  , _disk_path (getDiskPath (_filename))
 {
   if (filename.empty())
     throw std::runtime_error("MPQFile: filename empty");
@@ -298,28 +299,40 @@ char const* MPQFile::getPointer() const
   return buffer.data() + pointer;
 }
 
-void MPQFile::SaveFile()
-{
-  LogDebug << "Save file to: " << _disk_path << std::endl;
 
-  auto const directory_name (_disk_path.parent_path());
+void MPQFile::save_file_to_folder(std::string const& folder)
+{
+  save_file(boost::filesystem::path(folder) / _filename);
+}
+
+void MPQFile::save_file(boost::filesystem::path& path)
+{
+  LogDebug << "Save file to: " << path << std::endl;
+
+  auto const directory_name(path.parent_path());
   boost::system::error_code ec;
-  boost::filesystem::create_directories (directory_name, ec);
+  boost::filesystem::create_directories(directory_name, ec);
+
   if (ec)
   {
     LogError << "Creating directory \"" << directory_name << "\" failed: " << ec << ". Saving is highly likely to fail." << std::endl;
   }
 
-  std::ofstream output(_disk_path.string(), std::ios_base::binary | std::ios_base::out);
+  std::ofstream output(path.string(), std::ios_base::binary | std::ios_base::out);
   if (output.is_open())
   {
-    NOGGIT_LOG << "Saving file \"" << _disk_path << "\"." << std::endl;
+    NOGGIT_LOG << "Saving file \"" << path << "\"." << std::endl;
 
     output.write(buffer.data(), buffer.size());
     output.close();
 
     External = true;
   }
+}
+
+void MPQFile::SaveFile()
+{
+  save_file(_disk_path);
 }
 
 namespace noggit

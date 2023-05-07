@@ -41,7 +41,6 @@ MapChunk::MapChunk(MapTile *maintile, MPQFile *f, bool bigAlpha, tile_mode mode)
 
     f->read(&header, 0x80);
 
-    header_flags.value = header.flags;
     areaID = header.areaid;
 
     zbase = header.zpos;
@@ -136,7 +135,7 @@ MapChunk::MapChunk(MapTile *maintile, MPQFile *f, bool bigAlpha, tile_mode mode)
     f->read(_chunk_shadow.get(), 0x200);
     f->seekRelative(-0x200);
 
-    if (!header_flags.flags.do_not_fix_alpha_map)
+    if (!header.flags.flags.do_not_fix_alpha_map)
     {
       auto& sh_map = _chunk_shadow->data;
 
@@ -155,7 +154,7 @@ MapChunk::MapChunk(MapTile *maintile, MPQFile *f, bool bigAlpha, tile_mode mode)
     }
   }
 
-  texture_set = std::make_unique<TextureSet>(header, f, base, maintile, bigAlpha, !!header_flags.flags.do_not_fix_alpha_map, mode == tile_mode::uid_fix_all, _chunk_shadow ? _chunk_shadow.get() : nullptr);
+  texture_set = std::make_unique<TextureSet>(header, f, base, maintile, bigAlpha, !!header.flags.flags.do_not_fix_alpha_map, mode == tile_mode::uid_fix_all, _chunk_shadow ? _chunk_shadow.get() : nullptr);
 
   // - MCCV ----------------------------------------------
   if(header.ofsMCCV)
@@ -166,9 +165,9 @@ MapChunk::MapChunk(MapTile *maintile, MPQFile *f, bool bigAlpha, tile_mode mode)
 
     assert(fourcc == 'MCCV');
 
-    if (!(header_flags.flags.has_mccv))
+    if (!(header.flags.flags.has_mccv))
     {
-      header_flags.flags.has_mccv = 1;
+      header.flags.flags.has_mccv = 1;
     }
 
     hasMCCV = true;
@@ -204,7 +203,7 @@ MapChunk::MapChunk(MapTile *maintile, MPQFile *f, bool bigAlpha, tile_mode mode)
 
     mt->Water.getChunk(px, py)->from_mclq(layers);
     // remove the liquid flags as it'll be saved as MH2O
-    header_flags.value &= ~(0xF << 2);
+    header.flags.value &= ~(0xF << 2);
   }
 
   // no need to create indexes when applying the uid fix
@@ -577,7 +576,7 @@ void MapChunk::update_shader_data ( bool selected_texture_changed
     csd.cant_paint = _shader_data.cant_paint;
   }
 
-  csd.draw_impassible_flag = header_flags.flags.impass ? 1 : 0;
+  csd.draw_impassible_flag = header.flags.flags.impass ? 1 : 0;
   csd.areaid_color = (math::vector_4d)area_id_colors[areaID];
 
   gl.bufferSubData(GL_UNIFORM_BUFFER, (sizeof(chunk_shader_data) * (py * 16 + px)), sizeof(chunk_shader_data), &csd);
@@ -860,7 +859,7 @@ bool MapChunk::ChangeMCCV(math::vector_3d const& pos, math::vector_4d const& col
     }
 
     changed = true;
-    header_flags.flags.has_mccv = 1;
+    header.flags.flags.has_mccv = 1;
     hasMCCV = true;
   }
 
@@ -1142,17 +1141,24 @@ void MapChunk::setFlag(bool changeto, uint32_t flag)
 {
   if (changeto)
   {
-    header_flags.value |= flag;
+    header.flags.value |= flag;
   }
   else
   {
-    header_flags.value &= ~flag;
+    header.flags.value &= ~flag;
   }
 
   require_shader_data_update();
 }
 
-void MapChunk::save(util::sExtendableArray &lADTFile, int &lCurrentPosition, int &lMCIN_Position, std::map<std::string, int> &lTextures, std::vector<WMOInstance> &lObjectInstances, std::vector<ModelInstance>& lModelInstances)
+void MapChunk::save( util::sExtendableArray &lADTFile
+                   , int &lCurrentPosition
+                   , int &lMCIN_Position
+                   , std::map<std::string, int> &lTextures
+                   , std::vector<WMOInstance> &lObjectInstances
+                   , std::vector<ModelInstance>& lModelInstances
+                   , bool use_mclq_liquids
+                   )
 {
   int lID;
   int lMCNK_Size = 0x80;
@@ -1165,9 +1171,9 @@ void MapChunk::save(util::sExtendableArray &lADTFile, int &lCurrentPosition, int
   lADTFile.Insert(lCurrentPosition + 8, 0x80, reinterpret_cast<char*>(&(header)));
   auto const lMCNK_header = lADTFile.GetPointer<MapChunkHeader>(lCurrentPosition + 8);
 
-  header_flags.flags.do_not_fix_alpha_map = 1;
+  header.flags.flags.do_not_fix_alpha_map = use_mclq_liquids ? 0 : 1;
 
-  lMCNK_header->flags = header_flags.value;
+  lMCNK_header->flags = header.flags;
   lMCNK_header->holes = holes;
   lMCNK_header->areaid = areaID;
 
@@ -1385,7 +1391,7 @@ void MapChunk::save(util::sExtendableArray &lADTFile, int &lCurrentPosition, int
   // MCSH
   if (!shadow_map_is_empty())
   {
-    header_flags.flags.has_mcsh = 1;
+    header.flags.flags.has_mcsh = 1;
 
     int lMCSH_Size = 0x200;
     lADTFile.Extend(8 + lMCSH_Size);
@@ -1403,7 +1409,7 @@ void MapChunk::save(util::sExtendableArray &lADTFile, int &lCurrentPosition, int
   }
   else
   {
-    header_flags.flags.has_mcsh = 0;
+    header.flags.flags.has_mcsh = 0;
     lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->ofsShadow = 0;
     lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->sizeShadow = 0;
   }
@@ -1425,10 +1431,37 @@ void MapChunk::save(util::sExtendableArray &lADTFile, int &lCurrentPosition, int
 
   lCurrentPosition += 8 + lMCAL_Size;
   lMCNK_Size += 8 + lMCAL_Size;
-  //        }
 
-  //! Don't write anything MCLQ related anymore...
+  if (use_mclq_liquids)
+  {
+    auto liquids = liquid_chunk();
 
+    if (liquids && liquids->layer_count() > 0)
+    {
+      int liquids_size = 8 + liquids->layer_count() * sizeof(mclq);
+
+      lMCNK_Size += liquids_size;
+
+      lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->sizeLiquid = liquids_size;
+      lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->ofsLiquid = lCurrentPosition - lMCNK_Position;
+
+      // current position updated inside
+      liquids->save_mclq(lADTFile, lMCNK_Position, lCurrentPosition);
+    }
+    // no liquid, vanilla adt still have an empty chunk
+    else
+    {
+      lADTFile.Extend(8);
+      // size seems to be 0 in vanilla adts in the mclq chunk's header and set right in the mcnk header (layer_size * n_layer + 8)
+      SetChunkHeader(lADTFile, lCurrentPosition, 'MCLQ', 0);
+
+      lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->sizeLiquid = 8;
+      lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->ofsLiquid = lCurrentPosition - lMCNK_Position;
+
+      lCurrentPosition += 8;
+      lMCNK_Size += 8;
+    }
+  }
 
   // MCSE
   int lMCSE_Size = 0;

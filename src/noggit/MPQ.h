@@ -52,8 +52,9 @@ class MPQFile
 
 
   bool External;
+
+  std::string _filename;
   boost::filesystem::path _disk_path;
-  std::string _mpq_path;
 
 public:
   explicit MPQFile(const std::string& pFilename);  // filenames are not case sensitive, the are if u dont use a filesystem which is kinda shitty...
@@ -90,6 +91,9 @@ public:
     buffer = vec;
   }
 
+
+  void save_file_to_folder(std::string const& folder);
+  void save_file(boost::filesystem::path& path);
   void SaveFile();
 
   static bool exists (std::string const& filename);

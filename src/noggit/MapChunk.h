@@ -131,7 +131,6 @@ public:
 
   float xbase, ybase, zbase;
 
-  mcnk_flags header_flags;
   bool use_big_alphamap;
 
   std::unique_ptr<TextureSet> texture_set;
@@ -236,7 +235,14 @@ public:
   void clearHeight();
 
   //! \todo this is ugly create a build struct or sth
-  void save(util::sExtendableArray &lADTFile, int &lCurrentPosition, int &lMCIN_Position, std::map<std::string, int> &lTextures, std::vector<WMOInstance> &lObjectInstances, std::vector<ModelInstance>& lModelInstances);
+  void save( util::sExtendableArray &lADTFile
+           , int &lCurrentPosition
+           , int &lMCIN_Position
+           , std::map<std::string, int> &lTextures
+           , std::vector<WMOInstance> &lObjectInstances
+           , std::vector<ModelInstance>& lModelInstances
+           , bool use_mclq_liquids
+           );
 
   // fix the gaps with the chunk to the left
   bool fixGapLeft(const MapChunk* chunk);

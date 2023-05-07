@@ -38,6 +38,7 @@ public:
   void from_mclq(std::vector<mclq>& layers);
   void fromFile(MPQFile &f, size_t basePos);
   void save(util::sExtendableArray& adt, int base_pos, int& header_pos, int& current_pos);
+  void save_mclq(util::sExtendableArray& adt, int mcnk_pos, int& current_pos);
 
 
   bool is_visible ( const float& cull_distance

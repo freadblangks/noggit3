@@ -86,6 +86,7 @@ namespace noggit
       browse_row (&projectPathField, "Project Path", "project/path", util::file_line_edit::directories);
       browse_row (&importPathField, "Import Path", "project/import_file", util::file_line_edit::files);
       browse_row (&wmvLogPathField, "WMV Log Path", "project/wmv_log_file", util::file_line_edit::files);
+      browse_row (&mclq_liquids_export_path, "MCLQ Liquids Export Path", "project/mclq_liquids_path", util::file_line_edit::directories);
 
       _mysql_box = new QGroupBox ("MySQL (uid storage)", this);
       _mysql_box->setToolTip ("Store the maps' max model unique id (uid) in a mysql database to sync your uids with different computers/users to avoid duplications");
@@ -178,6 +179,7 @@ namespace noggit
       layout->addRow("Undock quick access texture palette", _undock_small_texture_palette = new QCheckBox(this));
 
       layout->addRow("Additional file loading log", _additional_file_loading_log = new QCheckBox(this));
+      layout->addRow("Use MCLQ Liquids (vanilla/BC) export", _use_mclq_liquids_export = new QCheckBox(this));
 
 #ifdef NOGGIT_HAS_SCRIPTING
       layout->addRow("Allow scripts to write to any file",_allow_scripts_write_any_file = new QCheckBox(this));
@@ -226,6 +228,7 @@ namespace noggit
       projectPathField->actual->setText (NoggitSettings.value ("project/path").toString());
       importPathField->actual->setText (NoggitSettings.value ("project/import_file").toString());
       wmvLogPathField->actual->setText (NoggitSettings.value ("project/wmv_log_file").toString());
+      mclq_liquids_export_path->actual->setText (NoggitSettings.value ("project/mclq_liquids_path").toString());
       viewDistanceField->setValue (NoggitSettings.value ("view_distance", 1000.f).toFloat());
       farZField->setValue (NoggitSettings.value ("farZ", 2048.f).toFloat());
       tabletModeCheck->setChecked (NoggitSettings.value ("tablet/enabled", false).toBool());
@@ -240,6 +243,8 @@ namespace noggit
       _async_loader_thread_count->setValue(NoggitSettings.value("async_thread_count", 1).toInt());
       _uid_cb->setChecked(NoggitSettings.value("uid_startup_check", true).toBool());
       _additional_file_loading_log->setChecked(NoggitSettings.value("additional_file_loading_log", false).toBool());
+      _use_mclq_liquids_export->setChecked(NoggitSettings.value("use_mclq_liquids_export", false).toBool());
+
 #ifdef NOGGIT_HAS_SCRIPTING
       _allow_scripts_write_any_file->setChecked(NoggitSettings.value("allow_scripts_write_any_file",false).toBool());
 #endif
@@ -263,6 +268,7 @@ namespace noggit
       NoggitSettings.set_value ("project/path", projectPathField->actual->text());
       NoggitSettings.set_value ("project/import_file", importPathField->actual->text());
       NoggitSettings.set_value ("project/wmv_log_file", wmvLogPathField->actual->text());
+      NoggitSettings.set_value ("project/mclq_liquids_path", mclq_liquids_export_path->actual->text());
       NoggitSettings.set_value ("farZ", farZField->value());
       NoggitSettings.set_value ("view_distance", viewDistanceField->value());
       NoggitSettings.set_value ("tablet/enabled", tabletModeCheck->isChecked());
@@ -277,6 +283,7 @@ namespace noggit
       NoggitSettings.set_value ("async_thread_count", _async_loader_thread_count->value());
       NoggitSettings.set_value ("uid_startup_check", _uid_cb->isChecked());
       NoggitSettings.set_value ("additional_file_loading_log", _additional_file_loading_log->isChecked());
+      NoggitSettings.set_value ("use_mclq_liquids_export", _use_mclq_liquids_export->isChecked());
 
 #ifdef NOGGIT_HAS_SCRIPTING
       NoggitSettings.set_value ("allow_scripts_write_any_file", _allow_scripts_write_any_file->isChecked());

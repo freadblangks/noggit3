@@ -112,7 +112,7 @@ struct ENTRY_MODF
 };
 
 struct MapChunkHeader {
-  uint32_t flags;
+  mcnk_flags flags;
   uint32_t ix;
   uint32_t iy;
   uint32_t nLayers;

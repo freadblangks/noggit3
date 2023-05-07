@@ -2248,7 +2248,7 @@ void MapView::tick (float dt)
       case eEntry_MapChunk:
         {
         auto chunk(boost::get<selected_chunk_type>(lastSelection).chunk);
-          mcnk_flags const& flags = chunk->header_flags;
+          mcnk_flags const& flags = chunk->header.flags;
 
           select_info << "MCNK " << chunk->px << ", " << chunk->py << " (" << chunk->py * 16 + chunk->px
                       << ") of tile (" << chunk->mt->index.x << " " << chunk->mt->index.z << ")"
