@@ -50,7 +50,7 @@ namespace noggit
       generate_hotkey_row({font_noggit::rmb_drag},                                            "\a - Rotate camera", basic_controls_layout);
       generate_hotkey_row({font_noggit::lmb},                                                 "\a - Select chunk or object", basic_controls_layout);
       generate_hotkey_row({font_noggit::i},                                                   "\a - Invert mouse up and down", basic_controls_layout);
-      generate_hotkey_row({font_noggit::q, font_noggit::e},                                   "\a,\a - Invert mouse up and down", basic_controls_layout);
+      generate_hotkey_row({font_noggit::q, font_noggit::e},                                   "\a,\a - Move up and down", basic_controls_layout);
       generate_hotkey_row({font_noggit::w, font_noggit::a , font_noggit::s , font_noggit::d}, "\a\a\a\a - Move left, right, forward, backwards", basic_controls_layout);
       generate_hotkey_row({font_noggit::home},                                                "\a - Move position to the cursor", basic_controls_layout);
       generate_hotkey_row({font_noggit::shift, font_noggit::c},                               "\a+\a - Switch cursor type", basic_controls_layout);
