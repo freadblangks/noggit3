@@ -28,6 +28,7 @@ endif()
 # \todo Add deploy script that adds tags so that we have sane
 # revisions again, at all times.
 execute (_revision "${GIT_EXECUTABLE}" "rev-parse" "--short" "HEAD")
+execute (_commit_count "${GIT_EXECUTABLE}" "rev-list" "--count" "--all")
 
 file (READ "${_noggit_revision_template_file}" _template_blob)
 file (READ "${CMAKE_CURRENT_LIST_FILE}" _self_blob)
@@ -42,6 +43,9 @@ endif()
 
 file (WRITE "${_noggit_revision_state_file}" "${_state_hash}")
 
-set (NOGGIT_GIT_VERSION_STRING "${_revision}${_dirty_marker}")
+message("Commit count: ${_commit_count}")
+
+set (NOGGIT_COMMIT_COUNT "${_commit_count}${_dirty_marker}")
+set (NOGGIT_GIT_VERSION_STRING "${_revision}")
 configure_file ("${_noggit_revision_template_file}"
                 "${_noggit_revision_output_file}" @ONLY)
