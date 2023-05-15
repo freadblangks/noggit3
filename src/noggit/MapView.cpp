@@ -885,25 +885,12 @@ void MapView::createGUI()
 
 #if defined(_WIN32) || defined(WIN32)
   ADD_ACTION_NS ( help_menu
-                , "Forum"
-                , []
-                  {
-                    ShellExecute ( nullptr
-                                 , "open"
-                                 , "http://www.modcraft.io/index.php?board=48.0"
-                                 , nullptr
-                                 , nullptr
-                                 , SW_SHOWNORMAL
-                                 );
-                  }
-                );
-  ADD_ACTION_NS ( help_menu
                 , "Homepage"
                 , []
                   {
                     ShellExecute ( nullptr
                                  , "open"
-                                 , "https://bitbucket.org/berndloerwald/noggit3/"
+                                 , "https://github.com/wowdev/noggit3"
                                  , nullptr
                                  , nullptr
                                  , SW_SHOWNORMAL
