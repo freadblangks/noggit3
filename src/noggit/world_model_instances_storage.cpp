@@ -106,59 +106,41 @@ namespace noggit
 
   void world_model_instances_storage::delete_instances_from_tile(tile_index const& tile)
   {
-    std::unique_lock<std::mutex> const lock (_mutex);
+    std::vector<selection_type> instances_to_remove;
 
-    for (auto it = _m2s.begin(); it != _m2s.end();)
+    for (auto it = _m2s.begin(); it != _m2s.end(); ++it)
     {
       if (tile_index(it->second.pos) == tile)
       {
-        _world->updateTilesModel(&it->second, model_update::remove);
-        _instance_count_per_uid.erase(it->first);
-        it = _m2s.erase(it);
-      }
-      else
-      {
-        it++;
+        instances_to_remove.push_back(&it->second);
       }
     }
-    for (auto it = _wmos.begin(); it != _wmos.end();)
+    for (auto it = _wmos.begin(); it != _wmos.end(); ++it)
     {
       if (tile_index(it->second.pos) == tile)
       {
-        _world->updateTilesWMO(&it->second, model_update::remove);
-        _instance_count_per_uid.erase(it->first);
-        it = _wmos.erase(it);
-      }
-      else
-      {
-        it++;
+        instances_to_remove.push_back(&it->second);
       }
     }
+
+    delete_instances(instances_to_remove);
   }
 
   void world_model_instances_storage::delete_instances(std::vector<selection_type> const& instances)
   {
-    std::unique_lock<std::mutex> const lock (_mutex);
-
     for (auto& it : instances)
     {
       if (it.which() == eEntry_Model)
       {
         auto& instance = boost::get<selected_model_type>(it);
-        
         _world->updateTilesModel(instance, model_update::remove);
-
-        _instance_count_per_uid.erase(instance->uid);
-        _m2s.erase(instance->uid);
+        delete_instance(instance->uid);
       }
       else if (it.which() == eEntry_WMO)
       {
         auto& instance = boost::get<selected_wmo_type>(it);
-
         _world->updateTilesWMO(instance, model_update::remove);
-
-        _instance_count_per_uid.erase(instance->mUniqueID);
-        _wmos.erase(instance->mUniqueID);
+        delete_instance(instance->mUniqueID);
       }
     }
   }
