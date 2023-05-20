@@ -228,7 +228,11 @@ public:
   std::vector<WMOMaterial> materials;
   math::vector_3d extents[2];
 
-  std::vector<std::pair<std::uint64_t, int>> _textures_array_params;
+  std::vector<noggit::texture_infos const*> _textures_infos;
+  bool _textures_finished_upload = false;
+
+  bool check_texture_upload_status();
+
   std::vector<std::string> textures;
   std::vector<std::string> models;
   std::vector<wmo_doodad_instance> modelis;

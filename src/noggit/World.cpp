@@ -1196,6 +1196,12 @@ void World::draw ( math::matrix_4x4 const& model_view
   std::unordered_map<Model*, std::size_t> model_with_particles;
   bool update_transform_buffers = camera_moved;
 
+  // if m2/wmo are rendered, check if there are textures ready to be uploaded
+  if (draw_models || draw_wmo)
+  {
+    _model_texture_handler.upload_ready_textures();
+  }
+
   // M2s / models
   if (draw_models || draw_doodads_wmo)
   {

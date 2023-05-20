@@ -356,9 +356,19 @@ void WMO::draw_instanced( opengl::scoped::use_program& wmo_shader
 
   if (!_uploaded)
   {
-    for (std::string& tex : textures)
+    if (_textures_infos.empty())
     {
-      _textures_array_params.push_back(texture_handler.get_texture_position(tex));
+      for (std::string& tex : textures)
+      {
+        _textures_infos.push_back(texture_handler.get_texture_info(tex));
+      }
+    }
+
+    // wait for the textures to load before rendering the model
+    // texture data required for the ubo setup
+    if (!check_texture_upload_status())
+    {
+      return;
     }
 
     _vertex_arrays.upload();
@@ -559,6 +569,24 @@ bool WMO::draw_skybox ( math::matrix_4x4 const& model_view
   }
 
   return false;
+}
+
+bool WMO::check_texture_upload_status()
+{
+  if (_textures_finished_upload)
+  {
+    return true;
+  }
+
+  for (auto& tex_info : _textures_infos)
+  {
+    if (!tex_info->ready())
+    {
+      return false;
+    }
+  }
+
+  return _textures_finished_upload = true;
 }
 
 std::map<uint32_t, std::vector<wmo_doodad_instance>> WMO::doodads_per_group(uint16_t doodadset) const
@@ -1278,24 +1306,24 @@ void WMOGroup::setup_ubo_data()
     _render_batches.push_back(rbg);
 #endif
 
-    auto& t1_param = wmo->_textures_array_params.at(mat.texture1);
+    auto& t1_param = wmo->_textures_infos.at(mat.texture1);
 #ifdef USE_BINDLESS_TEXTURES
-    ubo_data.texture_1 = t1_param.first;
+    ubo_data.texture_1 = t1_param->array_handle.value();
 #else
     ubo_data.texture_1 = mat.texture1;
 #endif
-    ubo_data.index_1 = t1_param.second;
+    ubo_data.index_1 = t1_param->pos_in_array->second;
 
     // only shaders using 2 textures in wotlk
     if (mat.shader == 6 || mat.shader == 5 || mat.shader == 3)
     {
-      auto& t2_param = wmo->_textures_array_params.at(mat.texture2);
+      auto& t2_param = wmo->_textures_infos.at(mat.texture2);
 #ifdef USE_BINDLESS_TEXTURES
-      ubo_data.texture_2 = t2_param.first;
+      ubo_data.texture_2 = t2_param->array_handle.value();
 #else
       ubo_data.texture_2 = mat.texture2;
 #endif
-      ubo_data.index_2 = t2_param.second;
+      ubo_data.index_2 = t2_param->pos_in_array->second;
     }
     else
     {
@@ -1405,11 +1433,11 @@ void WMOGroup::draw( opengl::scoped::use_program& wmo_shader
 #ifndef USE_BINDLESS_TEXTURES
     WMOMaterial const& mat(wmo->materials.at(_batches[batch_index++].texture));
 
-    texture_handler.bind_layer(wmo->_textures_array_params[mat.texture1].first, 0);
+    texture_handler.bind_layer(wmo->_textures_infos[mat.texture1]->pos_in_array->first, 0);
 
     if (mat.shader == 3 || mat.shader == 5 || mat.shader == 6)
     {
-      texture_handler.bind_layer(wmo->_textures_array_params[mat.texture2].first, 1);
+      texture_handler.bind_layer(wmo->_textures_infos[mat.texture2]->pos_in_array->first, 1);
     }
 #endif
 

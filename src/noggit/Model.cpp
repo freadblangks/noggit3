@@ -722,15 +722,24 @@ bool ModelRenderPass::prepare_draw(opengl::scoped::use_program& m2_shader, Model
     ubo_data.unfogged = renderflag.flags.unfogged;
     ubo_data.unlit = renderflag.flags.unlit;
 
-    auto& tex_param_1 = m->_texture_array_params[m->_texture_lookup[textures[0]]];
-    ubo_data.texture_1 = tex_param_1.first;
-    ubo_data.index_1 = tex_param_1.second;
+    auto& tex_param_1 = m->_textures_infos[m->_texture_lookup[textures[0]]];
+
+#ifdef USE_BINDLESS_TEXTURES
+    ubo_data.texture_1 = tex_param_1->array_handle.value();
+#else
+    ubo_data.texture_1 = tex_param_1->pos_in_array->first;
+#endif
+    ubo_data.index_1 = tex_param_1->pos_in_array->second;
 
     if (texture_count > 1)
     {
-      auto& tex_param_2 = m->_texture_array_params[m->_texture_lookup[textures[1]]];
-      ubo_data.texture_2 = tex_param_2.first;
-      ubo_data.index_2 = tex_param_2.second;
+      auto& tex_param_2 = m->_textures_infos[m->_texture_lookup[textures[1]]];
+#ifdef USE_BINDLESS_TEXTURES
+      ubo_data.texture_2 = tex_param_2->array_handle.value();
+#else
+      ubo_data.texture_2 = tex_param_2->pos_in_array->first;
+#endif
+      ubo_data.index_2 = tex_param_2->pos_in_array->second;
       ubo_data.tex_count = 2;
     }
     else
@@ -831,14 +840,11 @@ bool ModelRenderPass::prepare_draw(opengl::scoped::use_program& m2_shader, Model
   }
 
 #ifndef USE_BINDLESS_TEXTURES
-  auto& tex_param_1 = m->_texture_array_params[m->_texture_lookup[textures[0]]];
-
-  texture_handler.bind_layer(tex_param_1.first, 0);
+  texture_handler.bind_layer(ubo_data.texture_1, 0);
 
   if (texture_count > 1)
   {
-    auto& tex_param_2 = m->_texture_array_params[m->_texture_lookup[textures[1]]];
-    texture_handler.bind_layer(tex_param_2.first, 1);
+    texture_handler.bind_layer(ubo_data.texture_2, 1);
   }
 #endif
 
@@ -1455,6 +1461,12 @@ void Model::draw( math::matrix_4x4 const& model_view
   }
   }
 
+  // wait for the textures to load before rendering the model
+  // must be called after the upload is done
+  if (!check_texture_upload_status())
+  {
+    return;
+  }
 
   if (animated && (!animcalc || _per_instance_animation))
   {
@@ -1534,6 +1546,13 @@ void Model::draw ( math::matrix_4x4 const& model_view
     }
   }
 
+  // wait for the textures to load before rendering the model
+  // must be called after the upload is done
+  if (!check_texture_upload_status())
+  {
+    return;
+  }
+
   if (animated && (!animcalc || (_per_instance_animation && draw_particles)))
   {
     animate(model_view, 0, animtime);
@@ -1611,6 +1630,12 @@ void Model::draw_particles( math::matrix_4x4 const& model_view
                           , noggit::texture_array_handler& texture_handler
                           )
 {
+  // wait for the textures to load before rendering the model
+  if (!_textures_finished_upload)
+  {
+    return;
+  }
+
   for (auto& p : _particles)
   {
     p.draw(model_view, particles_shader, _transform_buffer, instance_count, texture_handler);
@@ -1622,6 +1647,12 @@ void Model::draw_ribbons( opengl::scoped::use_program& ribbons_shader
                         , noggit::texture_array_handler& texture_handler
                         )
 {
+  // wait for the textures to load before rendering the model
+  if (!_textures_finished_upload)
+  {
+    return;
+  }
+
   for (auto& r : _ribbons)
   {
     r.draw(ribbons_shader, _transform_buffer, instance_count, texture_handler);
@@ -1711,7 +1742,7 @@ void Model::upload(noggit::texture_array_handler& texture_handler)
 {
   for (std::string& texture : _textureFilenames)
   {
-    _texture_array_params.push_back(texture_handler.get_texture_position(texture));
+    _textures_infos.push_back(texture_handler.get_texture_info(texture));
   }
 
   _buffers.upload();
@@ -1740,7 +1771,6 @@ void Model::upload(noggit::texture_array_handler& texture_handler)
     }
   }
 
-
   _finished_upload = true;
 }
 
@@ -1753,4 +1783,22 @@ void Model::updateEmitters(float dt)
       particle.update (dt);
     }
   }
+}
+
+bool Model::check_texture_upload_status()
+{
+  if (_textures_finished_upload)
+  {
+    return true;
+  }
+
+  for (auto& tex_info : _textures_infos)
+  {
+    if (!tex_info->ready())
+    {
+      return false;
+    }
+  }
+
+  return _textures_finished_upload = true;
 }

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <noggit/TextureManager.h>
 #include <opengl/texture.hpp>
 
 #include <vector>
@@ -10,6 +11,19 @@
 
 namespace noggit
 {
+  struct texture_infos
+  {
+    texture_infos(std::string const& filename) : tex(filename) {}
+
+    scoped_blp_texture_reference tex;
+
+    // array index, index inside array
+    std::optional<std::pair<int, int>> pos_in_array;
+    std::optional<std::uint64_t> array_handle;
+
+    bool ready() const { return pos_in_array.has_value(); }
+  };
+
   class texture_array_handler
   {
   public:
@@ -20,14 +34,14 @@ namespace noggit
     void bind();
     void bind_layer(int array_index, int texture_unit = 0);
 
-    // return the texture array handle and the position in the array
-    std::pair<std::uint64_t, int> get_texture_position(std::string const& normalized_filename);
-    std::pair<std::uint64_t, int> get_texture_position_normalize_filename(std::string const& tileset_filename);
+    texture_infos const* get_texture_info(std::string const& normalized_filename);
 
     int array_count() const { return _texture_arrays.size(); }
 
     // todo: grab that info beforehand to have it on creation
     void set_max_array_size(int max_layer_count) { _max_layer_count = max_layer_count; }
+
+    void upload_ready_textures();
   private:
     std::optional<std::pair<int, int>> find_next_available_spot(int width, int height, GLuint format);
 
@@ -37,7 +51,6 @@ namespace noggit
 
     int _max_layer_count = 256;
     int _base_texture_unit;
-    int _texture_count = 0;
 
     std::vector<opengl::texture_array> _texture_arrays;
     std::vector<std::pair<int, int>> _texture_size_for_array;
@@ -45,7 +58,9 @@ namespace noggit
     std::vector<int> _array_capacity;
     std::vector<GLuint> _array_format;
 
-    std::map<std::string, std::pair<int, int>> _texture_positions;
+    std::map<std::string, texture_infos> _textures_infos;
+
+    std::vector<texture_infos*> _textures_to_upload;
 
     // todo: make that variable depending on size, and add the option to reupload an array
     // if there isn't enough space and

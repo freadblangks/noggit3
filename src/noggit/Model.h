@@ -12,7 +12,6 @@
 #include <noggit/MPQ.h>
 #include <noggit/ModelHeaders.h>
 #include <noggit/Particle.h>
-#include <noggit/TextureManager.h>
 #include <noggit/texture_array_handler.hpp>
 #include <noggit/tool_enums.hpp>
 #include <opengl/scoped.hpp>
@@ -312,7 +311,11 @@ public:
   // ===============================
   // Texture data
   // ===============================
-  std::vector<std::pair<std::uint64_t, int>> _texture_array_params;
+  std::vector<noggit::texture_infos const*> _textures_infos;
+  bool _textures_finished_upload = false;
+
+  bool check_texture_upload_status();
+
   std::vector<std::string> _textureFilenames;
   std::vector<int> _specialTextures;
   std::vector<bool> _useReplaceTextures;

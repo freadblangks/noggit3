@@ -3,7 +3,6 @@
 #include <noggit/texture_array_handler.hpp>
 
 #include <noggit/MPQ.h>
-#include <noggit/TextureManager.h>
 #include <opengl/context.hpp>
 
 #include <set>
@@ -75,62 +74,70 @@ namespace noggit
     }
   }
 
-  std::pair<std::uint64_t, int> texture_array_handler::get_texture_position_normalize_filename(std::string const& tileset_filename)
+  texture_infos const* texture_array_handler::get_texture_info(std::string const& normalized_filename)
   {
-    return get_texture_position(mpq::normalized_filename(tileset_filename));
-  }
+    auto& it = _textures_infos.find(normalized_filename);
 
-  std::pair<std::uint64_t, int> texture_array_handler::get_texture_position(std::string const& normalized_filename)
-  {
-    auto& it = _texture_positions.find(normalized_filename);
-
-    if (it != _texture_positions.end())
+    if (it != _textures_infos.end())
     {
-#ifdef USE_BINDLESS_TEXTURES
-      return { _texture_arrays[it->second.first].get_resident_handle(), it->second.second };
-#else
-      return it->second;
-#endif
+      return &it->second;
     }
     else
     {
-      std::pair<int, int> pos;
+      texture_infos* info = &_textures_infos.emplace(normalized_filename, std::move(texture_infos(normalized_filename))).first->second;
 
-      blp_texture tex(normalized_filename);
-      tex.finishLoading();
+      _textures_to_upload.push_back(info);
 
-      int height = tex.height();
-      int width = tex.width();
-      int shift = 0;
-      int mipmap_count = tex.layer_count();
-      GLuint format = tex.texture_format();
+      return info;
+    }
+  }
 
-      auto spot = find_next_available_spot(width, height, format);
+  void texture_array_handler::upload_ready_textures()
+  {
+    for (auto& it = _textures_to_upload.begin(); it != _textures_to_upload.end();)
+    {
+      texture_infos* info = *it;
 
-      if (!spot)
+      if (info->tex->finishedLoading())
       {
-        pos = {_texture_arrays.size() , 0};
-        create_next_array(width, height, format);
+        std::pair<int, int> pos;
+
+        scoped_blp_texture_reference& tex = info->tex;
+
+        int height = tex->height();
+        int width = tex->width();
+        int mipmap_count = tex->layer_count();
+        GLuint format = tex->texture_format();
+
+        auto spot = find_next_available_spot(width, height, format);
+
+        if (!spot)
+        {
+          pos = { _texture_arrays.size() , 0 };
+          create_next_array(width, height, format);
+        }
+        else
+        {
+          pos = spot.value();
+        }
+
+        bind_layer(pos.first);
+        tex->upload_to_currently_bound_array(pos.second, 0);
+
+        _texture_count_in_array[pos.first]++;
+
+        info->pos_in_array = pos;
+
+#ifdef USE_BINDLESS_TEXTURES
+        info->array_handle = _texture_arrays[pos.first].get_resident_handle();
+#endif
+
+        it = _textures_to_upload.erase(it);
       }
       else
       {
-        pos = spot.value();
+        ++it;
       }
-
-      bind_layer(pos.first);
-      tex.upload_to_currently_bound_array(pos.second, shift);
-
-      _texture_count_in_array[pos.first]++;
-      _texture_positions[normalized_filename] = pos;
-      _texture_count++;
-
-
-#ifdef USE_BINDLESS_TEXTURES
-      return { _texture_arrays[pos.first].get_resident_handle(), pos.second };
-#else
-      return pos;
-#endif
-
     }
   }
 
