@@ -94,42 +94,6 @@ namespace noggit
         }
       }
 
-      {
-        auto const prefix (boost::filesystem::path (NoggitSettings.project_path()));
-        auto const prefix_size (prefix.string().length());
-
-        if (boost::filesystem::exists (prefix))
-        {
-          for ( auto const& entry_abs
-              : boost::make_iterator_range
-                  (boost::filesystem::recursive_directory_iterator (prefix), {})
-              )
-          {
-            auto entry ( mpq::normalized_filename
-                          (entry_abs.path().string().substr (prefix_size))
-                       );
-
-            if ( entry.find ("tileset") != std::string::npos
-              && entry.find (".blp") != std::string::npos
-               )
-            {
-              auto suffix_pos (entry.find ("_s.blp"));
-              if (suffix_pos == std::string::npos)
-              {
-                tilesets.emplace_back (entry);
-              }
-              else
-              {
-                std::string specular (entry);
-                specular.erase (suffix_pos, strlen ("_s"));
-                tilesets_with_specular_variant.emplace (specular);
-              }
-            }
-          }
-        }
-      }
-
-
       auto model (new QStandardItemModel);
       constexpr int const has_specular_role = Qt::UserRole;
 

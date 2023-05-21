@@ -77,6 +77,8 @@ void AsyncLoader::process()
         std::lock_guard<std::mutex> const lock (_guard);
         _currently_loading.remove (object);
         _state_changed.notify_all();
+
+        _object_queued_count--;
       }
     }
     catch (...)
@@ -97,6 +99,8 @@ void AsyncLoader::queue_for_load (AsyncObject* object)
   std::lock_guard<std::mutex> const lock (_guard);
   _to_load[(size_t)object->loading_priority()].push_back (object);
   _state_changed.notify_one();
+
+  _object_queued_count++;
 }
 
 void AsyncLoader::ensure_deletable (AsyncObject* object)
@@ -119,6 +123,18 @@ void AsyncLoader::ensure_deletable (AsyncObject* object)
       {
         return std::find (_currently_loading.begin(), _currently_loading.end(), object) == _currently_loading.end();
       }
+    }
+  );
+}
+
+void AsyncLoader::wait_queue_empty()
+{
+  std::unique_lock<std::mutex> lock (_guard);
+  _state_changed.wait
+  ( lock
+  , [&]
+    {
+      return _object_queued_count.load() == 0;
     }
   );
 }

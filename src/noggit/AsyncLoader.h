@@ -26,6 +26,9 @@ public:
 
   void ensure_deletable (AsyncObject*);
 
+  // wait until everything is loaded
+  void wait_queue_empty();
+
   AsyncLoader(int numThreads);
   ~AsyncLoader();
 
@@ -38,6 +41,7 @@ private:
   std::mutex _guard;
   std::condition_variable _state_changed;
   std::atomic<bool> _stop;
+  std::atomic<int> _object_queued_count = { 0 };
   std::array<std::list<AsyncObject*>, (size_t)async_priority::count> _to_load;
   std::list<AsyncObject*> _currently_loading;
   std::list<std::thread> _threads;

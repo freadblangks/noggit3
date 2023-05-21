@@ -83,6 +83,26 @@ void Noggit::initPath(char *argv[])
 
 void Noggit::loadMPQs()
 {
+  // load project folder listfile first, todo: make that async
+  {
+    auto const prefix(boost::filesystem::path(NoggitSettings.project_path()));
+    auto const prefix_size(prefix.string().length());
+
+    if (boost::filesystem::exists(prefix))
+    {
+      for (auto const& entry_abs
+        : boost::make_iterator_range
+        (boost::filesystem::recursive_directory_iterator(prefix), {})
+        )
+      {
+        gListfile.emplace(
+          noggit::mpq::normalized_filename
+          (entry_abs.path().string().substr(prefix_size))
+        );
+      }
+    }
+  }
+
   std::vector<std::string> archiveNames;
   archiveNames.push_back("common.MPQ");
   archiveNames.push_back("common-2.MPQ");
@@ -318,6 +338,9 @@ Noggit::Noggit(int argc, char *argv[])
   LogDebug << "GL: Version: " << gl.getString (GL_VERSION) << std::endl;
   LogDebug << "GL: Vendor: " << gl.getString (GL_VENDOR) << std::endl;
   LogDebug << "GL: Renderer: " << gl.getString (GL_RENDERER) << std::endl;
+
+  // ensure all MPQs are loaded fully so the listfile is complete
+  AsyncLoader::instance->wait_queue_empty();
 
   main_window = std::make_unique<noggit::ui::main_window>();
   if (fullscreen)
