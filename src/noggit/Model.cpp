@@ -16,6 +16,83 @@
 #include <sstream>
 #include <string>
 
+opengl_model_state_changer::opengl_model_state_changer()
+{
+  cull_face = true;
+  depth_mask = true;
+  blend = true;
+  blend_func = { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
+
+  gl.enable(GL_CULL_FACE);
+  gl.depthMask(GL_TRUE);
+  gl.enable(GL_BLEND);
+  gl.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+
+opengl_model_state_changer::~opengl_model_state_changer()
+{
+  gl.enable(GL_CULL_FACE);
+  gl.depthMask(GL_TRUE);
+  gl.enable(GL_BLEND);
+  gl.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+
+void opengl_model_state_changer::set_depth_mask(bool v)
+{
+  if (v != depth_mask)
+  {
+    depth_mask = v;
+
+    if (!depth_mask)
+    {
+      gl.depthMask(GL_FALSE);
+    }
+    else
+    {
+      gl.depthMask(GL_TRUE);
+    }
+  }
+}
+void opengl_model_state_changer::set_cull_face(bool v)
+{
+  if (v != cull_face)
+  {
+    cull_face = v;
+
+    if (!cull_face)
+    {
+      gl.disable(GL_CULL_FACE);
+    }
+    else
+    {
+      gl.enable(GL_CULL_FACE);
+    }
+  }
+}
+void opengl_model_state_changer::set_blend(bool v)
+{
+  if (v != blend)
+  {
+    if (blend)
+    {
+      gl.enable(GL_BLEND);
+    }
+    else
+    {
+      gl.disable(GL_BLEND);
+    }
+  }
+}
+void opengl_model_state_changer::set_blend_func(GLenum v1, GLenum v2)
+{
+  if (v1 != blend_func.first || v2 != blend_func.second)
+  {
+    blend_func = { v1, v2 };
+
+    gl.blendFunc(v1, v2);
+  }
+}
+
 Model::Model(const std::string& filename_)
   : AsyncObject(filename_)
   , _finished_upload(false)
@@ -603,7 +680,9 @@ ModelRenderPass::ModelRenderPass(ModelTexUnit const& tex_unit, Model* m)
 {
 }
 
-bool ModelRenderPass::prepare_draw(opengl::scoped::use_program& m2_shader, Model *m, bool animate, int index, noggit::texture_array_handler& texture_handler)
+bool ModelRenderPass::prepare_draw( opengl::scoped::use_program& m2_shader, Model *m, bool animate, int index
+                                  , noggit::texture_array_handler& texture_handler, opengl_model_state_changer& ogl_state
+                                  )
 {
   if (!render)
   {
@@ -660,42 +739,44 @@ bool ModelRenderPass::prepare_draw(opengl::scoped::use_program& m2_shader, Model
     {
     default:
     case M2Blend::Opaque:
-      gl.disable(GL_BLEND);
+      ogl_state.set_blend(false);
+      ogl_state.set_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
       ubo_data.alpha_test = -1.f;
       ubo_data.fog_mode = 1;
       break;
     case M2Blend::Alpha_Key:
-      gl.disable(GL_BLEND);
+      ogl_state.set_blend(false);
+      ogl_state.set_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
       ubo_data.alpha_test = (224.f / 255.f) * mesh_color.w;
       ubo_data.fog_mode = 1;
       break;
     case M2Blend::Alpha:
-      gl.enable(GL_BLEND);
-      gl.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      ogl_state.set_blend(true);
+      ogl_state.set_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
       ubo_data.alpha_test = (1.f / 255.f) * mesh_color.w;
       ubo_data.fog_mode = 1;
       break;
     case M2Blend::No_Add_Alpha:
-      gl.enable(GL_BLEND);
-      gl.blendFunc(GL_ONE, GL_ONE);
+      ogl_state.set_blend(true);
+      ogl_state.set_blend_func(GL_ONE, GL_ONE);
       ubo_data.alpha_test = (1.f / 255.f) * mesh_color.w;
       ubo_data.fog_mode = 2;
       break;
     case M2Blend::Add:
-      gl.enable(GL_BLEND);
-      gl.blendFunc(GL_SRC_ALPHA, GL_ONE);
+      ogl_state.set_blend(true);
+      ogl_state.set_blend_func(GL_SRC_ALPHA, GL_ONE);
       ubo_data.alpha_test = (1.f / 255.f) * mesh_color.w;
       ubo_data.fog_mode = 2;
       break;
     case M2Blend::Mod:
-      gl.enable(GL_BLEND);
-      gl.blendFunc(GL_DST_COLOR, GL_ZERO);
+      ogl_state.set_blend(true);
+      ogl_state.set_blend_func(GL_DST_COLOR, GL_ZERO);
       ubo_data.alpha_test = (1.f / 255.f) * mesh_color.w;
       ubo_data.fog_mode = 3;
       break;
     case M2Blend::Mod2x:
-      gl.enable(GL_BLEND);
-      gl.blendFunc(GL_DST_COLOR, GL_SRC_COLOR);
+      ogl_state.set_blend(true);
+      ogl_state.set_blend_func(GL_DST_COLOR, GL_SRC_COLOR);
       ubo_data.alpha_test = (1.f / 255.f) * mesh_color.w;
       ubo_data.fog_mode = 4;
       break;
@@ -703,20 +784,20 @@ bool ModelRenderPass::prepare_draw(opengl::scoped::use_program& m2_shader, Model
 
     if (renderflag.flags.two_sided)
     {
-      gl.disable(GL_CULL_FACE);
+      ogl_state.set_cull_face(false);
     }
     else
     {
-      gl.enable(GL_CULL_FACE);
+      ogl_state.set_cull_face(true);
     }
 
     if (renderflag.flags.z_buffered)
     {
-      gl.depthMask(GL_FALSE);
+      ogl_state.set_depth_mask(false);
     }
     else
     {
-      gl.depthMask(GL_TRUE);
+      ogl_state.set_depth_mask(true);
     }
 
     ubo_data.unfogged = renderflag.flags.unfogged;
@@ -793,49 +874,51 @@ bool ModelRenderPass::prepare_draw(opengl::scoped::use_program& m2_shader, Model
     {
     default:
     case M2Blend::Opaque:
-      gl.disable(GL_BLEND);;
+      ogl_state.set_blend(false);
+      ogl_state.set_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
       break;
     case M2Blend::Alpha_Key:
-      gl.disable(GL_BLEND);
+      ogl_state.set_blend(false);
+      ogl_state.set_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
       break;
     case M2Blend::Alpha:
-      gl.enable(GL_BLEND);
-      gl.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      ogl_state.set_blend(true);
+      ogl_state.set_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
       break;
     case M2Blend::No_Add_Alpha:
-      gl.enable(GL_BLEND);
-      gl.blendFunc(GL_ONE, GL_ONE);
+      ogl_state.set_blend(true);
+      ogl_state.set_blend_func(GL_ONE, GL_ONE);
       break;
     case M2Blend::Add:
-      gl.enable(GL_BLEND);
-      gl.blendFunc(GL_SRC_ALPHA, GL_ONE);
+      ogl_state.set_blend(true);
+      ogl_state.set_blend_func(GL_SRC_ALPHA, GL_ONE);
       break;
     case M2Blend::Mod:
-      gl.enable(GL_BLEND);
-      gl.blendFunc(GL_DST_COLOR, GL_ZERO);
+      ogl_state.set_blend(true);
+      ogl_state.set_blend_func(GL_DST_COLOR, GL_ZERO);
       break;
     case M2Blend::Mod2x:
-      gl.enable(GL_BLEND);
-      gl.blendFunc(GL_DST_COLOR, GL_SRC_COLOR);
+      ogl_state.set_blend(true);
+      ogl_state.set_blend_func(GL_DST_COLOR, GL_SRC_COLOR);
       break;
     }
 
     if (renderflag.flags.two_sided)
     {
-      gl.disable(GL_CULL_FACE);
+      ogl_state.set_cull_face(false);
     }
     else
     {
-      gl.enable(GL_CULL_FACE);
+      ogl_state.set_cull_face(true);
     }
 
     if (renderflag.flags.z_buffered)
     {
-      gl.depthMask(GL_FALSE);
+      ogl_state.set_depth_mask(false);
     }
     else
     {
-      gl.depthMask(GL_TRUE);
+      ogl_state.set_depth_mask(true);
     }
   }
 
@@ -1431,6 +1514,7 @@ void Model::draw( math::matrix_4x4 const& model_view
                 , bool // all_boxes
                 , display_mode display
                 , noggit::texture_array_handler& texture_handler
+                , opengl_model_state_changer& ogl_state
                 )
 {
   if (!finishedLoading() || loading_failed())
@@ -1484,19 +1568,13 @@ void Model::draw( math::matrix_4x4 const& model_view
 
   for (ModelRenderPass& p : _render_passes)
   {
-    if (p.prepare_draw(m2_shader, this, draw_particles, index, texture_handler))
+    if (p.prepare_draw(m2_shader, this, draw_particles, index, texture_handler, ogl_state))
     {
       m2_shader.uniform("index", index);
       gl.drawElements(GL_TRIANGLES, p.index_count, _indices, sizeof (_indices[0]) * p.index_start);
-      p.after_draw();
-
       index++;
     }
   }
-
-  gl.disable(GL_BLEND);
-  gl.enable(GL_CULL_FACE);
-  gl.depthMask(GL_TRUE);
 }
 
 void Model::draw ( math::matrix_4x4 const& model_view
@@ -1514,6 +1592,7 @@ void Model::draw ( math::matrix_4x4 const& model_view
                  , display_mode display
                  , bool update_transform_matrix_buffer
                  , noggit::texture_array_handler& texture_handler
+                 , opengl_model_state_changer& ogl_state
                  )
 {
   if (!finishedLoading() || loading_failed())
@@ -1608,20 +1687,16 @@ void Model::draw ( math::matrix_4x4 const& model_view
 
   for (ModelRenderPass& p : _render_passes)
   {
-    if (p.prepare_draw(m2_shader, this, draw_particles, index, texture_handler))
+    if (p.prepare_draw(m2_shader, this, draw_particles, index, texture_handler, ogl_state))
     {
       m2_shader.uniform("index", index);
 
       gl.drawElementsInstanced(GL_TRIANGLES, p.index_count, _instance_visible, _indices, sizeof (_indices[0]) * p.index_start);
-      p.after_draw();
 
       index++;
     }
   }
 
-  gl.disable(GL_BLEND);
-  gl.enable(GL_CULL_FACE);
-  gl.depthMask(GL_TRUE);
 }
 
 void Model::draw_particles( math::matrix_4x4 const& model_view

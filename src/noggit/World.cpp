@@ -1232,6 +1232,8 @@ void World::draw ( math::matrix_4x4 const& model_view
     std::unordered_map<Model*, std::size_t> model_boxes_to_draw;
 
     {
+      opengl_model_state_changer ogl_state;
+
       opengl::scoped::use_program m2_shader {*_m2_instanced_program.get()};
 
       m2_shader.uniform("model_view", model_view);
@@ -1267,6 +1269,7 @@ void World::draw ( math::matrix_4x4 const& model_view
                                     , display
                                     , update_transform_buffers
                                     , _model_texture_handler
+                                    , ogl_state
                                     );
         }
       }

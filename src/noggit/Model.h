@@ -28,6 +28,24 @@ class RibbonEmitter;
 
 math::vector_3d fixCoordSystem(math::vector_3d v);
 
+class opengl_model_state_changer
+{
+public:
+  opengl_model_state_changer();
+  ~opengl_model_state_changer();
+
+  void set_depth_mask(bool v);
+  void set_cull_face(bool v);
+  void set_blend(bool v);
+  void set_blend_func(GLenum v1, GLenum v2);
+
+private:
+  bool depth_mask;
+  bool cull_face;
+  bool blend;
+  std::pair<GLenum, GLenum> blend_func;
+};
+
 class Bone {
   Animation::M2Value<math::vector_3d> trans;
   Animation::M2Value<math::quaternion, math::packed_quaternion> rot;
@@ -191,7 +209,9 @@ struct ModelRenderPass : ModelTexUnit
   bool need_ubo_data_update = true;
   bool render = true;
 
-  bool prepare_draw(opengl::scoped::use_program& m2_shader, Model *m, bool animate, int index, noggit::texture_array_handler& texture_handler);
+  bool prepare_draw( opengl::scoped::use_program& m2_shader, Model *m, bool animate, int index
+                   , noggit::texture_array_handler& texture_handler, opengl_model_state_changer& ogl_state
+                   );
   void after_draw();
   void init_uv_types(Model* m);
 
@@ -255,6 +275,7 @@ public:
            , bool all_boxes
            , display_mode display
            , noggit::texture_array_handler& texture_handler
+           , opengl_model_state_changer& ogl_state
            );
   void draw ( math::matrix_4x4 const& model_view
             , std::vector<ModelInstance*> instances
@@ -271,6 +292,7 @@ public:
             , display_mode display
             , bool update_transform_matrix_buffer
             , noggit::texture_array_handler& texture_handler
+            , opengl_model_state_changer& ogl_state
             );
   void draw_particles( math::matrix_4x4 const& model_view
                      , opengl::scoped::use_program& particles_shader

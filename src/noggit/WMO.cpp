@@ -562,7 +562,7 @@ bool WMO::draw_skybox ( math::matrix_4x4 const& model_view
       sky.scale = 2.f;
       sky.recalcExtents();
 
-      skybox->get()->draw(model_view, sky, m2_shader, frustum, cull_distance, camera_pos, animtime, draw_particles, false, display_mode::in_3D, texture_handler);
+      skybox->get()->draw(model_view, sky, m2_shader, frustum, cull_distance, camera_pos, animtime, draw_particles, false, display_mode::in_3D, texture_handler, opengl_model_state_changer());
 
       return true;
     }
