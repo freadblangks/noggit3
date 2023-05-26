@@ -181,14 +181,24 @@ Skies::Skies(unsigned int mapid)
   {
     for (DBCFile::Iterator i = gLightDB.begin(); i != gLightDB.end(); ++i)
     {
-      if (0 == i->getUInt(LightDB::Map))
+      // get the first global light available
+      if (i->getFloat(LightDB::RadiusOuter) < 0.01f)
       {
+        LogError << "No light data found for the current map (id :" << mapid
+                 << ") using global light from map id=" << i->getUInt(LightDB::Map)
+                 << " as a fallback" << std::endl;
+
         Sky s(i);
         skies.push_back(s);
         numSkies++;
         break;
       }
     }
+  }
+
+  if (numSkies == 0)
+  {
+    LogError << "Could not load Light data for the map (id: " << mapid << ") and no fallback was available" << std::endl;
   }
 
   // sort skies from smallest to largest; global last.

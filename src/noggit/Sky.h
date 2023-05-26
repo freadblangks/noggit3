@@ -129,7 +129,7 @@ private:
   float _ocean_deep_alpha;
 public:
   std::vector<Sky> skies;
-  std::vector<math::vector_3d> color_set = std::vector<math::vector_3d>(NUM_SkyColorNames);
+  std::vector<math::vector_3d> color_set = std::vector<math::vector_3d>(NUM_SkyColorNames, math::vector_3d(1.f, 1.f, 1.f));
 
   explicit Skies(unsigned int mapid);
 
