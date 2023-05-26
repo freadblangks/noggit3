@@ -695,6 +695,9 @@ void MapView::createGUI()
   ADD_TOGGLE_NS (view_menu, "Models with box", _draw_models_with_box);
   //! \todo space+h in object mode
   ADD_TOGGLE_NS (view_menu, "Draw hidden models", _draw_hidden_models);
+  ADD_TOGGLE_NS (view_menu, "Draw Sky", _draw_sky);
+  ADD_TOGGLE_NS (view_menu, "Draw Skybox", _draw_skybox);
+
 
   view_menu->addSeparator();
   view_menu->addAction(createTextSeparator("Minimap"));
@@ -2538,6 +2541,8 @@ void MapView::draw_map()
                , _draw_hole_lines.get() || terrainMode == editing_mode::holes
                , _draw_models_with_box.get()
                , _draw_hidden_models.get()
+               , _draw_sky.get()
+               , _draw_skybox.get()
                , _area_id_colors
                , _draw_fog.get()
                , terrainTool->_edit_type

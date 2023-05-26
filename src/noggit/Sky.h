@@ -144,6 +144,7 @@ public:
             , const float& cull_distance
             , int animtime
             , bool draw_particles
+            , bool draw_skybox
             , OutdoorLightStats const& light_stats
             , noggit::texture_array_handler& texture_handler
             );

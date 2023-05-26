@@ -283,6 +283,7 @@ bool Skies::draw( math::matrix_4x4 const& model_view
                 , const float& cull_distance
                 , int animtime
                 , bool draw_particles
+                , bool draw_skybox
                 , OutdoorLightStats const& light_stats
                 , noggit::texture_array_handler& texture_handler
                 )
@@ -320,28 +321,31 @@ bool Skies::draw( math::matrix_4x4 const& model_view
     }
   }
 
-  for (Sky& sky : skies)
+  if (draw_skybox)
   {
-    if (sky.weight > 0.f && sky.skybox)
+    for (Sky& sky : skies)
     {
-      auto& model = sky.skybox.get();
-      model.model->trans = sky.weight;
-      model.pos = camera_pos;
-      model.scale = 0.1f;
-      model.recalcExtents();
+      if (sky.weight > 0.f && sky.skybox)
+      {
+        auto& model = sky.skybox.get();
+        model.model->trans = sky.weight;
+        model.pos = camera_pos;
+        model.scale = 0.1f;
+        model.recalcExtents();
 
-      model.model->draw(model_view, model, m2_shader, frustum, cull_distance, camera_pos, animtime, draw_particles, false, display_mode::in_3D, texture_handler, opengl_model_state_changer());
+        model.model->draw(model_view, model, m2_shader, frustum, cull_distance, camera_pos, animtime, draw_particles, false, display_mode::in_3D, texture_handler, opengl_model_state_changer());
+      }
     }
-  }
-  // if it's night, draw the stars
-  if (light_stats.nightIntensity > 0)
-  {
-    stars.model->trans = light_stats.nightIntensity;
-    stars.pos = camera_pos;
-    stars.scale = 0.1f;
-    stars.recalcExtents();
+    // if it's night, draw the stars
+    if (light_stats.nightIntensity > 0)
+    {
+      stars.model->trans = light_stats.nightIntensity;
+      stars.pos = camera_pos;
+      stars.scale = 0.1f;
+      stars.recalcExtents();
 
-    stars.model->draw(model_view, stars, m2_shader, frustum, cull_distance, camera_pos, animtime, draw_particles, false, display_mode::in_3D, texture_handler, opengl_model_state_changer());
+      stars.model->draw(model_view, stars, m2_shader, frustum, cull_distance, camera_pos, animtime, draw_particles, false, display_mode::in_3D, texture_handler, opengl_model_state_changer());
+    }
   }
 
   return true;

@@ -108,6 +108,8 @@ private:
   noggit::bool_toggle_property _draw_hole_lines = {false};
   noggit::bool_toggle_property _draw_models_with_box = {false};
   noggit::bool_toggle_property _draw_fog = {false};
+  noggit::bool_toggle_property _draw_sky = {true};
+  noggit::bool_toggle_property _draw_skybox = {true};
 public:
   noggit::bool_toggle_property _draw_hidden_models = {false};
 private:

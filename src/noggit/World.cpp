@@ -830,6 +830,8 @@ void World::draw ( math::matrix_4x4 const& model_view
                  , bool draw_hole_lines
                  , bool draw_models_with_box
                  , bool draw_hidden_models
+                 , bool draw_sky
+                 , bool draw_skybox
                  , std::map<int, misc::random_color>& area_id_colors
                  , bool draw_fog
                  , eTerrainType ground_editing_brush
@@ -995,8 +997,14 @@ void World::draw ( math::matrix_4x4 const& model_view
   math::vector_3d diffuse_color(skies->color_set[LIGHT_GLOBAL_DIFFUSE] * outdoorLightStats.dayIntensity);
   math::vector_3d ambient_color(skies->color_set[LIGHT_GLOBAL_AMBIENT] * outdoorLightStats.ambientIntensity);
 
+  // if m2/wmo are rendered, check if there are textures ready to be uploaded
+  if (draw_models || draw_wmo || draw_skybox)
+  {
+    _model_texture_handler.upload_ready_textures();
+  }
+
   // only draw the sky in 3D
-  if(display == display_mode::in_3D)
+  if(display == display_mode::in_3D && draw_sky)
   {
     opengl::scoped::use_program m2_shader {*_m2_program.get()};
 
@@ -1011,9 +1019,7 @@ void World::draw ( math::matrix_4x4 const& model_view
 
     bool hadSky = false;
 
-    // todo: only bind the relevant textures ?
-
-    if (draw_wmo || mapIndex.hasAGlobalWMO())
+    if (draw_skybox && (draw_wmo || mapIndex.hasAGlobalWMO()))
     {
       _model_instance_storage.for_each_wmo_instance
       (
@@ -1054,6 +1060,7 @@ void World::draw ( math::matrix_4x4 const& model_view
                  , culldistance
                  , animtime
                  , draw_model_animations
+                 , draw_skybox
                  , outdoorLightStats
                  , _model_texture_handler
                  );
@@ -1195,12 +1202,6 @@ void World::draw ( math::matrix_4x4 const& model_view
 
   std::unordered_map<Model*, std::size_t> model_with_particles;
   bool update_transform_buffers = camera_moved;
-
-  // if m2/wmo are rendered, check if there are textures ready to be uploaded
-  if (draw_models || draw_wmo)
-  {
-    _model_texture_handler.upload_ready_textures();
-  }
 
   // M2s / models
   if (draw_models || draw_doodads_wmo)
