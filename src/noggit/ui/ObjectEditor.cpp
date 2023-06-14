@@ -6,6 +6,7 @@
 #include <noggit/settings.hpp>
 #include <noggit/WMOInstance.h> // WMOInstance
 #include <noggit/World.h>
+#include <noggit/ui/asset_browser.hpp>
 #include <noggit/ui/HelperModels.h>
 #include <noggit/ui/ModelImport.h>
 #include <noggit/ui/ObjectEditor.h>
@@ -52,6 +53,7 @@ namespace noggit
             , modelImport (new model_import(this))
             , rotationEditor (new rotation_editor(mapView, world))
             , helper_models_widget(new helper_models(this))
+            , asset_browser_widget(new asset_browser(mapView, this))
             , _copy_model_stats (true)
             , selected()
             , pasteMode(PASTE_ON_TERRAIN)
@@ -200,11 +202,14 @@ namespace noggit
       new QGridLayout (importBox);
       importBox->setTitle("Import");
 
-      QPushButton *toTxt = new QPushButton("To Text File", this);
-      QPushButton *fromTxt = new QPushButton("From Text File", this);
-      QPushButton *last_m2_from_wmv = new QPushButton("Last M2 from WMV", this);
-      QPushButton *last_wmo_from_wmv = new QPushButton("Last WMO from WMV", this);
-      QPushButton *helper_models_btn = new QPushButton("Helper Models", this);
+      QPushButton* asset_browser_btn = new QPushButton("Asset Browser", this);
+      QPushButton* toTxt = new QPushButton("To Text File", this);
+      QPushButton* fromTxt = new QPushButton("From Text File", this);
+      QPushButton* last_m2_from_wmv = new QPushButton("Last M2 from WMV", this);
+      QPushButton* last_wmo_from_wmv = new QPushButton("Last WMO from WMV", this);
+      QPushButton* helper_models_btn = new QPushButton("Helper Models", this);
+
+      importBox->layout()->addWidget(asset_browser_btn);
       importBox->layout()->addWidget(toTxt);
       importBox->layout()->addWidget(fromTxt);
       importBox->layout()->addWidget(last_m2_from_wmv);
@@ -327,6 +332,9 @@ namespace noggit
         WMOManager::clear_hidden_wmos();
       });
 
+      connect(asset_browser_btn, &QPushButton::clicked, [=]() {
+          asset_browser_widget->setVisible(!asset_browser_widget->isVisible());
+      });
       connect(toTxt, &QPushButton::clicked, [=]() {
           SaveObjecttoTXT (world);
       });

@@ -19,6 +19,7 @@ namespace noggit
 {
   namespace ui
   {
+    class asset_browser;
     class model_import;
     class rotation_editor;
     class helper_models;
@@ -77,6 +78,7 @@ namespace noggit
       model_import *modelImport;
       rotation_editor* rotationEditor;
       helper_models* helper_models_widget;
+      asset_browser* asset_browser_widget;
       QSize sizeHint() const override;
 
     private:
