@@ -256,6 +256,7 @@ set ( noggit_ui_sources
       src/noggit/ui/About.cpp
       src/noggit/ui/asset_browser.cpp
       src/noggit/ui/clickable_label.cpp
+      src/noggit/ui/collapsible_widget.cpp
       src/noggit/ui/CurrentTexture.cpp
       src/noggit/ui/CursorSwitcher.cpp
       src/noggit/ui/DetailInfos.cpp
@@ -363,6 +364,7 @@ set ( noggit_ui_headers
       src/noggit/ui/About.h
       src/noggit/ui/asset_browser.hpp
       src/noggit/ui/clickable_label.hpp
+      src/noggit/ui/collapsible_widget.hpp
       src/noggit/ui/CurrentTexture.h
       src/noggit/ui/CursorSwitcher.h
       src/noggit/ui/DetailInfos.h
@@ -500,6 +502,7 @@ list (APPEND headers_to_moc
   src/noggit/MapView.h
   src/noggit/bool_toggle_property.hpp
   src/noggit/ui/asset_browser.hpp
+  src/noggit/ui/collapsible_widget.hpp
   src/noggit/ui/terrain_tool.hpp
   src/noggit/ui/TexturePicker.h
   src/noggit/ui/TexturingGUI.h
