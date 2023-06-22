@@ -132,7 +132,7 @@ void Noggit::loadMPQs()
   // Find locale, take first one.
   for (int i(0); i < 10; ++i)
   {
-    if (boost::filesystem::exists (wowpath / "Data" / locales[i] / "realmlist.wtf"))
+    if (boost::filesystem::exists (wowpath / "Data" / locales[i]))
     {
       locale = locales[i];
       NOGGIT_LOG << "Locale: " << locale << std::endl;
@@ -281,6 +281,10 @@ Noggit::Noggit(int argc, char *argv[])
     }
     path = QDir (new_path);
   }
+
+  // save the new game path if it was changed
+  NoggitSettings.set_value("project/game_path", path.absolutePath());
+  NoggitSettings.sync();
 
   wowpath = path.absolutePath().toStdString();
 
