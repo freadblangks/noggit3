@@ -7,6 +7,7 @@
 #include <noggit/WMOInstance.h> // WMOInstance
 #include <noggit/World.h>
 #include <noggit/ui/asset_browser.hpp>
+#include <noggit/ui/collapsible_widget.hpp>
 #include <noggit/ui/HelperModels.h>
 #include <noggit/ui/ModelImport.h>
 #include <noggit/ui/ObjectEditor.h>
@@ -59,13 +60,21 @@ namespace noggit
             , pasteMode(PASTE_ON_TERRAIN)
     {
       auto layout = new QFormLayout (this);
+      // might seem counter-intuitive but that's what allow the widget
+      // to resize when the children change size
+      layout->setSizeConstraint(QLayout::SetFixedSize);
 
-      QGroupBox *copyBox = new QGroupBox("Copy options", this);
-      auto copy_layout = new QFormLayout (copyBox);
+      collapsible_widget* copy_widget = new collapsible_widget("Copy options", true, this);
+      // to avoid width changes when the widget expand/collapse 
+      // which can make part of the UI go out of screen
+      copy_widget->setFixedWidth(200); 
+      auto copy_layout = new QFormLayout (copy_widget);
+      copy_widget->setTitle("test");
+      copy_widget->add_layout(copy_layout);
 
-      auto rotation_group (new QGroupBox ("Random rotation", copyBox));
-      auto tilt_group (new QGroupBox ("Random tilt", copyBox));
-      auto scale_group (new QGroupBox ("Random scale", copyBox));
+      auto rotation_group (new QGroupBox ("Random rotation", copy_widget));
+      auto tilt_group (new QGroupBox ("Random tilt", copy_widget));
+      auto scale_group (new QGroupBox ("Random scale", copy_widget));
       auto rotation_layout (new QGridLayout (rotation_group));
       auto tilt_layout (new QGridLayout(tilt_group));
       auto scale_layout (new QGridLayout(scale_group));
@@ -216,7 +225,7 @@ namespace noggit
       importBox->layout()->addWidget(last_wmo_from_wmv);
       importBox->layout()->addWidget(helper_models_btn);
 
-      layout->addRow(copyBox);
+      layout->addRow(copy_widget);
       layout->addRow(pasteBox);
       layout->addRow(object_movement_box);
       layout->addRow(multi_select_movement_box);
