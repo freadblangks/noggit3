@@ -78,6 +78,7 @@ namespace noggit
       {
         if ( entry.find ("tileset") != std::string::npos
           && entry.find (".blp") != std::string::npos
+          && entry.find ("_h.blp") == std::string::npos // skip _h textures
            )
         {
           auto suffix_pos (entry.find ("_s.blp"));
