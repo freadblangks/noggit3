@@ -43,18 +43,17 @@ MapChunk::MapChunk(MapTile *maintile, MPQFile *f, bool bigAlpha, tile_mode mode)
 
     areaID = header.areaid;
 
-    zbase = header.zpos;
-    xbase = header.xpos;
-    ybase = header.ypos;
-
     px = header.ix;
     py = header.iy;
 
-    holes = header.holes;
+    float x = -header.xpos + ZEROPOINT;
+    float z = -header.zpos + ZEROPOINT;
+    zbase = maintile->index.z * TILESIZE + py * CHUNKSIZE;
+    xbase = maintile->index.x * TILESIZE + px * CHUNKSIZE;
+    ybase = header.ypos;
 
-    // correct the x and z values ^_^
-    zbase = zbase*-1.0f + ZEROPOINT;
-    xbase = xbase*-1.0f + ZEROPOINT;
+
+    holes = header.holes;
 
     vmin = math::vector_3d(9999999.0f, 9999999.0f, 9999999.0f);
     vmax = math::vector_3d(-9999999.0f, -9999999.0f, -9999999.0f);
