@@ -180,6 +180,8 @@ private:
   std::vector<std::string> mModelFilenames;
   std::vector<std::string> mWMOFilenames;
 
+  std::map<std::string, mtxf_entry> _mtxf_entries;
+
   std::vector<uint32_t> uids;
 
   std::unique_ptr<MapChunk> mChunks[16][16];

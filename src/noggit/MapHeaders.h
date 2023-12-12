@@ -65,7 +65,7 @@ struct MHDR
   /*020h*/  uint32_t modf;  //WMO Positioning Information
   /*024h*/  uint32_t mfbo;  // tbc, wotlk; only when flags&1
   /*028h*/  uint32_t mh2o;  // wotlk
-  /*02Ch*/  uint32_t mtfx;  // wotlk
+  /*02Ch*/  uint32_t mtxf;  // wotlk
   /*030h*/  uint32_t pad4;
   /*034h*/  uint32_t pad5;
   /*038h*/  uint32_t pad6;
@@ -129,8 +129,7 @@ struct MapChunkHeader {
   uint32_t nMapObjRefs;
   uint32_t holes;
   uint8_t low_quality_texture_map[0x10];
-  uint32_t predTex;
-  uint32_t nEffectDoodad;
+  uint8_t disable_doodads_map[8]; // 8x8 1bit array
   uint32_t ofsSndEmitters;
   uint32_t nSndEmitters;
   uint32_t ofsLiquid;
@@ -277,4 +276,11 @@ struct MPHD
   uint32_t flags;
   uint32_t something;
   uint32_t unused[6];
+};
+
+
+struct mtxf_entry
+{
+  uint32_t use_cubemap : 1;
+  uint32_t unused : 31;
 };
