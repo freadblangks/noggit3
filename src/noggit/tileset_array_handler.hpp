@@ -22,16 +22,16 @@ namespace noggit
 
     int array_count() const { return _texture_arrays.size(); }
   private:
-    std::optional<std::pair<int, int>> find_next_available_spot(int texture_dimension, GLint format) const;
+    std::optional<std::pair<int, int>> find_next_available_spot(int width, int height, GLint format) const;
 
     void bind_layer(int array_index);
-    void create_next_array(int texture_dimension, GLint format);
+    void create_next_array(int width, int height, GLint format);
 
     int _base_texture_unit;
     int _texture_count = 0;
 
     std::vector<opengl::texture_array> _texture_arrays;
-    std::vector<int> _texture_size_for_array;
+    std::vector<std::pair<int, int>> _texture_size_for_array;
     std::vector<int> _texture_count_in_array;
     std::vector<GLint> _texture_format;
     std::map<std::string, std::pair<int, int>> _texture_positions;

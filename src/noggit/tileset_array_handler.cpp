@@ -11,7 +11,7 @@ namespace noggit
   tileset_array_handler::~tileset_array_handler()
   {
     LogDebug << "Array Count: " << _texture_size_for_array.size() << std::endl;
-    std::map<int, int> texture_count;
+    std::map<std::pair<int, int>, int> texture_count;
 
     for (auto& it : _texture_size_for_array)
     {
@@ -25,7 +25,7 @@ namespace noggit
 
     for (auto& it : texture_count)
     {
-      LogDebug << it.first << "x" << it.first << " -> " << it.second << std::endl;
+      LogDebug << it.first.first << "x" << it.first.second << " -> " << it.second << std::endl;
     }
   }
 
@@ -64,7 +64,6 @@ namespace noggit
       int mipmap_count = tex.layer_count();
       GLint format = tex.texture_format();
 
-      assert(height == width);
 
       // downsize large texture to save space,
       // texture unit spots and vram
@@ -75,13 +74,13 @@ namespace noggit
         shift++;
       }
 
-      auto spot = find_next_available_spot(height, format);
+      auto spot = find_next_available_spot(width, height, format);
 
       if (!spot)
       {
         pos = { _texture_arrays.size(), 0 };
         // create new texture array and bind it
-        create_next_array(height, format);
+        create_next_array(width, height, format);
       }
       else
       {
@@ -99,11 +98,11 @@ namespace noggit
     }
   }
 
-  std::optional<std::pair<int, int>> tileset_array_handler::find_next_available_spot(int texture_dimension, GLint format) const
+  std::optional<std::pair<int, int>> tileset_array_handler::find_next_available_spot(int width, int height, GLint format) const
   {
     for (int i = 0; i < _texture_size_for_array.size(); ++i)
     {
-      if (_texture_size_for_array[i] == texture_dimension && _texture_count_in_array[i] < textures_per_array && _texture_format[i] == format)
+      if (_texture_size_for_array[i].first == width && _texture_size_for_array[i].second == height && _texture_count_in_array[i] < textures_per_array && _texture_format[i] == format)
       {
         return std::pair<int, int>(i, _texture_count_in_array[i]);
       }
@@ -118,24 +117,25 @@ namespace noggit
     _texture_arrays[array_index].bind();
   }
 
-  void tileset_array_handler::create_next_array(int texture_dimension, GLint format)
+  void tileset_array_handler::create_next_array(int width, int height, GLint format)
   {
     int index = _texture_arrays.size();
 
     _texture_arrays.emplace_back();
     bind_layer(index);
 
-    _texture_size_for_array.push_back(texture_dimension);
+    _texture_size_for_array.emplace_back(width, height);
     _texture_count_in_array.push_back(0);
     _texture_format.push_back(format);
 
     int texture_level = 0;
-    int size = texture_dimension;
+    int w = width, h = height;
 
-    while (size > 1)
+    while ((w >= 1 && h > 1) || (w > 1 && h >= 1))
     {
-      gl.texImage3D(GL_TEXTURE_2D_ARRAY, texture_level++, format, size, size, textures_per_array, 0, GL_RGBA, GL_FLOAT, NULL);
-      size = size >> 1;
+      gl.texImage3D(GL_TEXTURE_2D_ARRAY, texture_level++, format, w, h, textures_per_array, 0, GL_RGBA, GL_FLOAT, NULL);
+      w = std::max(1, w >> 1);
+      h = std::max(1, h >> 1);
     }
 
     gl.texImage3D(GL_TEXTURE_2D_ARRAY, texture_level, format, 1, 1, textures_per_array, 0, GL_RGBA, GL_FLOAT, NULL);
