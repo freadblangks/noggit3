@@ -862,18 +862,23 @@ void RibbonEmitter::setup(int anim, int time, int animtime)
   // kill stuff from the end
   float l = 0;
   bool erasemode = false;
-  for (std::list<RibbonSegment>::iterator it = segs.begin(); it != segs.end();) {
-    if (!erasemode) {
+  for (auto& it = segs.begin(); it != segs.end();)
+  {
+    if (!erasemode) 
+    {
       l += it->len;
-      if (l > length) {
+      if (l > length) 
+      {
         it->len = l - length;
         erasemode = true;
       }
+
+      ++it;
     }
-    else {
-      segs.erase(it);
+    else 
+    {
+      it = segs.erase(it);
     }
-    ++it;
   }
 
   tpos = ntpos;
