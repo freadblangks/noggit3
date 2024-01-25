@@ -46,6 +46,7 @@ namespace noggit
     void unload_instance_and_remove_from_selection_if_necessary(std::uint32_t uid);
 
     void clear();
+    int size() const { return _m2s.size() + _wmos.size(); }
 
     void clear_duplicates();
 

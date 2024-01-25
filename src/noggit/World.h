@@ -62,6 +62,8 @@ private:
   std::string _last_selected_texture = "";
 
 public:
+  int model_instance_count() const { return _model_instance_storage.size(); }
+
   MapIndex mapIndex;
   noggit::map_horizon horizon;
 

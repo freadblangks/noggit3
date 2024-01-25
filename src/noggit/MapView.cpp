@@ -1353,6 +1353,7 @@ MapView::MapView( math::degrees camera_yaw0
   , _status_area (new QLabel (this))
   , _status_time (new QLabel (this))
   , _status_fps (new QLabel (this))
+  , _status_model_instances(new QLabel (this))
   , _minimap (new noggit::ui::minimap_widget (nullptr))
   , _minimap_dock (new QDockWidget ("Minimap", this))
   , _texture_palette_dock(new QDockWidget(this))
@@ -1391,6 +1392,12 @@ MapView::MapView( math::degrees camera_yaw0
           , &QObject::destroyed
           , _main_window
           , [=] { _main_window->statusBar()->removeWidget (_status_fps); }
+          );
+  _main_window->statusBar()->addWidget (_status_model_instances);
+  connect ( this
+          , &QObject::destroyed
+          , _main_window
+          , [=] { _main_window->statusBar()->removeWidget (_status_model_instances); }
           );
 
   _minimap->world (_world.get());
@@ -2163,6 +2170,7 @@ void MapView::tick (float dt)
     _status_fps->setText ( "FPS: " + QString::number (int (1. / avg_frame_duration))
                          + " - Average frame time: " + QString::number(avg_frame_duration*1000.0) + "ms"
                          );
+    _status_model_instances->setText(QString::number(_world->model_instance_count()) + " model instances");
 
     _last_frame_durations.clear();
     _last_fps_update = 0.f;
