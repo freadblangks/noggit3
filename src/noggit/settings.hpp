@@ -13,7 +13,7 @@ namespace noggit
     {
       values = std::make_unique<QSettings>("settings.ini", QSettings::Format::IniFormat);
 
-      QString project_folder = values->value("project/path").toString();
+      QString project_folder = values->value("project/path", "./").toString();
       if (!(project_folder.endsWith('\\') || project_folder.endsWith('/')))
       {
         project_folder += "/";
@@ -36,7 +36,7 @@ namespace noggit
 
     std::string project_path()
     {
-      return values->value("project/path").toString().toStdString();
+      return values->value("project/path", "./").toString().toStdString();
     }
 
     void sync()
