@@ -46,6 +46,7 @@ class World
 private:
   int _model_display_mode = 0;
 
+  std::vector<WMOInstance*> _wmos_with_skybox;
   std::unordered_map<std::string, std::vector<WMOInstance*>> _wmos_by_filename;
   std::unordered_map<std::string, std::vector<ModelInstance*>> _models_by_filename;
   std::unordered_map<std::string, std::vector<ModelInstance*>> _wmo_doodads_by_filename;

@@ -1021,33 +1021,29 @@ void World::draw ( math::matrix_4x4 const& model_view
 
     if (draw_skybox && (draw_wmo || mapIndex.hasAGlobalWMO()))
     {
-      _model_instance_storage.for_each_wmo_instance
-      (
-        [&] (WMOInstance& wmo)
+      for(WMOInstance* wmo : _wmos_with_skybox)
+      {
+        if (wmo->wmo->finishedLoading() && wmo->wmo->skybox)
         {
-          if (wmo.wmo->finishedLoading() && wmo.wmo->skybox)
+          if (wmo->group_extents.empty())
           {
-            if (wmo.group_extents.empty())
-            {
-              wmo.recalcExtents();
-            }
-
-            hadSky = wmo.wmo->draw_skybox( model_view
-                                         , camera_pos
-                                         , m2_shader
-                                         , frustum
-                                         , culldistance
-                                         , animtime
-                                         , draw_model_animations
-                                         , wmo.extents[0]
-                                         , wmo.extents[1]
-                                         , wmo.group_extents
-                                         , _model_texture_handler
-                                         );
+            wmo->recalcExtents();
           }
+
+          hadSky = wmo->wmo->draw_skybox( model_view
+                                        , camera_pos
+                                        , m2_shader
+                                        , frustum
+                                        , culldistance
+                                        , animtime
+                                        , draw_model_animations
+                                        , wmo->extents[0]
+                                        , wmo->extents[1]
+                                        , wmo->group_extents
+                                        , _model_texture_handler
+                                        );
         }
-        , [&] () { return hadSky; }
-      );
+      }
     }
 
     if (!hadSky)
@@ -2180,6 +2176,7 @@ void World::unload_every_model_and_wmo_instance()
 
   _model_instance_storage.clear();
 
+  _wmos_with_skybox.clear();
   _wmos_by_filename.clear();
   _models_by_filename.clear();
   _wmo_doodads_by_filename.clear();
@@ -2254,6 +2251,11 @@ WMOInstance* World::addWMO ( std::string const& filename
   auto wmo = _model_instance_storage.get_wmo_instance(uid).get();
 
   _wmos_by_filename[filename].push_back(wmo);
+
+  if (wmo->wmo->skybox)
+  {
+    _wmos_with_skybox.push_back(wmo);
+  }
 
   need_model_updates = true;
 
@@ -2733,6 +2735,7 @@ std::set<MapChunk*>& World::vertexBorderChunks()
 
 void World::update_models_by_filename()
 {
+  _wmos_with_skybox.clear();
   _wmos_by_filename.clear();
   _models_by_filename.clear();
   _wmo_doodads_by_filename.clear();
@@ -2761,6 +2764,11 @@ void World::update_models_by_filename()
   _model_instance_storage.for_each_wmo_instance([&](WMOInstance& wmo_instance)
   {
     _wmos_by_filename[wmo_instance.wmo->filename].push_back(&wmo_instance);
+
+    if (wmo_instance.wmo->skybox)
+    {
+      _wmos_with_skybox.push_back(&wmo_instance);
+    }
 
     if (wmo_instance.need_recalc_extents())
     {
