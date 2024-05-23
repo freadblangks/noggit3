@@ -183,6 +183,7 @@ struct ModelRenderPass : ModelTexUnit
 
   m2_render_pass_ubo_data ubo_data;
   bool need_ubo_data_update = true;
+  bool render = true;
 
   bool prepare_draw(opengl::scoped::use_program& m2_shader, Model *m, bool animate, int index);
   void after_draw();

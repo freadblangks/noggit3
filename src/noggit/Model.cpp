@@ -605,6 +605,11 @@ ModelRenderPass::ModelRenderPass(ModelTexUnit const& tex_unit, Model* m)
 
 bool ModelRenderPass::prepare_draw(opengl::scoped::use_program& m2_shader, Model *m, bool animate, int index)
 {
+  if (!render)
+  {
+    return false;
+  }
+
   auto const& renderflag(m->_render_flags[renderflag_index]);
 
   if (animate || need_ubo_data_update)
@@ -1431,7 +1436,13 @@ void Model::draw( math::matrix_4x4 const& model_view
     m2_shader.attrib(_, "normal", opengl::array_buffer_is_already_bound{}, 3, GL_FLOAT, GL_FALSE, sizeof(ModelVertex), (void*)offsetof(ModelVertex, normal));
     m2_shader.attrib(_, "texcoord1", opengl::array_buffer_is_already_bound{}, 2, GL_FLOAT, GL_FALSE, sizeof(ModelVertex), (void*)offsetof(ModelVertex, texcoords[0]));
     m2_shader.attrib(_, "texcoord2", opengl::array_buffer_is_already_bound{}, 2, GL_FLOAT, GL_FALSE, sizeof(ModelVertex), (void*)offsetof(ModelVertex, texcoords[1]));
+
+    for (ModelRenderPass& p : _render_passes)
+    {
+      p.render = p.pixel_shader.has_value() && showGeosets[p.submesh];
   }
+  }
+
 
   if (animated && (!animcalc || _per_instance_animation))
   {
@@ -1503,6 +1514,11 @@ void Model::draw ( math::matrix_4x4 const& model_view
     {
       opengl::scoped::buffer_binder<GL_ARRAY_BUFFER> const transform_binder (_transform_buffer);
       m2_shader.attrib(_, "transform", opengl::array_buffer_is_already_bound{}, static_cast<math::matrix_4x4*> (nullptr), 1);
+    }
+
+    for (ModelRenderPass& p : _render_passes)
+    {
+      p.render = p.pixel_shader.has_value() && showGeosets[p.submesh];
     }
   }
 
