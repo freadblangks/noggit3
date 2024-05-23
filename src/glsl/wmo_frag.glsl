@@ -3,27 +3,42 @@
 
 uniform sampler2DArray textures[32];
 
-uniform ivec4 tex_param;
-
-uniform bool use_vertex_color;
-
 uniform bool draw_fog;
-uniform bool unfogged;
 uniform float fog_start;
 uniform float fog_end;
 uniform vec3 fog_color;
 uniform vec3 camera;
 
-uniform bool unlit;
-uniform bool exterior_lit;
+
+struct batch_uniforms
+{
+  ivec4 texture_params;
+
+  int use_vertex_color;
+  int exterior_lit;
+  int shader_id;
+  int unfogged;
+
+  int unlit;
+  float alpha_test;
+  // padding
+  int unculled;
+  int blend_mode;
+};
+
+
+flat in int index;
+
+layout (std140) uniform render_data
+{
+  batch_uniforms data[96];
+};
+
 uniform vec3 exterior_light_dir;
 uniform vec3 exterior_diffuse_color;
 uniform vec3 exterior_ambient_color;
 uniform vec3 ambient_color;
 
-uniform float alpha_test;
-
-uniform int shader_id;
 
 in vec3 f_position;
 in vec3 f_normal;
@@ -168,13 +183,13 @@ vec4 tex_color(ivec2 param, vec2 uv)
 vec3 lighting(vec3 material)
 {
   vec3 light_color = vec3(1.);
-  vec3 vertex_color = use_vertex_color ? f_vertex_color.rgb : vec3(0.);
+  vec3 vertex_color = data[index].use_vertex_color != 0 ? f_vertex_color.rgb : vec3(0.);
 
-  if(unlit)
+  if(data[index].unlit != 0)
   {
-    light_color = vertex_color + (exterior_lit ? exterior_ambient_color : ambient_color);
+    light_color = vertex_color + (data[index].exterior_lit != 0 ? exterior_ambient_color : ambient_color);
   }
-  else if(exterior_lit)
+  else if(data[index].exterior_lit != 0)
   {
     vec3 ambient = exterior_ambient_color + vertex_color.rgb;
 
@@ -191,7 +206,7 @@ vec3 lighting(vec3 material)
 void main()
 {
   float dist_from_camera = distance(camera, f_position);
-  bool fog = draw_fog && !unfogged;
+  bool fog = draw_fog && data[index].unfogged == 0;
 
   if(fog && dist_from_camera >= fog_end)
   {
@@ -199,10 +214,10 @@ void main()
     return;
   }
 
-  vec4 tex   = tex_color(tex_param.xy, f_texcoord);
-  vec4 tex_2 = tex_color(tex_param.zw, f_texcoord_2);
+  vec4 tex   = tex_color(data[index].texture_params.xy, f_texcoord);
+  vec4 tex_2 = tex_color(data[index].texture_params.zw, f_texcoord_2);
 
-  if(tex.a < alpha_test)
+  if(tex.a < data[index].alpha_test)
   {
     discard;
   }
@@ -210,24 +225,24 @@ void main()
   vec4 vertex_color = vec4(0., 0., 0., 1.f);
   vec3 light_color = vec3(1.);
 
-  if(use_vertex_color) 
+  if(data[index].use_vertex_color != 0) 
   {
     vertex_color = f_vertex_color;
   }
 
 
   // see: https://github.com/Deamon87/WebWowViewerCpp/blob/master/wowViewerLib/src/glsl/wmoShader.glsl
-  if(shader_id == 3) // Env
+  if(data[index].shader_id == 3) // Env
   {
     vec3 env = tex_2.rgb * tex.rgb;
     out_color = vec4(lighting(tex.rgb) + env, 1.);
   }
-  else if(shader_id == 5) // EnvMetal
+  else if(data[index].shader_id == 5) // EnvMetal
   {
     vec3 env = tex_2.rgb * tex.rgb * tex.a;
     out_color = vec4(lighting(tex.rgb) + env, 1.);
   }
-  else if(shader_id == 6) // TwoLayerDiffuse
+  else if(data[index].shader_id == 6) // TwoLayerDiffuse
   {
     vec3 layer2 = mix(tex.rgb, tex_2.rgb, tex_2.a);
     out_color = vec4(lighting(mix(layer2, tex.rgb, vertex_color.a)), 1.);
@@ -245,7 +260,7 @@ void main()
     out_color.rgb = mix(out_color.rgb, fog_color, alpha);
   }
 
-  if(out_color.a < alpha_test)
+  if(out_color.a < data[index].alpha_test)
   {
     discard;
   }

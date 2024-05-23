@@ -211,4 +211,5 @@ struct wmo_vertex
   math::vector_4d color;
   math::vector_2d uv1;
   math::vector_2d uv2;
+  int index;
 };

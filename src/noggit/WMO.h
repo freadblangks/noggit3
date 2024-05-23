@@ -32,15 +32,35 @@ class Model;
 
 struct wmo_group_uniform_data
 {
-  int mocv = -1;
-  int exterior_lit = -1;
+  int cull = -1;
   int blend_mode = -1;
-  int shader = -1;
-  int unfogged = -1;
-  int unlit = -1;
 };
 
-class WMOGroup 
+struct wmo_render_batch
+{
+  int blend_mode = 0;
+  int index_start;
+  int index_count;
+  bool cull;
+};
+
+struct wmo_ubo_data
+{
+  math::vector_4i texture_params;
+
+  int use_vertex_color;
+  int exterior_lit;
+  int shader_id;
+  int unfogged;
+
+  int unlit;
+  float alpha_test;
+  // padding, not used in the shader
+  int unculled;
+  int blend_mode;
+};
+
+class WMOGroup
 {
 public:
   WMOGroup(WMO *wmo, MPQFile* f, int num, char const* names);
@@ -49,6 +69,7 @@ public:
   void load();
 
   void setup_global_buffer_data(std::vector<wmo_vertex>& vertices, std::vector<std::uint32_t>& indices);
+  void setup_ubo_data();
 
   void draw( opengl::scoped::use_program& wmo_shader
            , math::frustum const& frustum
@@ -101,6 +122,7 @@ private:
   std::vector<uint16_t> _doodad_ref;
 
   std::vector<wmo_batch> _batches;
+  std::vector<wmo_render_batch> _render_batches;
 
   std::vector<::math::vector_3d> _vertices;
   std::vector<::math::vector_3d> _normals;
@@ -109,6 +131,7 @@ private:
   std::vector<::math::vector_4d> _vertex_colors;
   std::vector<uint16_t> _indices;
 
+  GLuint _ubo;
 
   bool _uploaded = false;
   bool _vao_is_setup = false;
@@ -321,7 +344,7 @@ struct scoped_wmo_reference
     return _wmo;
   }
 
-private:  
+private:
   bool _valid;
 
   std::string _filename;

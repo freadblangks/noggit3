@@ -160,6 +160,7 @@ namespace opengl
 
     GLint getAttribLocation (GLuint program, GLchar const* name);
     void vertexAttribPointer (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLvoid const* pointer);
+    void vertexAttribIPointer (GLuint index, GLint size, GLenum type, GLsizei stride, GLvoid const* pointer);
     void vertexAttribDivisor (GLuint index, GLuint divisor);
     void enableVertexAttribArray (GLuint index);
     void disableVertexAttribArray (GLuint index);
@@ -170,7 +171,7 @@ namespace opengl
     void uniform1iv (GLint location, GLsizei count, GLint const* value);
     void uniform2fv (GLint location, GLsizei count, GLfloat const* value);
     void uniform3fv (GLint location, GLsizei count, GLfloat const* value);
-    void uniform4iv(GLint location, GLsizei count, GLint const* value);
+    void uniform4iv (GLint location, GLsizei count, GLint const* value);
     void uniform4fv (GLint location, GLsizei count, GLfloat const* value);
     void uniformMatrix4fv (GLint location, GLsizei count, GLboolean transpose, GLfloat const* value);
 

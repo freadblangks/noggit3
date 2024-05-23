@@ -675,6 +675,11 @@ namespace opengl
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
     return _current_context->functions()->glVertexAttribPointer (index, size, type, normalized, stride, pointer);
   }
+  void context::vertexAttribIPointer (GLuint index, GLint size, GLenum type, GLsizei stride, GLvoid const* pointer)
+  {
+    verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
+    return _4_1_core_func->glVertexAttribIPointer(index, size, type, stride, pointer);
+  }
   void context::vertexAttribDivisor (GLuint index, GLuint divisor)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
@@ -729,7 +734,7 @@ namespace opengl
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
     return _current_context->functions()->glUniform3fv (location, count, value);
   }
-  void context::uniform4iv(GLint location, GLsizei count, GLint const* value)
+  void context::uniform4iv (GLint location, GLsizei count, GLint const* value)
   {
     verify_context_and_check_for_gl_errors const _ (_current_context, BOOST_CURRENT_FUNCTION);
     return _current_context->functions()->glUniform4iv (location, count, value);

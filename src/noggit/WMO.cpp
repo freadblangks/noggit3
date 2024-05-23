@@ -371,6 +371,7 @@ void WMO::draw_instanced( opengl::scoped::use_program& wmo_shader
     wmo_shader.attrib(_, "color", _vertices_buffer, 4, GL_FLOAT, GL_FALSE, sizeof(wmo_vertex), (void*)offsetof(wmo_vertex, color));
     wmo_shader.attrib(_, "uv1", _vertices_buffer, 2, GL_FLOAT, GL_FALSE, sizeof(wmo_vertex), (void*)offsetof(wmo_vertex, uv1));
     wmo_shader.attrib(_, "uv2", _vertices_buffer, 2, GL_FLOAT, GL_FALSE, sizeof(wmo_vertex), (void*)offsetof(wmo_vertex, uv2));
+    wmo_shader.attrib_int(_, "id", _vertices_buffer, 1, GL_INT, sizeof(wmo_vertex), (void*)offsetof(wmo_vertex, index));
     wmo_shader.attrib(_, "transform", _transform_buffer, static_cast<math::matrix_4x4*> (nullptr), 1);
 
     std::vector<wmo_vertex> vertices_data;
@@ -379,6 +380,7 @@ void WMO::draw_instanced( opengl::scoped::use_program& wmo_shader
     for (auto& group : groups)
     {
       group.setup_global_buffer_data(vertices_data, indices_data);
+      group.setup_ubo_data();
     }
 
     gl.bindBuffer(GL_ARRAY_BUFFER, _vertices_buffer);
@@ -553,7 +555,7 @@ bool WMO::draw_skybox ( math::matrix_4x4 const& model_view
 
       return true;
     }
-  }  
+  }
 
   return false;
 }
@@ -678,6 +680,7 @@ WMOGroup::WMOGroup(WMOGroup const& other)
   , _texcoords_2(other._texcoords_2)
   , _vertex_colors(other._vertex_colors)
   , _indices(other._indices)
+  , _ubo(other._ubo)
 {
   if (other.liquid)
   {
@@ -875,7 +878,7 @@ void WMOGroup::load()
 
     f.seekRelative (size);
   }
-  
+
   if (header.flags.flag_0x400)
   {
     // - MPBV ----------------------------------------------
@@ -1068,7 +1071,7 @@ void WMOGroup::load_mocv(MPQFile& f, uint32_t size)
 void WMOGroup::fix_vertex_color_alpha()
 {
   int interior_batchs_start = 0;
-  
+
   if (header.transparency_batches_count > 0)
   {
     interior_batchs_start = _batches[header.transparency_batches_count - 1].vertex_end + 1;
@@ -1144,11 +1147,19 @@ bool WMOGroup::is_visible( math::matrix_4x4 const& transform
 
 void WMOGroup::setup_global_buffer_data(std::vector<wmo_vertex>& vertices, std::vector<std::uint32_t>& indices)
 {
+  if (_batches.empty())
+  {
+    return;
+  }
+
   _vertex_offset = vertices.size();
   _index_offset = indices.size();
 
   bool mocv = _vertex_colors.size() > 0;
   bool uv2 = _texcoords_2.size() > 0;
+
+  vertices.reserve(vertices.size() + _vertices.size());
+  indices.reserve(indices.size()+ _indices.size());
 
   for (int i = 0; i < _vertices.size(); ++i)
   {
@@ -1159,15 +1170,155 @@ void WMOGroup::setup_global_buffer_data(std::vector<wmo_vertex>& vertices, std::
     v.color = mocv ? _vertex_colors[i] : math::vector_4d();
     v.uv1 = _texcoords[i];
     v.uv2 = uv2 ? _texcoords_2[i] : math::vector_2d();
+    v.index = -1;
 
     vertices.push_back(v);
   }
 
-  for (std::uint16_t index : _indices)
+  int next_vertex_index = vertices.size();
+
+  for (int i = 0; i < _batches.size(); ++i)
   {
-    // shift the indices to match the vertex positions in the global buffer
-    indices.push_back(index + _vertex_offset);
+    wmo_batch& batch = _batches[i];
+    std::map<std::uint16_t, std::uint32_t> shifted_indices;
+
+    for (int j = batch.index_start; j < batch.index_start + batch.index_count; ++j)
+    {
+      std::uint16_t id = _indices[j];
+      wmo_vertex& v = vertices[id + _vertex_offset];
+
+      // not used or used for this batch
+      if (v.index == -1 || v.index == i)
+      {
+        v.index = i;
+        indices.push_back(id+_vertex_offset);
+      }
+      // duplicate vertex if necessary, or use the new index
+      // doesn't affect batch indices start/count as it's just shifting the indices
+      else
+      {
+        auto const& it = shifted_indices.find(id);
+
+        if (it != shifted_indices.end())
+        {
+          indices.push_back(it->second);
+        }
+        else
+        {
+          indices.push_back(next_vertex_index);
+          vertices.push_back(v);
+          vertices[next_vertex_index].index = i;
+
+          shifted_indices[id] = next_vertex_index;
+          next_vertex_index++;
+        }
+      }
+    }
   }
+
+  // data no longer need, only keep the vertices/indices for collisions
+  _normals.clear();
+  _normals.shrink_to_fit();
+  _vertex_colors.clear();
+  _vertex_colors.shrink_to_fit();
+  _texcoords.clear();
+  _texcoords.shrink_to_fit();
+  _texcoords_2.clear();
+  _texcoords_2.shrink_to_fit();
+}
+
+
+void WMOGroup::setup_ubo_data()
+{
+  int batch_count = _batches.size();
+  int exterior_lit = header.flags.exterior_lit | header.flags.exterior;
+  int has_mocv = header.flags.has_vertex_color | header.flags.use_mocv2_for_texture_blending;
+
+  std::vector<wmo_ubo_data> data(batch_count);
+  std::vector<wmo_render_batch> render_batches;
+
+  for (int i = 0; i < batch_count; ++i)
+  {
+    wmo_batch& batch = _batches[i];
+    WMOMaterial const& mat(wmo->materials.at(batch.texture));
+    wmo_ubo_data ubo_data;
+
+    ubo_data.exterior_lit = exterior_lit;
+    ubo_data.use_vertex_color = has_mocv;
+    ubo_data.shader_id = mat.shader;
+    ubo_data.unfogged = mat.flags.unfogged;
+    ubo_data.unlit = mat.flags.unlit;
+    ubo_data.unculled = mat.flags.unculled;
+    ubo_data.blend_mode = mat.blend_mode;
+
+    wmo_render_batch rbg;
+    rbg.blend_mode = mat.blend_mode;
+    rbg.cull = !ubo_data.unculled;
+    rbg.index_start = batch.index_start;
+    rbg.index_count = batch.index_count;
+
+    if (mat.blend_mode == 1)
+    {
+      rbg.blend_mode = 0; // only alpha test change, and it's in the ubo
+      ubo_data.alpha_test = 0.878431372f; // 224/255
+    }
+    else if (mat.blend_mode > 6 || mat.blend_mode == 0)
+    {
+      ubo_data.alpha_test = -1.f;
+    }
+    else
+    {
+      ubo_data.alpha_test = 0.003921568f; // 1/255
+    }
+
+    render_batches.push_back(rbg);
+
+    auto& p1 = wmo->texture_array_params.at(mat.texture1);
+    ubo_data.texture_params.x = p1.first;
+    ubo_data.texture_params.y = p1.second;
+
+    // only shaders using 2 textures in wotlk
+    if (mat.shader == 6 || mat.shader == 5 || mat.shader == 3)
+    {
+      auto& p2 = wmo->texture_array_params.at(mat.texture2);
+      ubo_data.texture_params.z = p2.first;
+      ubo_data.texture_params.w = p2.second;
+    }
+    else
+    {
+      ubo_data.texture_params.z = 0;
+      ubo_data.texture_params.w = 0;
+    }
+
+    data[i] = ubo_data;
+  }
+
+  if (!render_batches.empty())
+  {
+    wmo_render_batch batch = render_batches[0];
+
+    for (int i = 1; i < render_batches.size(); ++i)
+    {
+      wmo_render_batch b = render_batches[i];
+
+      if (b.blend_mode == batch.blend_mode && b.cull == batch.cull && b.index_start == batch.index_start + batch.index_count)
+      {
+        batch.index_count += b.index_count;
+      }
+      else
+      {
+        _render_batches.push_back(batch);
+        batch = b;
+      }
+    }
+
+    _render_batches.push_back(batch);
+  }
+
+  gl.genBuffers(1, &_ubo);
+  gl.bindBuffer(GL_UNIFORM_BUFFER, _ubo);
+  gl.bufferData(GL_UNIFORM_BUFFER, sizeof(wmo_ubo_data) * batch_count, data.data(), GL_STATIC_DRAW);
+  gl.bindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 void WMOGroup::draw( opengl::scoped::use_program& wmo_shader
@@ -1180,32 +1331,18 @@ void WMOGroup::draw( opengl::scoped::use_program& wmo_shader
                    , int instance_count
                    )
 {
-  int exterior_lit = header.flags.exterior_lit | header.flags.exterior;
-  int has_mocv = header.flags.has_vertex_color | header.flags.use_mocv2_for_texture_blending;
+  gl.bindBufferBase(GL_UNIFORM_BUFFER, 0, _ubo);
 
-  if (has_mocv != wmo_uniform_data.mocv)
+  for(wmo_render_batch& batch : _render_batches)
   {
-    wmo_shader.uniform("use_vertex_color", has_mocv);
-    wmo_uniform_data.mocv = has_mocv;
-  }
-  if (exterior_lit != wmo_uniform_data.exterior_lit)
-  {
-    wmo_shader.uniform("exterior_lit", exterior_lit);
-    wmo_uniform_data.exterior_lit = exterior_lit;
-  }
-
-  for (wmo_batch& batch : _batches)
-  {
-    WMOMaterial const& mat (wmo->materials.at (batch.texture));
-    float alpha_test = 0.003921568f; // 1/255
-
-    if (mat.blend_mode != wmo_uniform_data.blend_mode)
+    if (batch.blend_mode != wmo_uniform_data.blend_mode)
     {
-      switch (mat.blend_mode)
+      switch (batch.blend_mode)
       {
+      default:
+      case 0:
       case 1:
         gl.disable(GL_BLEND);
-        alpha_test = 0.878431372f; // 224/255
         break;
       case 2:
         gl.enable(GL_BLEND);
@@ -1227,58 +1364,24 @@ void WMOGroup::draw( opengl::scoped::use_program& wmo_shader
         gl.enable(GL_BLEND);
         gl.blendFunc(GL_DST_COLOR, GL_ONE);
         break;
-      case 0:
-      default:
-        alpha_test = -1.f;
-        gl.disable(GL_BLEND);
-        break;
       }
 
-      wmo_shader.uniform("alpha_test", alpha_test);
-      wmo_uniform_data.blend_mode = mat.blend_mode;
+      wmo_uniform_data.blend_mode = batch.blend_mode;
     }
 
-    if (mat.shader != wmo_uniform_data.shader)
+    if (batch.cull != wmo_uniform_data.cull)
     {
-      wmo_shader.uniform("shader_id", (int)mat.shader);
-      wmo_uniform_data.shader = mat.shader;
-    }
-    if (mat.flags.unfogged != wmo_uniform_data.unfogged)
-    {
-      wmo_shader.uniform("unfogged", (int)mat.flags.unfogged);
-      wmo_uniform_data.unfogged = mat.flags.unfogged;
-    }
-    if (mat.flags.unlit != wmo_uniform_data.unlit)
-    {
-      wmo_shader.uniform("unlit", (int)mat.flags.unlit);
-      wmo_uniform_data.unlit = mat.flags.unlit;
-    }
+      if (!batch.cull)
+      {
+        gl.disable(GL_CULL_FACE);
+      }
+      else
+      {
+        gl.enable(GL_CULL_FACE);
+      }
 
-    if (mat.flags.unculled)
-    {
-      gl.disable(GL_CULL_FACE);
+      wmo_uniform_data.cull = batch.cull;
     }
-    else
-    {
-      gl.enable(GL_CULL_FACE);
-    }
-
-    auto& p1 = wmo->texture_array_params.at(mat.texture1);
-
-    math::vector_4i tex_param;
-    tex_param.x = p1.first;
-    tex_param.y = p1.second;
-
-    // only shaders using 2 textures in wotlk
-    if (mat.shader == 6 || mat.shader == 5 || mat.shader == 3)
-    {
-      auto& p2 = wmo->texture_array_params.at(mat.texture2);
-
-      tex_param.w = p2.first;
-      tex_param.z = p2.second;
-    }
-
-    wmo_shader.uniform("tex_param", tex_param);
 
     gl.drawElementsInstanced(GL_TRIANGLES, batch.index_count, instance_count, GL_UNSIGNED_INT, opengl::index_buffer_is_already_bound{}, sizeof(std::uint32_t) * (batch.index_start + _index_offset));
   }
