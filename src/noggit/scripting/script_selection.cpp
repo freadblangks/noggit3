@@ -84,7 +84,7 @@ namespace noggit
       {
         for (int i = 0; i < mapbufsize; ++i)
         {
-          auto& v = chunk._chunk->mVertices[i];
+          auto& v = chunk._chunk->vertices[i].position;
           if (v.x >= _min.x && v.x <= _max.x &&
             v.z >= _min.z && v.z <= _max.z)
           {

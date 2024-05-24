@@ -161,6 +161,7 @@ private:
   bool _shader_data_need_update = true;
   bool _texture_set_need_update = true;
 public:
+  void require_vertices_buffer_update() { _need_vao_update = true; }
   void require_shader_data_update();
   void texture_set_changed();
 
@@ -187,6 +188,7 @@ public:
   bool ChangeMCCV(math::vector_3d const& pos, math::vector_4d const& color, float change, float radius, bool editMode);
   //! Initialize MCCV to 1,1,1, do nothing if already exists.
   void maybe_create_mccv();
+  void reset_mccv();
   bool hasColors();
   math::vector_3d pickMCCV(math::vector_3d const& pos);
 

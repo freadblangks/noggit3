@@ -25,7 +25,7 @@ namespace noggit {
     {
       auto& ts = _chunk->texture_set;
       ts->create_temporary_alphamaps_if_needed();
-      return ts->tmp_edit_values.get()[index][_index];
+      return ts->tmp_edit_values.get()->operator[](index)[_index];
     }
 
     void tex::set_alpha(int index, float value)
@@ -41,7 +41,7 @@ namespace noggit {
       }
       auto& ts = _chunk->texture_set;
       ts->create_temporary_alphamaps_if_needed();
-      ts->tmp_edit_values.get()[index][_index] = value;
+      ts->tmp_edit_values.get()->operator[](index)[_index] = value;
     }
 
     namespace {

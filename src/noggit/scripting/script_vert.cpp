@@ -4,6 +4,8 @@
 #include <noggit/scripting/script_context.hpp>
 #include <noggit/scripting/scripting_tool.hpp>
 
+#include <noggit/liquid_chunk.hpp>
+
 #include <sol/sol.hpp>
 
 #include <vector>
@@ -30,23 +32,23 @@ namespace noggit
 
     void vert::set_height(float value)
     {
-      _chunk->mVertices[_index].y = value;
+      _chunk->vertices[_index].position.y = value;
     }
 
     void vert::add_height(float value)
     {
-      _chunk->mVertices[_index].y += value;
+      _chunk->vertices[_index].position.y += value;
     }
 
     void vert::sub_height(float value)
     {
-      _chunk->mVertices[_index].y -= value;
+      _chunk->vertices[_index].position.y -= value;
     }
 
     void vert::set_color(float r, float g, float b)
     {
       _chunk->maybe_create_mccv();
-      _chunk->mccv[_index] = math::vector_3d(r, g, b);
+      _chunk->vertices[_index].color = math::vector_3d(r, g, b);
     }
 
     math::vector_3d vert::get_color()
@@ -57,7 +59,7 @@ namespace noggit
       }
       else
       {
-        return math::vector_3d(_chunk->mccv[_index]);
+        return math::vector_3d(_chunk->vertices[_index].color);
       }
     }
 
@@ -79,7 +81,7 @@ namespace noggit
 
     math::vector_3d vert::get_pos()
     {
-      return _chunk->mVertices[_index];
+      return _chunk->vertices[_index].position;
     }
 
     void vert::set_alpha(int index, float alpha)
@@ -107,7 +109,7 @@ namespace noggit
       {
         if (*iter == -1)
           break;
-        ts->tmp_edit_values.get()[index][*iter] = alpha;
+        ts->tmp_edit_values.get()->operator[](index)[*iter] = alpha;
       }
     }
 
@@ -137,7 +139,7 @@ namespace noggit
       {
         if (*iter == -1)
           break;
-        sum += ts->tmp_edit_values.get()[index][*iter];
+        sum += ts->tmp_edit_values.get()->operator[](index)[*iter];
         ++ctr;
       }
       return sum / float(ctr);

@@ -89,7 +89,7 @@ namespace noggit
         );
       }
 
-      return _chunk->texture_set->texture(index)->filename;
+      return _chunk->texture_set->texture(index);
     }
 
     void chunk::apply_heightmap ()
@@ -105,7 +105,7 @@ namespace noggit
 
     void chunk::apply_vertex_color()
     {
-      _chunk->UpdateMCCV();
+      _chunk->require_vertices_buffer_update();
     }
 
     void chunk::apply_all()
@@ -132,11 +132,7 @@ namespace noggit
 
     void chunk::clear_colors()
     {
-      std::fill (
-        _chunk->mccv,
-        _chunk->mccv + mapbufsize,
-        math::vector_3d (1.f, 1.f, 1.f)
-      );
+      _chunk->reset_mccv();
     }
 
     tex chunk::get_tex(int index)
@@ -149,32 +145,21 @@ namespace noggit
       return vert(state(), _chunk, index);
     }
 
+    //todo: remove that now that the chunk always has the attributes ?
     bool chunk::has_render_flags()
     {
-        return _chunk->liquid_chunk()->Render.has_value();
+      return true;
     }
 
-    MH2O_Render chunk::getRenderOrDefault()
+    MH2O_Attributes chunk::getRenderOrDefault()
     {
-        std::optional<MH2O_Render>& render = _chunk->liquid_chunk()->Render;
-        if (render.has_value())
-        {
-            return render.value();
-        }
-        else
-        {
-            return { 0xFFFFFFFFFFFFFFFF,1 };
-        }
+        return _chunk->liquid_chunk()->attributes;
+        
     }
 
-    MH2O_Render & chunk::getOrCreateRender()
+    MH2O_Attributes & chunk::getOrCreateRender()
     {
-        std::optional<MH2O_Render>& render = _chunk->liquid_chunk()->Render;
-        if (!render.has_value())
-        {
-            render.emplace();
-        }
-        return render.value();
+        return _chunk->liquid_chunk()->attributes;
     }
 
     void chunk::set_deep_flag(std::uint32_t low, std::uint32_t high)

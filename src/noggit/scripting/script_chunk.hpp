@@ -52,8 +52,8 @@ namespace noggit
       vert get_vert(int index);
       std::shared_ptr<selection> to_selection();
     private:
-      MH2O_Render getRenderOrDefault();
-      MH2O_Render& getOrCreateRender();
+      MH2O_Attributes getRenderOrDefault();
+      MH2O_Attributes& getOrCreateRender();
       MapChunk* _chunk;
       friend class selection;
     };

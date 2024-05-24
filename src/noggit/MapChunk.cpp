@@ -467,7 +467,7 @@ void MapChunk::clearHeight()
 
   update_intersect_points();
 
-  _need_vao_update = true;
+  require_vertices_buffer_update();
 
   mt->need_chunk_data_update();
 }
@@ -695,8 +695,7 @@ void MapChunk::updateVerticesData()
   }
 
   update_intersect_points();
-
-  _need_vao_update = true;
+  require_vertices_buffer_update();
 
   // update adt extents each time the min/max height of a chunk might have changed
   mt->chunk_height_changed();
@@ -741,7 +740,7 @@ void MapChunk::recalcNorms (std::function<boost::optional<float> (float, float)>
     vertices[i].normal = {-Norm.z, Norm.y, -Norm.x};
   }
 
-   _need_vao_update = true;
+   require_vertices_buffer_update();
 
    mt->need_chunk_data_update();
 }
@@ -825,6 +824,12 @@ bool MapChunk::changeTerrain(math::vector_3d const& pos, float change, float rad
   return changed;
 }
 
+void MapChunk::reset_mccv()
+{
+  hasMCCV = false;
+  maybe_create_mccv();
+}
+
 bool MapChunk::hasColors()
 {
   return hasMCCV;
@@ -889,7 +894,7 @@ bool MapChunk::ChangeMCCV(math::vector_3d const& pos, math::vector_4d const& col
     }
   }
 
-  _need_vao_update = true;
+  require_vertices_buffer_update();
 
   mt->need_chunk_data_update();
 

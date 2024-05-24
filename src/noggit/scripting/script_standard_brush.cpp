@@ -173,6 +173,7 @@ namespace noggit {
                             , radius
                             , brush_type
                             , inner_radius
+                            , terrain_edit_mode::normal
                             );
     }
 
