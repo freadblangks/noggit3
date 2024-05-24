@@ -324,12 +324,18 @@ bool MapTile::isTile(int pX, int pZ)
 
 void MapTile::convert_alphamap(bool to_big_alpha)
 {
-  mBigAlpha = true;
-  for (size_t i = 0; i < 16; i++)
+  if (mBigAlpha != to_big_alpha)
   {
-    for (size_t j = 0; j < 16; j++)
+    mBigAlpha = to_big_alpha;
+    // force alphamap update
+    _alphamap_created = false;
+
+    for (size_t i = 0; i < 16; i++)
     {
-      mChunks[i][j]->use_big_alphamap = to_big_alpha;
+      for (size_t j = 0; j < 16; j++)
+      {
+        mChunks[i][j]->use_big_alphamap = to_big_alpha;
+      }
     }
   }
 }
@@ -1052,8 +1058,15 @@ void MapTile::create_combined_alpha_shadow_map()
   }
   else
   {
-    // todo: add toggle or use GL_RGBA8 for tiles close to the camera on big alpha maps (alpha stored as 4bits otherwise)
-    gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB5_A1, 64, 64, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    if (mBigAlpha)
+    {
+      gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, 64, 64, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    }
+    else
+    {
+      gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB5_A1, 64, 64, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    }
+    
 
     for (size_t i = 0; i < 16; i++)
     {
