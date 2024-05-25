@@ -444,9 +444,19 @@ void MapTile::draw ( math::frustum const& frustum
   gl.multiDrawElements(GL_TRIANGLES, _indices_count.data(), GL_UNSIGNED_SHORT, _indices_offsets.data(), 256);
 }
 
-void MapTile::intersect (math::ray const& ray, selection_result* results) const
+void MapTile::intersect (math::ray const& ray, selection_result* results)
 {
-  if (!finished || !ray.intersect_bounds(extents[0], extents[1]))
+  if (!finished)
+  {
+    return;
+  }
+
+  if (_need_recalc_extents)
+  {
+    recalc_extents();
+  }
+
+  if (!ray.intersect_bounds(extents[0], extents[1]))
   {
     return;
   }
