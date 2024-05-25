@@ -1226,7 +1226,9 @@ void MapChunk::save( util::sExtendableArray &lADTFile
   lADTFile.Extend(8 + lMCVT_Size);
   SetChunkHeader(lADTFile, lCurrentPosition, 'MCVT', lMCVT_Size);
 
-  lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->ofsHeight = lCurrentPosition - lMCNK_Position;
+  auto header_ptr = lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8);
+
+  header_ptr->ofsHeight = lCurrentPosition - lMCNK_Position;
 
   auto const lHeightmap = lADTFile.GetPointer<float>(lCurrentPosition + 8);
 
@@ -1243,7 +1245,7 @@ void MapChunk::save( util::sExtendableArray &lADTFile
     lMCCV_Size = mapbufsize * sizeof(unsigned int);
     lADTFile.Extend(8 + lMCCV_Size);
     SetChunkHeader(lADTFile, lCurrentPosition, 'MCCV', lMCCV_Size);
-    lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->ofsMCCV = lCurrentPosition - lMCNK_Position;
+    header_ptr->ofsMCCV = lCurrentPosition - lMCNK_Position;
 
     auto const lmccv = lADTFile.GetPointer<unsigned int>(lCurrentPosition + 8);
 
@@ -1259,7 +1261,7 @@ void MapChunk::save( util::sExtendableArray &lADTFile
   }
   else
   {
-    lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->ofsMCCV = 0;
+    header_ptr->ofsMCCV = 0;
   }
 
   // MCNR
@@ -1268,7 +1270,7 @@ void MapChunk::save( util::sExtendableArray &lADTFile
   lADTFile.Extend(8 + lMCNR_Size);
   SetChunkHeader(lADTFile, lCurrentPosition, 'MCNR', lMCNR_Size);
 
-  lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->ofsNormal = lCurrentPosition - lMCNK_Position;
+  header_ptr->ofsNormal = lCurrentPosition - lMCNK_Position;
 
   auto const lNormals = lADTFile.GetPointer<char>(lCurrentPosition + 8);
 
@@ -1298,8 +1300,8 @@ void MapChunk::save( util::sExtendableArray &lADTFile
   lADTFile.Extend(8 + lMCLY_Size);
   SetChunkHeader(lADTFile, lCurrentPosition, 'MCLY', lMCLY_Size);
 
-  lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->ofsLayer = lCurrentPosition - lMCNK_Position;
-  lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->nLayers = texture_set->num();
+  header_ptr->ofsLayer = lCurrentPosition - lMCNK_Position;
+  header_ptr->nLayers = texture_set->num();
 
   std::vector<std::vector<uint8_t>> alphamaps = texture_set->save_alpha(use_big_alphamap);
   int lMCAL_Size = 0;
@@ -1368,9 +1370,9 @@ void MapChunk::save( util::sExtendableArray &lADTFile
   lADTFile.Extend(8 + lMCRF_Size);
   SetChunkHeader(lADTFile, lCurrentPosition, 'MCRF', lMCRF_Size);
 
-  lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->ofsRefs = lCurrentPosition - lMCNK_Position;
-  lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->nDoodadRefs = lDoodadIDs.size();
-  lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->nMapObjRefs = lObjectIDs.size();
+  header_ptr->ofsRefs = lCurrentPosition - lMCNK_Position;
+  header_ptr->nDoodadRefs = lDoodadIDs.size();
+  header_ptr->nMapObjRefs = lObjectIDs.size();
 
   // MCRF data
   auto const lReferences = lADTFile.GetPointer<int>(lCurrentPosition + 8);
@@ -1401,8 +1403,8 @@ void MapChunk::save( util::sExtendableArray &lADTFile
     lADTFile.Extend(8 + lMCSH_Size);
     SetChunkHeader(lADTFile, lCurrentPosition, 'MCSH', lMCSH_Size);
 
-    lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->ofsShadow = lCurrentPosition - lMCNK_Position;
-    lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->sizeShadow = 0x200;
+    header_ptr->ofsShadow = lCurrentPosition - lMCNK_Position;
+    header_ptr->sizeShadow = 0x200;
 
     auto const lLayer = lADTFile.GetPointer<char>(lCurrentPosition + 8);
 
@@ -1414,16 +1416,16 @@ void MapChunk::save( util::sExtendableArray &lADTFile
   else
   {
     header.flags.flags.has_mcsh = 0;
-    lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->ofsShadow = 0;
-    lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->sizeShadow = 0;
+    header_ptr->ofsShadow = 0;
+    header_ptr->sizeShadow = 0;
   }
 
   // MCAL
   lADTFile.Extend(8 + lMCAL_Size);
   SetChunkHeader(lADTFile, lCurrentPosition, 'MCAL', lMCAL_Size);
 
-  lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->ofsAlpha = lCurrentPosition - lMCNK_Position;
-  lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->sizeAlpha = 8 + lMCAL_Size;
+  header_ptr->ofsAlpha = lCurrentPosition - lMCNK_Position;
+  header_ptr->sizeAlpha = 8 + lMCAL_Size;
 
   auto lAlphaMaps = lADTFile.GetPointer<char>(lCurrentPosition + 8);
 
@@ -1446,8 +1448,8 @@ void MapChunk::save( util::sExtendableArray &lADTFile
 
       lMCNK_Size += liquids_size;
 
-      lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->sizeLiquid = liquids_size;
-      lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->ofsLiquid = lCurrentPosition - lMCNK_Position;
+      header_ptr->sizeLiquid = liquids_size;
+      header_ptr->ofsLiquid = lCurrentPosition - lMCNK_Position;
 
       // current position updated inside
       liquids->save_mclq(lADTFile, lMCNK_Position, lCurrentPosition);
@@ -1459,8 +1461,8 @@ void MapChunk::save( util::sExtendableArray &lADTFile
       // size seems to be 0 in vanilla adts in the mclq chunk's header and set right in the mcnk header (layer_size * n_layer + 8)
       SetChunkHeader(lADTFile, lCurrentPosition, 'MCLQ', 0);
 
-      lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->sizeLiquid = 8;
-      lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->ofsLiquid = lCurrentPosition - lMCNK_Position;
+      header_ptr->sizeLiquid = 8;
+      header_ptr->ofsLiquid = lCurrentPosition - lMCNK_Position;
 
       lCurrentPosition += 8;
       lMCNK_Size += 8;
@@ -1472,8 +1474,8 @@ void MapChunk::save( util::sExtendableArray &lADTFile
   lADTFile.Extend(8 + lMCSE_Size);
   SetChunkHeader(lADTFile, lCurrentPosition, 'MCSE', lMCSE_Size);
 
-  lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->ofsSndEmitters = lCurrentPosition - lMCNK_Position;
-  lADTFile.GetPointer<MapChunkHeader>(lMCNK_Position + 8)->nSndEmitters = lMCSE_Size / 0x1C;
+  header_ptr->ofsSndEmitters = lCurrentPosition - lMCNK_Position;
+  header_ptr->nSndEmitters = lMCSE_Size / 0x1C;
 
   lCurrentPosition += 8 + lMCSE_Size;
   lMCNK_Size += 8 + lMCSE_Size;
