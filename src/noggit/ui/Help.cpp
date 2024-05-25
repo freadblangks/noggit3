@@ -135,6 +135,7 @@ namespace noggit
 
       generate_hotkey_row({ font_noggit::ctrl, font_noggit::lmb },  "\a+\a -  Pick existing AreaID", flag_layout);
       generate_hotkey_row({ font_noggit::shift, font_noggit::lmb }, "\a+\a -  Paint selected AreaID", flag_layout);
+      generate_hotkey_row({ font_noggit::f}, "\a -  Fill current ADT with selected AreaID", flag_layout);
 
 
       auto ground_widget (new QWidget (this));
