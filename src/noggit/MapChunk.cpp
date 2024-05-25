@@ -1464,6 +1464,9 @@ void MapChunk::save( util::sExtendableArray &lADTFile
       header_ptr->sizeLiquid = 8;
       header_ptr->ofsLiquid = lCurrentPosition - lMCNK_Position;
 
+      // clear MCLQ liquid flags (0x4, 0x8, 0x10, 0x20)
+      header_ptr->flags.value &= 0xFFFFFFC3;
+
       lCurrentPosition += 8;
       lMCNK_Size += 8;
     }
