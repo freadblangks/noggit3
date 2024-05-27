@@ -49,7 +49,6 @@ namespace noggit
                       , bool from_bookmark = false
                       );
 
-      void createBookmarkList();
       void build_menu();
       void rebuild_menu();
 
@@ -60,17 +59,8 @@ namespace noggit
         int areaType;
       };
 
-      struct BookmarkEntry
-      {
-        int mapID;
-        std::string name;
-        math::vector_3d pos;
-        float camera_yaw;
-        float camera_pitch;
-      };
 
       std::vector<MapEntry> mMaps;
-      std::vector<BookmarkEntry> mBookmarks;
 
       minimap_widget* _minimap;
       settings* _settings;

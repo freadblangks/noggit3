@@ -1,5 +1,6 @@
 #include <noggit/ui/main_window.hpp>
 
+#include <noggit/bookmarks.hpp>
 #include <noggit/DBC.h>
 #include <noggit/DBCFile.h>
 #include <noggit/Log.h>
@@ -50,7 +51,7 @@ namespace noggit
 
       setCentralWidget (_null_widget);
 
-      createBookmarkList();
+      bookmark_manager::instance().reload();
 
       _settings = new settings(this);
       _about = new about(this);
@@ -205,7 +206,7 @@ namespace noggit
       }
 
       qulonglong bookmark_index (0);
-      for (auto entry : mBookmarks)
+      for (auto const& entry : bookmark_manager::instance().bookmarks())
       {
         auto item (new QListWidgetItem (entry.name.c_str(), bookmarks_table));
         item->setData (Qt::UserRole, QVariant (bookmark_index++));
@@ -224,15 +225,15 @@ namespace noggit
       QObject::connect ( bookmarks_table, &QListWidget::itemDoubleClicked
                        , [this] (QListWidgetItem* item)
                          {
-                           auto& entry (mBookmarks.at (item->data (Qt::UserRole).toInt()));
+                           auto& entry (bookmark_manager::instance().bookmarks().at(item->data(Qt::UserRole).toInt()));
 
                            _world.reset();
 
                            for (DBCFile::Iterator it = gMapDB.begin(); it != gMapDB.end(); ++it)
                            {
-                             if (it->getInt(MapDB::MapID) == entry.mapID)
+                             if (it->getInt(MapDB::MapID) == entry.map_id)
                              {
-                               _world = std::make_unique<World> (it->getString(MapDB::InternalName), entry.mapID);
+                               _world = std::make_unique<World> (it->getString(MapDB::InternalName), entry.map_id);
                                check_uid_then_enter_map ( entry.pos
                                                         , math::degrees (entry.camera_pitch)
                                                         , math::degrees (entry.camera_yaw)
@@ -266,40 +267,9 @@ namespace noggit
     {
       setCentralWidget(_null_widget = new QWidget(this));
 
-      createBookmarkList();
+      bookmark_manager::instance().reload();
       build_menu();
       map_loaded = false;
-    }
-
-    void main_window::createBookmarkList()
-    {
-      mBookmarks.clear();
-
-      std::ifstream f("bookmarks.txt");
-      if (!f.is_open())
-      {
-        LogDebug << "No bookmarks file." << std::endl;
-        return;
-      }
-
-      std::string basename;
-      std::size_t areaID;
-      BookmarkEntry b;
-      int mapID = -1;
-      while (f >> mapID >> b.pos.x >> b.pos.y >> b.pos.z >> b.camera_yaw >> b.camera_pitch >> areaID)
-      {
-        if (mapID == -1)
-        {
-          continue;
-        }
-
-        std::stringstream temp;
-        temp << MapDB::getMapName(mapID) << ": " << AreaDB::getAreaName(areaID);
-        b.name = temp.str();
-        b.mapID = mapID;
-        mBookmarks.push_back(b);
-      }
-      f.close();
     }
 
     void main_window::closeEvent (QCloseEvent* event)
