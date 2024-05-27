@@ -2,7 +2,6 @@
 
 #include <math/projection.hpp>
 #include <math/constants.hpp>
-#include <noggit/bookmarks.hpp>
 #include <noggit/Brush.h> // brush
 #include <noggit/DBC.h>
 #include <noggit/Log.h>
@@ -463,6 +462,9 @@ void MapView::createGUI()
   auto view_menu (_main_window->menuBar()->addMenu ("View"));
   connect (this, &QObject::destroyed, view_menu, &QObject::deleteLater);
 
+  _bookmark_menu = _main_window->menuBar()->addMenu("Bookmarks");
+  connect(this, &QObject::destroyed, _bookmark_menu, &QObject::deleteLater);
+
   auto help_menu (_main_window->menuBar()->addMenu ("Help"));
   connect (this, &QObject::destroyed, help_menu, &QObject::deleteLater);
 
@@ -918,20 +920,33 @@ void MapView::createGUI()
                 );
 #endif
 
-  ADD_ACTION ( file_menu
+  ADD_ACTION ( _bookmark_menu
              , "Add bookmark"
              , Qt::Key_F5
              , [this]
                {
-                 noggit::bookmark_manager::instance().add
+                 add_bookmark( noggit::bookmark_manager::instance().add
                    ( _camera.position
                    , _camera.yaw()
                    , _camera.pitch()
                    , _world->getMapID()
                    , _world->getAreaID(_camera.position)
-                   );
+                   )
+                 );
                }
              );
+
+  _bookmark_menu->addSeparator();
+
+  std::uint32_t map_id = _world->getMapID();
+
+  for (noggit::bookmark const& b : noggit::bookmark_manager::instance().bookmarks())
+  {
+    if (b.map_id == map_id)
+    {
+      add_bookmark(b);
+    }
+  }
 
   ADD_ACTION (view_menu, "Increase time speed", Qt::Key_N, [this] { mTimespeed += 90.0f; });
   ADD_ACTION (view_menu, "Decrease time speed", Qt::Key_B, [this] { mTimespeed = std::max (0.0f, mTimespeed - 90.0f); });
@@ -1314,6 +1329,20 @@ void MapView::createGUI()
   addHotkey(Qt::Key_9, MOD_ctrl, [this] { change_selected_wmo_doodadset(9); });
 
   connect(_main_window, &noggit::ui::main_window::exit_prompt_opened, this, &MapView::on_exit_prompt);
+}
+
+void MapView::add_bookmark(noggit::bookmark const& b)
+{
+  ADD_ACTION_NS(_bookmark_menu
+    , b.name.c_str()
+    , [&]
+    {
+      _camera.position = b.pos;
+      _camera.yaw(math::degrees(b.camera_yaw));
+      _camera.pitch(math::degrees(b.camera_pitch));
+      _camera_moved_since_last_draw = true;
+    }
+  );
 }
 
 void MapView::on_exit_prompt()

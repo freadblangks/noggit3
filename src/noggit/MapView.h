@@ -4,6 +4,7 @@
 
 #include <math/ray.hpp>
 #include <math/vector_4d.hpp>
+#include <noggit/bookmarks.hpp>
 #include <noggit/Misc.h>
 #include <noggit/Selection.h>
 #include <noggit/bool_toggle_property.hpp>
@@ -131,6 +132,8 @@ private:
   void createGUI();
 
   QWidgetAction* createTextSeparator(const QString& text);
+
+  void add_bookmark(noggit::bookmark const& b);
 
   float mTimespeed;
 
@@ -305,6 +308,8 @@ private:
   noggit::ui::help* _keybindings;
 
   std::unordered_set<QDockWidget*> _tool_properties_docks;
+
+  QMenu* _bookmark_menu;
 
   noggit::ui::tileset_chooser* TexturePalette;
   noggit::ui::detail_infos* guidetailInfos;
