@@ -1122,10 +1122,20 @@ void MapTile::recalc_extents()
     }
   }
 
+  if (Water.need_recalc_extents())
+  {
+    Water.need_recalc_extents();
+  }
+
+  extents[0].y = std::min(extents[0].y, Water.min_height());
+  extents[1].y = std::max(extents[1].y, Water.max_height());
+
+
   _intersect_points.clear();
   _intersect_points = misc::intersection_points(extents[0], extents[1]);
 
   _need_recalc_extents = false;
+  _need_visibility_update = true;
 }
 
 void MapTile::update_visibility ( const float& cull_distance
@@ -1137,7 +1147,7 @@ void MapTile::update_visibility ( const float& cull_distance
   static const float adt_radius = std::sqrt (TILESIZE * TILESIZE / 2.0f);
 
   float dist = display == display_mode::in_3D
-             ? (camera - (extents[0] + extents[1]) * 0.5).length() - adt_radius
+             ? (camera - (extents[0] + extents[1]) * 0.5).length() - adt_radius // todo: improve when height diff > adt radius
              : std::abs(camera.y - extents[1].y);
 
 

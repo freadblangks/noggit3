@@ -49,6 +49,15 @@ public:
 
   void require_buffer_update() { _need_buffer_update = true; }
   void require_buffer_regen() { _need_buffer_regen = true; }
+
+  bool is_visible() const;
+
+  float min_height() const { return _extents[0].y; }
+  float max_height() const { return _extents[1].y; }
+
+  bool need_recalc_extents() const { return _need_recalc_extents; }
+  void require_extents_recalc();
+  void recalc_extents();
 private:
 
   MapTile *tile;
@@ -62,10 +71,7 @@ private:
   std::vector<math::vector_3d> _intersect_points;
 
   bool _need_recalc_extents = true;
-  void recalc_extents();
-
   bool _has_liquids = false;
-  bool _is_visible = false;
   bool _need_visibility_update = true;
 
   void update_visibility( const float& cull_distance

@@ -123,9 +123,12 @@ private:
   void upload();
   bool _uploaded = false;
 public:
+  // todo: store extent for each part and only update the relevant one and then update the "global" extents
+  void water_height_changed() { _need_recalc_extents = true; }
   void chunk_height_changed() { _need_recalc_extents = true; _need_visibility_update = true; _need_chunk_data_update = true; }
   void need_chunk_data_update() { _need_chunk_data_update = true; }
 
+  bool is_visible() const { return _is_visible; }
 private:
   bool _need_chunk_data_update = true;
 

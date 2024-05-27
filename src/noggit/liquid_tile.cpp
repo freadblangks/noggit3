@@ -69,7 +69,7 @@ void liquid_tile::draw ( math::frustum const& frustum
     update_visibility(cull_distance, frustum, camera, display);
   }
 
-  if (!_is_visible)
+  if (!is_visible())
   {
     return;
   }
@@ -160,7 +160,7 @@ bool liquid_tile::hasData(size_t layer)
 
 void liquid_tile::CropMiniChunk(int x, int z, MapChunk* chunkTerrain)
 {
-  _need_recalc_extents = true;
+  require_extents_recalc();
   _need_buffer_update = true;
 
   chunks[z][x]->CropWater(chunkTerrain);
@@ -190,6 +190,11 @@ int liquid_tile::getType(size_t layer)
     }
   }
   return 0;
+}
+
+bool liquid_tile::is_visible() const 
+{
+  return tile->is_visible(); 
 }
 
 void liquid_tile::upload(opengl::scoped::use_program& water_shader, liquid_render& render)
@@ -247,7 +252,7 @@ void liquid_tile::regen_buffer(liquid_render& render)
   _has_liquids = _indices_count.size() > 0;
 
   _need_visibility_update = true;
-  _need_recalc_extents = true;
+  require_extents_recalc();
 
   _need_buffer_regen = false;
   _need_buffer_update = false;
@@ -272,10 +277,17 @@ void liquid_tile::update_buffer(liquid_render& render)
 
   _has_liquids = _indices_count.size() > 0;
 
-  _need_recalc_extents = true;
+  require_extents_recalc();
   _need_visibility_update = true;
 
   _need_buffer_update = false;
+}
+
+void liquid_tile::require_extents_recalc()
+{
+  _need_recalc_extents = true;
+
+  tile->water_height_changed();
 }
 
 void liquid_tile::recalc_extents()
@@ -301,9 +313,13 @@ void liquid_tile::recalc_extents()
   _intersect_points.clear();
   _intersect_points = misc::intersection_points(_extents[0], _extents[1]);
 
-  _need_visibility_update = true;
-
   _need_recalc_extents = false;
+
+  // notify the adt something changed
+  // /!\ make sure the adt's _need_recalc_extents isn't set to false before
+  //  the water tile extents are updated
+  tile->water_height_changed(); 
+  
 }
 
 void liquid_tile::update_visibility ( const float& cull_distance
@@ -317,11 +333,6 @@ void liquid_tile::update_visibility ( const float& cull_distance
     recalc_extents();
   }
 
-  float dist = display == display_mode::in_3D
-             ? (camera - (_extents[0] + _extents[1]) * 0.5).length() - _radius
-             : std::abs(camera.y - _extents[1].y);
-
-  _is_visible = dist < cull_distance && frustum.intersects(_intersect_points);
   _need_visibility_update = false;
 
   for (int z = 0; z < 16; ++z)
