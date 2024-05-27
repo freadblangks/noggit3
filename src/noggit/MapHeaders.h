@@ -50,6 +50,8 @@ static const float UNITSIZE = (CHUNKSIZE / 8.0f);
 static const float MINICHUNKSIZE = (CHUNKSIZE / 4.0f);
 static const float TEXDETAILSIZE = (CHUNKSIZE / 64.0f);
 static const float ZEROPOINT = (32.0f * (TILESIZE));
+
+static const double TILE_RADIUS = 754.24723326565069269423398624517; //sqrt(2 * (533.33333)^2)
 static const double MAPCHUNK_RADIUS = 47.140452079103168293389624140323; //sqrt((533.33333/16)^2 + (533.33333/16)^2)
 
 struct MHDR

@@ -107,7 +107,7 @@ World::World(const std::string& name, int map_id)
   , skies(nullptr)
   , outdoorLightStats(OutdoorLightStats())
   , _current_selection()
-  , _view_distance(NoggitSettings.value ("view_distance", 1000.f).toFloat())
+  , _view_distance(NoggitSettings.value ("view_distance", 1000.f).toFloat() + TILE_RADIUS) // add adt radius to make sure tiles aren't culled too soon, todo: improve adt culling to prevent that from happening
 {
   LogDebug << "Loading world \"" << name << "\"." << std::endl;
 }

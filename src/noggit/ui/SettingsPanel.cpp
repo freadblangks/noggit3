@@ -150,14 +150,9 @@ namespace noggit
       layout->addRow ( "FOV", _fov = new QDoubleSpinBox(this));
       _fov->setRange(10.f, 90.f);
       layout->addRow ( "View Distance"
-                     , viewDistanceField = new QDoubleSpinBox
+                     , _view_distance = new QDoubleSpinBox
                      );
-      viewDistanceField->setRange (0.f, 1048576.f);
-
-      layout->addRow ( "FarZ"
-                     , farZField = new QDoubleSpinBox
-                     );
-      farZField->setRange (0.f, 1048576.f);
+      _view_distance->setRange (0.f, 1048576.f);
 
       layout->addRow ( "Adt unloading distance (in adt)", _adt_unload_dist = new QSpinBox(this));
       _adt_unload_dist->setRange(1, 64);
@@ -232,8 +227,7 @@ namespace noggit
       wmvLogPathField->actual->setText (NoggitSettings.value ("project/wmv_log_file").toString());
       mclq_liquids_export_path->actual->setText (NoggitSettings.value ("project/mclq_liquids_path").toString());
       _fov->setValue (NoggitSettings.value ("fov", 54.f).toFloat());
-      viewDistanceField->setValue (NoggitSettings.value ("view_distance", 1000.f).toFloat());
-      farZField->setValue (NoggitSettings.value ("farZ", 2048.f).toFloat());
+      _view_distance->setValue (NoggitSettings.value ("view_distance", 1000.f).toFloat());
       tabletModeCheck->setChecked (NoggitSettings.value ("tablet/enabled", false).toBool());
       _undock_tool_properties->setChecked (NoggitSettings.value ("undock_tool_properties/enabled", true).toBool());
       _undock_small_texture_palette->setChecked (NoggitSettings.value ("undock_small_texture_palette/enabled", true).toBool());
@@ -273,8 +267,7 @@ namespace noggit
       NoggitSettings.set_value ("project/wmv_log_file", wmvLogPathField->actual->text());
       NoggitSettings.set_value ("project/mclq_liquids_path", mclq_liquids_export_path->actual->text());
       NoggitSettings.set_value ("fov", _fov->value());
-      NoggitSettings.set_value ("farZ", farZField->value());
-      NoggitSettings.set_value ("view_distance", viewDistanceField->value());
+      NoggitSettings.set_value ("view_distance", _view_distance->value());
       NoggitSettings.set_value ("tablet/enabled", tabletModeCheck->isChecked());
       NoggitSettings.set_value ("undock_tool_properties/enabled", _undock_tool_properties->isChecked());
       NoggitSettings.set_value ("undock_small_texture_palette/enabled", _undock_small_texture_palette->isChecked());

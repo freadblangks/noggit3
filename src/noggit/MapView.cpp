@@ -2447,7 +2447,7 @@ math::matrix_4x4 MapView::model_view(bool use_debug_cam) const
 }
 math::matrix_4x4 MapView::projection() const
 {
-  float far_z = NoggitSettings.value("farZ", 2048).toFloat();
+  float far_z = NoggitSettings.value("view_distance", 2048).toFloat();
 
   if (_display_mode == display_mode::in_2D)
   {
