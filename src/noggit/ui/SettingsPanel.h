@@ -41,6 +41,7 @@ namespace noggit
       util::file_line_edit* importPathField;
       util::file_line_edit* wmvLogPathField;
       util::file_line_edit* mclq_liquids_export_path;
+      QDoubleSpinBox* _fov;
       QDoubleSpinBox* viewDistanceField;
       QDoubleSpinBox* farZField;
       QSpinBox* _adt_unload_dist;

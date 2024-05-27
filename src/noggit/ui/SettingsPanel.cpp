@@ -147,6 +147,8 @@ namespace noggit
       _anti_aliasing_cb->setToolTip("Require restart");
       _fullscreen_cb->setToolTip("Require restart");
 
+      layout->addRow ( "FOV", _fov = new QDoubleSpinBox(this));
+      _fov->setRange(10.f, 90.f);
       layout->addRow ( "View Distance"
                      , viewDistanceField = new QDoubleSpinBox
                      );
@@ -229,6 +231,7 @@ namespace noggit
       importPathField->actual->setText (NoggitSettings.value ("project/import_file").toString());
       wmvLogPathField->actual->setText (NoggitSettings.value ("project/wmv_log_file").toString());
       mclq_liquids_export_path->actual->setText (NoggitSettings.value ("project/mclq_liquids_path").toString());
+      _fov->setValue (NoggitSettings.value ("fov", 54.f).toFloat());
       viewDistanceField->setValue (NoggitSettings.value ("view_distance", 1000.f).toFloat());
       farZField->setValue (NoggitSettings.value ("farZ", 2048.f).toFloat());
       tabletModeCheck->setChecked (NoggitSettings.value ("tablet/enabled", false).toBool());
@@ -269,6 +272,7 @@ namespace noggit
       NoggitSettings.set_value ("project/import_file", importPathField->actual->text());
       NoggitSettings.set_value ("project/wmv_log_file", wmvLogPathField->actual->text());
       NoggitSettings.set_value ("project/mclq_liquids_path", mclq_liquids_export_path->actual->text());
+      NoggitSettings.set_value ("fov", _fov->value());
       NoggitSettings.set_value ("farZ", farZField->value());
       NoggitSettings.set_value ("view_distance", viewDistanceField->value());
       NoggitSettings.set_value ("tablet/enabled", tabletModeCheck->isChecked());
