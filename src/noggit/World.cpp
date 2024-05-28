@@ -1474,6 +1474,53 @@ void World::draw ( math::matrix_4x4 const& model_view
   gl.enable(GL_BLEND);
   gl.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+  // render before the water and enable depth right 
+  // so it's visible under water
+  // the checker board pattern is used to see the water under it
+  if (angled_mode || use_ref_pos)
+  {
+    opengl::scoped::depth_mask_setter<GL_TRUE> const depth_mask;
+
+    math::degrees orient = math::degrees(orientation);
+    math::degrees incl = math::degrees(angle);
+    math::vector_4d color = cursor_color;
+
+    color.w = 0.75f;
+
+    float radius = 1.2f * brush_radius;
+
+    if (angled_mode && !use_ref_pos)
+    {
+      math::vector_3d pos = cursor_pos;
+      pos.y += 0.1f; // to avoid z-fighting with the ground
+      _square_render.draw(mvp, pos, radius, incl, orient, color);
+    }
+    else if (use_ref_pos)
+    {
+      if (angled_mode)
+      {
+        math::vector_3d pos = cursor_pos;
+        pos.y = misc::angledHeight(ref_pos, pos, incl, orient);
+        pos.y += 0.1f;
+        _square_render.draw(mvp, pos, radius, incl, orient, color);
+
+        // display the plane when the cursor is far from ref_point
+        if (misc::dist(pos.x, pos.z, ref_pos.x, ref_pos.z) > 10.f + radius)
+        {
+          math::vector_3d ref = ref_pos;
+          ref.y += 0.1f;
+          _square_render.draw(mvp, ref, 10.f, incl, orient, color);
+        }
+      }
+      else
+      {
+        math::vector_3d pos = cursor_pos;
+        pos.y = ref_pos.y + 0.1f;
+        _square_render.draw(mvp, pos, radius, math::degrees(0.f), math::degrees(0.f), color);
+      }
+    }
+  }
+
   if (terrainMode == editing_mode::object && has_multiple_model_selected())
   {
     opengl::scoped::bool_setter<GL_DEPTH_TEST, GL_FALSE> const disable_depth_test;
@@ -1541,50 +1588,7 @@ void World::draw ( math::matrix_4x4 const& model_view
     gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
   }
 
-  if (angled_mode || use_ref_pos)
-  {
-    opengl::scoped::bool_setter<GL_CULL_FACE, GL_FALSE> cull;
-    opengl::scoped::depth_mask_setter<GL_FALSE> const depth_mask;
-
-    math::degrees orient = math::degrees(orientation);
-    math::degrees incl = math::degrees(angle);
-    math::vector_4d color = cursor_color;
-    // always half transparent regardless or the cursor transparency
-    color.w = 0.5f;
-
-    float radius = 1.2f * brush_radius;
-
-    if (angled_mode && !use_ref_pos)
-    {
-      math::vector_3d pos = cursor_pos;
-      pos.y += 0.1f; // to avoid z-fighting with the ground
-      _square_render.draw(mvp, pos, radius, incl, orient, color);
-    }
-    else if (use_ref_pos)
-    {
-      if (angled_mode)
-      {
-        math::vector_3d pos = cursor_pos;
-        pos.y = misc::angledHeight(ref_pos, pos, incl, orient);
-        pos.y += 0.1f;
-        _square_render.draw(mvp, pos, radius, incl, orient, color);
-
-        // display the plane when the cursor is far from ref_point
-        if (misc::dist(pos.x, pos.z, ref_pos.x, ref_pos.z) > 10.f + radius)
-        {
-          math::vector_3d ref = ref_pos;
-          ref.y += 0.1f;
-          _square_render.draw(mvp, ref, 10.f, incl, orient, color);
-        }
-      }
-      else
-      {
-        math::vector_3d pos = cursor_pos;
-        pos.y = ref_pos.y + 0.1f;
-        _square_render.draw(mvp, pos, radius, math::degrees(0.f), math::degrees(0.f), color);
-      }
-    }
-  }
+  
 
   // draw last because of the transparency
   if (draw_mfbo)

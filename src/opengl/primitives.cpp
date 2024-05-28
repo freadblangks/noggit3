@@ -159,6 +159,10 @@ out vec4 out_color;
 
 void main()
 {
+  if(gl_FragCoord.x < 0.5)
+  {
+    discard;
+  }
   out_color = color;
 }
 )code"
@@ -267,6 +271,8 @@ void main()
 
 in vec4 position;
 
+out vec3 f_pos;
+
 uniform mat4 model_view_projection;
 uniform vec3 origin;
 uniform float radius;
@@ -286,6 +292,8 @@ void main()
 
   pos.xyz += origin;
   gl_Position = model_view_projection * pos;
+
+  f_pos = position.xyz;
 }
 )code"
                    }
@@ -295,10 +303,21 @@ void main()
 
 uniform vec4 color;
 
+in vec3 f_pos;
+
 out vec4 out_color;
 
 void main()
 {
+  bool discard_x = mod((f_pos.x + 1.) * 5., 2.) < 1.;
+  bool discard_y = mod((f_pos.z + 1.) * 5., 2.) < 1.;
+
+  // discard in a checker board pattern
+  if(discard_x != discard_y)
+  {
+    discard;
+  }
+
   out_color = color;
 }
 )code"
