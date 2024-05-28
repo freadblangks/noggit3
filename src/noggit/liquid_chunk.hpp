@@ -3,9 +3,11 @@
 #pragma once
 
 #include <math/frustum.hpp>
+#include <math/ray.hpp>
 #include <math/vector_3d.hpp>
 #include <noggit/liquid_layer.hpp>
 #include <noggit/MapHeaders.h>
+#include <noggit/Selection.h>
 #include <noggit/tool_enums.hpp>
 #include <util/sExtendableArray.hpp>
 
@@ -46,6 +48,8 @@ public:
                   , const math::vector_3d& camera
                   , display_mode display
                   ) const;
+
+  void intersect(math::ray const& ray, selection_result* results);
 
   void autoGen(MapChunk* chunk, float factor);
   void update_underground_vertices_depth(MapChunk* chunk);

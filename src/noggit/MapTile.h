@@ -70,6 +70,9 @@ public:
             , noggit::tileset_array_handler& tileset_handler
             );
   void intersect (math::ray const&, selection_result*);
+  void intersect_liquids (math::ray const&, selection_result*);
+
+
   void drawWater ( math::frustum const& frustum
                  , const float& cull_distance
                  , const math::vector_3d& camera

@@ -249,6 +249,7 @@ namespace noggit
       generate_hotkey_row({ font_noggit::f },                          "\a - Set lock position to cursor position", water_layout);
       generate_hotkey_row({ font_noggit::space, font_noggit::f },      "\a+\a - Toggle lock mode", water_layout);
       generate_hotkey_row({ font_noggit::space, font_noggit::mmb },    "\a+\a - Change height", water_layout);
+      generate_hotkey_row({ font_noggit::c },                          "\a - Toggle cursor liquid collisions", water_layout);
 
 
       auto object_widget (new QWidget (this));

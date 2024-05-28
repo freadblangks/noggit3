@@ -1167,6 +1167,15 @@ void MapView::createGUI()
             , [&] { return terrainMode == editing_mode::water; }
             );
 
+    addHotkey ( Qt::Key_C
+            , MOD_none
+            , [&]
+              {
+                guiWater->toggle_liquids_intersect();
+              }
+            , [&] { return terrainMode == editing_mode::water; }
+            );
+
   addHotkey ( Qt::Key_T
             , MOD_none
             , [&]
@@ -1918,7 +1927,22 @@ void MapView::tick (float dt)
         scriptingTool->sendBrushEvent(_cursor_pos, 7.5f * dt);
       }
 #endif
+      if (leftMouse && selection.which() == eEntry_LiquidLayer && terrainMode == editing_mode::water)
+      {
+        bool underMap = _world->isUnderMap(_cursor_pos);
 
+        if (_display_mode == display_mode::in_3D && !underMap)
+        {
+          if (_mod_shift_down)
+          {
+            guiWater->paintLiquid(_world.get(), _cursor_pos, true);
+          }
+          else if (_mod_ctrl_down)
+          {
+            guiWater->paintLiquid(_world.get(), _cursor_pos, false);
+          }
+        }
+      }
       if (leftMouse && selection.which() == eEntry_MapChunk)
       {
         bool underMap = _world->isUnderMap(_cursor_pos);
@@ -2382,7 +2406,7 @@ math::ray MapView::intersect_ray() const
   }
 }
 
-selection_result MapView::intersect_result(bool terrain_only)
+selection_result MapView::intersect_result(bool terrain_only, bool intersect_liquids)
 {
   selection_result results
   ( _world->intersect
@@ -2394,6 +2418,7 @@ selection_result MapView::intersect_result(bool terrain_only)
     , _draw_wmo.get()
     , _draw_models.get()
     , _draw_hidden_models.get()
+    , intersect_liquids
     )
   );
 
@@ -2408,9 +2433,9 @@ selection_result MapView::intersect_result(bool terrain_only)
   return results;
 }
 
-void MapView::doSelection (bool selectTerrainOnly)
+void MapView::doSelection (bool selectTerrainOnly, bool intersect_liquids)
 {
-  selection_result results(intersect_result(selectTerrainOnly));
+  selection_result results(intersect_result(selectTerrainOnly, intersect_liquids));
 
   if (results.empty())
   {
@@ -2443,6 +2468,7 @@ void MapView::doSelection (bool selectTerrainOnly)
     _cursor_pos = hit.which() == eEntry_Model ? boost::get<selected_model_type>(hit)->pos
       : hit.which() == eEntry_WMO ? boost::get<selected_wmo_type>(hit)->pos
       : hit.which() == eEntry_MapChunk ? boost::get<selected_chunk_type>(hit).position
+      : hit.which() == eEntry_LiquidLayer ? boost::get<selected_liquid_layer_type>(hit).position
       : throw std::logic_error("bad variant");
   }
 
@@ -2451,13 +2477,21 @@ void MapView::doSelection (bool selectTerrainOnly)
 
 void MapView::update_cursor_pos()
 {
-  selection_result results (intersect_result (true));
+  bool intersect_liquids = terrainMode == editing_mode::water && guiWater->use_liquids_intersect();
+  selection_result results (intersect_result (true, intersect_liquids));
 
   if (!results.empty())
   {
     auto const& hit(results.front().second);
-    // hit cannot be something else than a chunk
-    _cursor_pos = boost::get<selected_chunk_type>(hit).position;
+
+    if (hit.which() == eEntry_LiquidLayer)
+    {
+      _cursor_pos = boost::get<selected_liquid_layer_type>(hit).position;
+    }
+    else
+    {
+      _cursor_pos = boost::get<selected_chunk_type>(hit).position;
+    }    
   }
 }
 
@@ -2545,11 +2579,13 @@ void MapView::draw_map()
 #endif
   }
 
+  bool use_liquid_intersect = terrainMode == editing_mode::water && guiWater->use_liquids_intersect();
+
   //! \note Select terrain below mouse, if no item selected or the item is map.
   if (!(_world->has_selection()
     || _locked_cursor_mode.get()))
   {
-    doSelection(true);
+    doSelection(true, use_liquid_intersect);
   }
 
   bool debug_cam = _debug_cam_mode.get();
@@ -2563,6 +2599,7 @@ void MapView::draw_map()
                , terrainMode == editing_mode::mccv ? shader_color : cursor_color
                , cursor_type.get()
                , radius
+               , use_liquid_intersect
                , texturingTool->show_unpaintable_chunks() && terrainMode == editing_mode::paint
                , noggit::ui::selected_texture::texture ? noggit::ui::selected_texture::texture.get()->filename : ""
                , _draw_contour.get()
@@ -3016,7 +3053,7 @@ void MapView::mousePressEvent(QMouseEvent* event)
 
   if (leftMouse)
   {
-    doSelection(false);
+    doSelection(false, terrainMode == editing_mode::water && guiWater->use_liquids_intersect());
   }
   else if (rightMouse)
   {

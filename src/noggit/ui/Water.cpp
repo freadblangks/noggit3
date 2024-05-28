@@ -4,6 +4,7 @@
 #include <noggit/Log.h>
 #include <noggit/Misc.h>
 #include <noggit/World.h>
+#include <noggit/ui/checkbox.hpp>
 #include <noggit/ui/pushbutton.hpp>
 #include <noggit/ui/Water.h>
 #include <util/qt/overload.hpp>
@@ -33,6 +34,7 @@ namespace noggit
       , _orientation(0.0f)
       , _locked(false)
       , _angled_mode(false)
+      , _cursor_intersect_liquids(true)
       , _override_liquid_id(true)
       , _override_height(true)
       , _opacity_mode(river_opacity)
@@ -206,6 +208,11 @@ namespace noggit
                             )
                         );
 
+      checkbox* toggle_intersect_cb = new checkbox("Cursor intersect liquids", &_cursor_intersect_liquids, this);
+      layout->addRow(toggle_intersect_cb);
+
+      
+
       auto layer_group (new QGroupBox ("Layers", this));
       auto layer_layout (new QFormLayout (layer_group));
 
@@ -218,6 +225,7 @@ namespace noggit
       layer_layout->addRow (waterLayer);
 
       layout->addRow (layer_group);
+
 
       connect ( waterLayer, qOverload<int> (&QSpinBox::valueChanged)
               , current_layer, &unsigned_int_property::set
@@ -324,6 +332,11 @@ namespace noggit
     void water::toggle_angled_mode()
     {
       _angled_mode.toggle();
+    }
+
+    void water::toggle_liquids_intersect()
+    {
+      _cursor_intersect_liquids.toggle();
     }
 
     float water::get_opacity_factor() const

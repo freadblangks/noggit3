@@ -322,6 +322,27 @@ void liquid_tile::recalc_extents()
   
 }
 
+void liquid_tile::intersect(math::ray const& ray, selection_result* results)
+{
+  if (_need_recalc_extents)
+  {
+    recalc_extents();
+  }
+
+  if (!ray.intersect_bounds(_extents[0], _extents[1]))
+  {
+    return;
+  }
+
+  for (int z = 0; z < 16; ++z)
+  {
+    for (int x = 0; x < 16; ++x)
+    {
+      chunks[z][x]->intersect(ray, results);
+    }
+  }
+}
+
 void liquid_tile::update_visibility ( const float& cull_distance
                                     , const math::frustum& frustum
                                     , const math::vector_3d& camera

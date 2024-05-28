@@ -271,6 +271,19 @@ bool liquid_chunk::is_visible ( const float& cull_distance
       && dist < cull_distance;
 }
 
+void liquid_chunk::intersect(math::ray const& ray, selection_result* results)
+{
+  if (!hasData(0) || !ray.intersect_bounds(vmin, vmax))
+  {
+    return;
+  }
+
+  for (liquid_layer& layer : _layers)
+  {
+    layer.intersect(ray, results);
+  }
+}
+
 void liquid_chunk::update_layers()
 {
   for (liquid_layer& layer : _layers)

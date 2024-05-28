@@ -3,8 +3,10 @@
 #pragma once
 
 #include <math/trig.hpp>
-#include <noggit/MapHeaders.h>
+#include <math/ray.hpp>
 #include <noggit/liquid_render.hpp>
+#include <noggit/MapHeaders.h>
+#include <noggit/Selection.h>
 #include <math/vector_2d.hpp>
 #include <util/sExtendableArray.hpp>
 
@@ -37,6 +39,8 @@ public:
   void crop(MapChunk* chunk);
   void update_opacity(MapChunk* chunk, float factor);
   void update_underground_vertices_depth(MapChunk* chunk);
+
+  void intersect(math::ray const& ray, selection_result* results);
 
 
   float min() const { return _minimum; }

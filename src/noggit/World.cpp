@@ -210,7 +210,7 @@ boost::optional<selection_type> World::get_last_selected_model() const
                    , _current_selection.rend()
                    , [&] (selection_type const& entry)
                      {
-                       return entry.which() != eEntry_MapChunk;
+                       return entry.which() != eEntry_MapChunk && entry.which() != eEntry_LiquidLayer;
                      }
                    )
     );
@@ -225,12 +225,12 @@ void World::set_current_selection(selection_type entry)
   _current_selection.push_back(entry);
   _multi_select_pivot = boost::none;
 
-  _selected_model_count = entry.which() == eEntry_MapChunk ? 0 : 1;
+  _selected_model_count = entry.which() == eEntry_MapChunk || entry.which() == eEntry_LiquidLayer ? 0 : 1;
 }
 
 void World::add_to_selection(selection_type entry)
 {
-  if (entry.which() != eEntry_MapChunk)
+  if (entry.which() != eEntry_MapChunk && entry.which() != eEntry_LiquidLayer)
   {
     _selected_model_count++;
   }
@@ -244,7 +244,7 @@ void World::remove_from_selection(selection_type entry)
   std::vector<selection_type>::iterator position = std::find(_current_selection.begin(), _current_selection.end(), entry);
   if (position != _current_selection.end())
   {
-    if (entry.which() != eEntry_MapChunk)
+    if (entry.which() != eEntry_MapChunk && entry.which() != eEntry_LiquidLayer)
     {
       _selected_model_count--;
     }
@@ -804,6 +804,7 @@ void World::draw ( math::matrix_4x4 const& model_view
                  , math::vector_4d const& cursor_color
                  , int cursor_type
                  , float brush_radius
+                 , bool show_liquid_cursor
                  , bool show_unpaintable_chunks
                  , std::string const& current_texture
                  , bool draw_contour
@@ -1548,6 +1549,18 @@ void World::draw ( math::matrix_4x4 const& model_view
     water_shader.uniform("river_color_light", river_color_light);
     water_shader.uniform("river_color_dark", river_color_dark);
 
+    if (cursor == cursor_mode::terrain && show_liquid_cursor)
+    {
+      water_shader.uniform("draw_cursor_circle", 1);
+      water_shader.uniform("cursor_position", cursor_pos);
+      water_shader.uniform("cursor_radius", brush_radius);
+      water_shader.uniform("cursor_color", cursor_color);
+    }
+    else
+    {
+      water_shader.uniform("draw_cursor_circle", 0);
+    }
+
     for (int i = 0; i < _liquid_render->array_count(); ++i)
     {
       water_shader.uniform("textures[" + std::to_string(i) + "]", i);
@@ -1615,6 +1628,7 @@ selection_result World::intersect ( math::matrix_4x4 const& model_view
                                   , bool draw_wmo
                                   , bool draw_models
                                   , bool draw_hidden_models
+                                  , bool intersect_liquids
                                   )
 {
   selection_result results;
@@ -1624,6 +1638,14 @@ selection_result World::intersect ( math::matrix_4x4 const& model_view
     for (auto&& tile : mapIndex.loaded_tiles())
     {
       tile->intersect (ray, &results);
+    }
+  }
+
+  if (intersect_liquids)
+  {
+    for (auto&& tile : mapIndex.loaded_tiles())
+    {
+      tile->Water.intersect(ray, &results);
     }
   }
 

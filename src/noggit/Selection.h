@@ -12,6 +12,7 @@
 class ModelInstance;
 class WMOInstance;
 class MapChunk;
+class liquid_layer;
 
 struct selected_chunk_type
 {
@@ -31,18 +32,42 @@ struct selected_chunk_type
   }
 };
 
+struct selected_liquid_layer_type
+{
+  selected_liquid_layer_type(liquid_layer* layer, std::tuple<int, int, int> triangle, math::vector_3d position, int liquid_id)
+    : layer(layer)
+    , triangle(triangle)
+    , position(position)
+    , liquid_id(liquid_id)
+  {
+
+  }
+
+  bool operator== (selected_liquid_layer_type const& other) const
+  {
+    return layer == other.layer;
+  }
+
+  liquid_layer* layer;
+  std::tuple<int, int, int> triangle;
+  math::vector_3d position;
+  int liquid_id;
+};
+
 using selected_model_type = ModelInstance*;
 using selected_wmo_type = WMOInstance*;
 using selection_type = boost::variant < selected_model_type
                                       , selected_wmo_type
                                       , selected_chunk_type
+                                      , selected_liquid_layer_type
                                       >;
 //! \note Keep in same order as variant!
 enum eSelectionEntryTypes
 {
   eEntry_Model,
   eEntry_WMO,
-  eEntry_MapChunk
+  eEntry_MapChunk,
+  eEntry_LiquidLayer
 };
 
 using selection_entry = std::pair<float, selection_type>;

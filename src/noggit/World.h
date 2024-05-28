@@ -106,6 +106,7 @@ public:
             , math::vector_4d const& cursor_color
             , int cursor_type
             , float brush_radius
+            , bool show_liquid_cursor
             , bool show_unpaintable_chunks
             , std::string const& current_texture
             , bool draw_contour
@@ -153,6 +154,7 @@ public:
                              , bool draw_wmo
                              , bool draw_models
                              , bool draw_hidden_models
+                             , bool intersect_liquids
                              );
 
   void initGlobalVBOs(GLuint* pDetailTexCoords);

@@ -45,6 +45,9 @@ namespace noggit
       void toggle_lock();
       void toggle_angled_mode();
 
+      bool use_liquids_intersect() const { return _cursor_intersect_liquids.get(); }
+      void toggle_liquids_intersect();
+
       float brushRadius() const { return _radius; }
       float angle() const { return _angle; }
       float orientation() const { return _orientation; }
@@ -69,6 +72,8 @@ namespace noggit
 
       bool_toggle_property _locked;
       bool_toggle_property _angled_mode;
+
+      bool_toggle_property _cursor_intersect_liquids;
 
       bool_toggle_property _override_liquid_id;
       bool_toggle_property _override_height;

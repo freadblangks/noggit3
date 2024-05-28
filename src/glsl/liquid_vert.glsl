@@ -13,12 +13,14 @@ uniform mat4 transform;
 
 uniform int use_transform = int(0);
 
+out vec3 f_position;
 out float depth_;
 out vec2 tex_coord_;
 flat out int draw_id;
 
 void main()
 {
+  f_position = position.xyz;
   depth_ = depth;
   tex_coord_ = tex_coord;
 

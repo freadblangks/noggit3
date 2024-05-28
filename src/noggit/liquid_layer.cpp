@@ -5,6 +5,7 @@
 #include <noggit/Log.h>
 #include <noggit/MapChunk.h>
 #include <noggit/Misc.h>
+#include <noggit/Selection.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
@@ -584,6 +585,52 @@ void liquid_layer::update_underground_vertices_depth(MapChunk* chunk)
           _vertices[z * 9 + x + 1].depth = 0.f;
           _vertices[(z + 1) * 9 + x].depth = 0.f;
           _vertices[(z + 1) * 9 + (x + 1)].depth = 0.f;
+        }
+      }
+    }
+  }
+}
+
+void liquid_layer::intersect(math::ray const& ray, selection_result* results)
+{
+  for (int z = 0; z < 8; ++z)
+  {
+    for (int x = 0; x < 8; ++x)
+    {
+      if (hasSubchunk(x, z))
+      {
+        int id0 = z * 9 + x;
+        int id1 = z * 9 + x + 1;
+        int id2 = (z + 1) * 9 + x;
+        int id3 = (z + 1) * 9 + (x + 1);
+        math::vector_3d const& v0 = _vertices[id0].position;
+        math::vector_3d const& v1 = _vertices[id1].position;
+        math::vector_3d const& v2 = _vertices[id2].position;
+        math::vector_3d const& v3 = _vertices[id3].position;
+
+        if (auto dist = ray.intersect_triangle(v0, v1, v2))
+        {
+          results->emplace_back
+          (* dist
+            , selected_liquid_layer_type
+            ( this
+            , std::make_tuple(id0, id1, id2)
+            , ray.position(*dist)
+            , _liquid_id
+            )
+          );
+        }
+        else if (auto dist = ray.intersect_triangle(v2, v3, v1))
+        {
+          results->emplace_back
+          (* dist
+            , selected_liquid_layer_type
+            ( this
+            , std::make_tuple(id2, id3, id1)
+            , ray.position(*dist)
+            , _liquid_id
+            )
+          );
         }
       }
     }

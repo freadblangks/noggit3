@@ -24,11 +24,18 @@ layout (std140) uniform chunk_data
   liquid_chunk_data ubo_data[256];
 };
 
+in vec3 f_position;
 in float depth_;
 in vec2 tex_coord_;
 flat in int draw_id;
 
 out vec4 out_color;
+
+uniform bool draw_cursor_circle;
+uniform vec3 cursor_position;
+uniform float cursor_radius;
+uniform vec4 cursor_color;
+
 
 // we already send animtime / 60
 const float lava_anim_factor = 1. / (2880. / 60.);
@@ -138,4 +145,13 @@ void main()
     //clamp shouldn't be needed
     out_color = vec4 (clamp(texel + lerp, 0.0, 1.0).rgb, lerp.a);
   }  
+
+  if (draw_cursor_circle)
+  {
+    vec3 fw = fwidth(f_position.xyz);
+    float diff = length(f_position.xz - cursor_position.xz);
+    float alpha = smoothstep(0.0, length(fw.xz), abs(diff - cursor_radius));
+
+    out_color.rgb = mix(cursor_color.rgb, out_color.rgb, alpha);
+  }
 }

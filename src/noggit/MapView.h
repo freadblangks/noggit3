@@ -118,8 +118,8 @@ private:
   std::map<int, misc::random_color> _area_id_colors;
 
   math::ray intersect_ray() const;
-  selection_result intersect_result(bool terrain_only);
-  void doSelection(bool selectTerrainOnly);
+  selection_result intersect_result(bool terrain_only, bool intersect_liquids);
+  void doSelection(bool selectTerrainOnly, bool intersect_liquids);
   void update_cursor_pos();
 
   display_mode _display_mode;

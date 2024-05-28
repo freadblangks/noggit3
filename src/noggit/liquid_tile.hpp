@@ -2,10 +2,12 @@
 
 #pragma once
 
+#include <math/ray.hpp>
 #include <math/vector_3d.hpp>
 #include <noggit/liquid_chunk.hpp>
 #include <noggit/MPQ.h>
 #include <noggit/MapHeaders.h>
+#include <noggit/Selection.h>
 #include <noggit/tool_enums.hpp>
 #include <util/sExtendableArray.hpp>
 #include <opengl/scoped.hpp>
@@ -58,6 +60,8 @@ public:
   bool need_recalc_extents() const { return _need_recalc_extents; }
   void require_extents_recalc();
   void recalc_extents();
+
+  void intersect(math::ray const& ray, selection_result* results);
 private:
 
   MapTile *tile;

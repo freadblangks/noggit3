@@ -469,6 +469,15 @@ void MapTile::intersect (math::ray const& ray, selection_result* results)
     }
   }
 }
+void MapTile::intersect_liquids (math::ray const& ray, selection_result* results)
+{
+  if (!finished)
+  {
+    return;
+  }
+
+  Water.intersect(ray, results);
+}
 
 
 void MapTile::drawMFBO (opengl::scoped::use_program& mfbo_shader)
