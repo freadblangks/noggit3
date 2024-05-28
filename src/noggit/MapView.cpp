@@ -570,9 +570,8 @@ void MapView::createGUI()
   assist_menu->addSeparator();
   assist_menu->addAction(createTextSeparator("Current ADT"));
   assist_menu->addSeparator();
-  ADD_ACTION ( assist_menu
+  ADD_ACTION_NS ( assist_menu
                 , "Set Area ID"
-                , "F"
                 , [this]
                   {
                     if (terrainMode == editing_mode::areaid && _selected_area_id != -1)
@@ -1146,6 +1145,17 @@ void MapView::createGUI()
                 _world->setHoleADT (_camera.position, true);
               }
             , [&] { return terrainMode == editing_mode::holes; }
+            );
+  addHotkey ( Qt::Key_F
+            , MOD_none
+            , [&]
+            {
+              if (_selected_area_id != -1)
+              {
+                _world->setAreaID(_camera.position, _selected_area_id, true);
+              }
+            }
+            , [&] { return terrainMode == editing_mode::areaid; }
             );
 
   addHotkey ( Qt::Key_T
@@ -2594,6 +2604,11 @@ void MapView::draw_map()
 
 void MapView::keyPressEvent (QKeyEvent *event)
 {
+  if (event->key() == Qt::Key_Space)
+  {
+    _mod_space_down = true;
+  }
+
   size_t const modifier
     ( ((event->modifiers() & Qt::ShiftModifier) ? MOD_shift : 0)
     | ((event->modifiers() & Qt::ControlModifier) ? MOD_ctrl : 0)
@@ -2614,10 +2629,6 @@ void MapView::keyPressEvent (QKeyEvent *event)
       return;
     }
   }
-
-  if (event->key() == Qt::Key_Space)
-    _mod_space_down = true;
-
 
   // movement
   if (event->key() == Qt::Key_W)
