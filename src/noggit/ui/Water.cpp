@@ -29,6 +29,7 @@ namespace noggit
                  )
       : QWidget (parent)
       , _liquid_id(5)
+      , _liquid_type(0)
       , _radius(10.0f)
       , _angle(10.0f)
       , _orientation(0.0f)
@@ -37,7 +38,7 @@ namespace noggit
       , _cursor_intersect_liquids(true)
       , _override_liquid_id(true)
       , _override_height(true)
-      , _opacity_mode(river_opacity)
+      , _opacity_mode(auto_opacity)
       , _custom_opacity_factor(0.0337f)
       , _lock_pos(math::vector_3d(0.0f, 0.0f, 0.0f))
       , tile(0, 0)
@@ -81,8 +82,8 @@ namespace noggit
       auto angle_group (new QGroupBox ("Angled mode", this));
       angle_group->setCheckable (true);
       angle_group->setChecked (_angled_mode.get());
-      
-      
+
+
       connect ( &_angled_mode, &bool_toggle_property::changed
               , angle_group, &QGroupBox::setChecked
               );
@@ -159,11 +160,13 @@ namespace noggit
       auto opacity_group (new QGroupBox ("Auto opacity", this));
       auto opacity_layout (new QFormLayout (opacity_group));
 
+      auto auto_button (new QRadioButton ("Auto", this));
       auto river_button (new QRadioButton ("River", this));
       auto ocean_button (new QRadioButton ("Ocean", this));
       auto custom_button (new QRadioButton ("Custom factor:", this));
 
       QButtonGroup *transparency_toggle = new QButtonGroup (this);
+      transparency_toggle->addButton (auto_button, auto_opacity);
       transparency_toggle->addButton (river_button, river_opacity);
       transparency_toggle->addButton (ocean_button, ocean_opacity);
       transparency_toggle->addButton (custom_button, custom_opacity);
@@ -172,11 +175,12 @@ namespace noggit
               , [&] (int id) { _opacity_mode = id; }
               );
 
+      opacity_layout->addRow (auto_button);
       opacity_layout->addRow (river_button);
       opacity_layout->addRow (ocean_button);
       opacity_layout->addRow (custom_button);
 
-      transparency_toggle->button (river_opacity)->setChecked (true);
+      transparency_toggle->button (_opacity_mode)->setChecked (true);
 
       QDoubleSpinBox *opacity_spin = new QDoubleSpinBox (this);
       opacity_spin->setRange (0.f, 1.f);
@@ -211,7 +215,7 @@ namespace noggit
       checkbox* toggle_intersect_cb = new checkbox("Cursor intersect liquids", &_cursor_intersect_liquids, this);
       layout->addRow(toggle_intersect_cb);
 
-      
+
 
       auto layer_group (new QGroupBox ("Layers", this));
       auto layer_layout (new QFormLayout (layer_group));
@@ -252,11 +256,13 @@ namespace noggit
       std::stringstream mt;
       mt << _liquid_id << " - " << LiquidTypeDB::getLiquidName(_liquid_id);
       waterType->setCurrentText (QString::fromStdString (mt.str()));
+      _liquid_type = LiquidTypeDB::getLiquidType(_liquid_id);
     }
 
     void water::changeWaterType(int waterint)
     {
       _liquid_id = waterint;
+
       updateData();
     }
 
@@ -287,7 +293,7 @@ namespace noggit
     }
 
     void water::change_height(float change)
-    { 
+    {
       _h_spin->setValue(_lock_pos.y + change);
     }
 
@@ -341,12 +347,26 @@ namespace noggit
 
     float water::get_opacity_factor() const
     {
+      // values found by experimenting
+      static const float river_opacity_value = 0.0337f;
+      static const float ocean_opacity_value = 0.007f;
+
       switch (_opacity_mode)
       {
-      default:          // values found by experimenting
-      case river_opacity:  return 0.0337f;
-      case ocean_opacity:  return 0.007f;
+      default:
+      case river_opacity:  return river_opacity_value;
+      case ocean_opacity:  return ocean_opacity_value;
       case custom_opacity: return _custom_opacity_factor;
+      case auto_opacity:
+      {
+        switch (_liquid_type)
+        {
+        case 0: return river_opacity_value;
+        case 1: return ocean_opacity_value;
+        default:return 1.f; // lava and slime, opacity isn't used
+        }
+      }
+      break;
       }
     }
 

@@ -65,6 +65,7 @@ namespace noggit
       float get_opacity_factor() const;
 
       int _liquid_id;
+      int _liquid_type;
       float _radius;
 
       float _angle;
