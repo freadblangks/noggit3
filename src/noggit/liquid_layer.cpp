@@ -699,7 +699,7 @@ void liquid_layer::paintLiquid( math::vector_3d const& cursor_pos
 {
   math::vector_3d ref ( lock
                       ? origin
-                      : math::vector_3d (cursor_pos.x, cursor_pos.y + 1.0f, cursor_pos.z)
+                      : math::vector_3d (cursor_pos.x, cursor_pos.y, cursor_pos.z)
                       );
 
   int id = 0;
