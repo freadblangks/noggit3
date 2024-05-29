@@ -126,7 +126,7 @@ void liquid_chunk::save(util::sExtendableArray& adt, int base_pos, int& header_p
 
   if (hasData(0))
   {
-    header.nLayers = _layers.size();
+    header.nLayers = _layer_count;
 
     // fagique only for single layer ocean chunk
     bool fatigue = _layers[0].has_fatigue();
@@ -145,7 +145,7 @@ void liquid_chunk::save(util::sExtendableArray& adt, int base_pos, int& header_p
     header.ofsInformation = current_pos - base_pos;
     int info_pos = current_pos;
 
-    std::size_t info_size = sizeof(MH2O_Information) * _layers.size();
+    std::size_t info_size = sizeof(MH2O_Information) * _layer_count;
     current_pos += info_size;
 
     adt.Extend(info_size);
@@ -168,7 +168,7 @@ void liquid_chunk::save_mclq(util::sExtendableArray& adt, int mcnk_pos, int& cur
 
   if (hasData(0))
   {
-    adt.Extend(sizeof(mclq) * _layers.size() + 8);
+    adt.Extend(sizeof(mclq) * _layer_count + 8);
     // size seems to be 0 in vanilla adts in the mclq chunk's header and set right in the mcnk header (layer_size * n_layer + 8)
     SetChunkHeader(adt, current_pos, 'MCLQ', 0);
 
@@ -393,7 +393,7 @@ void liquid_chunk::paintLiquid( math::vector_3d const& pos
 
 void liquid_chunk::cleanup()
 {
-  for (int i = _layers.size() - 1; i >= 0; --i)
+  for (int i = _layer_count - 1; i >= 0; --i)
   {
     if (_layers[i].empty())
     {
@@ -401,6 +401,8 @@ void liquid_chunk::cleanup()
       _liquid_tile->require_buffer_regen();
     }
   }
+
+  update_layers();
 }
 
 void liquid_chunk::copy_height_to_layer(liquid_layer& target, math::vector_3d const& pos, float radius)
