@@ -30,9 +30,8 @@ namespace noggit
             );
 
       void updatePos(tile_index const& newTile);
-      void updateData();
 
-      void changeWaterType(int waterint);
+      void select_liquid(int liquid_id, bool update_combo = false);
 
       void paintLiquid (World*, math::vector_3d const& pos, bool add);
 

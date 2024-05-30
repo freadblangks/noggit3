@@ -71,7 +71,7 @@ namespace noggit
       connect (waterType, qOverload<int> (&QComboBox::currentIndexChanged)
               , [&]
                 {
-                  changeWaterType(waterType->currentData().toInt());
+                  select_liquid(waterType->currentData().toInt());
                 }
               );
 
@@ -238,7 +238,6 @@ namespace noggit
               , waterLayer, &QSpinBox::setValue
               );
 
-      updateData();
       setMinimumWidth(sizeHint().width());
     }
 
@@ -247,23 +246,27 @@ namespace noggit
       if (newTile == tile) return;
 
       tile = newTile;
-
-      updateData();
     }
 
-    void water::updateData()
+
+    void water::select_liquid(int liquid_id, bool update_combo)
     {
-      std::stringstream mt;
-      mt << _liquid_id << " - " << LiquidTypeDB::getLiquidName(_liquid_id);
-      waterType->setCurrentText (QString::fromStdString (mt.str()));
+      _liquid_id = liquid_id;
       _liquid_type = LiquidTypeDB::getLiquidType(_liquid_id);
-    }
 
-    void water::changeWaterType(int waterint)
-    {
-      _liquid_id = waterint;
+      if (update_combo)
+      {
+        QSignalBlocker const blocker(waterType);
 
-      updateData();
+        for (int i = 0; i < waterType->count(); ++i)
+        {
+          if (waterType->itemData(i).toInt() == _liquid_id)
+          {
+            waterType->setCurrentIndex(i);
+            break;
+          }
+        }
+      }
     }
 
     void water::changeRadius(float change)
