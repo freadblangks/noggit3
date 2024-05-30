@@ -114,6 +114,8 @@ private:
 public:
   noggit::bool_toggle_property _draw_hidden_models = {false};
 private:
+  boost::optional<int> _liquid_id_below_cursor;
+
   int _selected_area_id = -1;
   std::map<int, misc::random_color> _area_id_colors;
 

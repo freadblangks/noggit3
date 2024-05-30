@@ -2479,6 +2479,7 @@ void MapView::update_cursor_pos()
 {
   bool intersect_liquids = terrainMode == editing_mode::water && guiWater->use_liquids_intersect();
   selection_result results (intersect_result (true, intersect_liquids));
+  _liquid_id_below_cursor.reset();
 
   if (!results.empty())
   {
@@ -2486,12 +2487,14 @@ void MapView::update_cursor_pos()
 
     if (hit.which() == eEntry_LiquidLayer)
     {
-      _cursor_pos = boost::get<selected_liquid_layer_type>(hit).position;
+      auto found = boost::get<selected_liquid_layer_type>(hit);
+      _cursor_pos = found.position;
+      _liquid_id_below_cursor = found.liquid_id;
     }
     else
     {
       _cursor_pos = boost::get<selected_chunk_type>(hit).position;
-    }    
+    }
   }
 }
 
@@ -3046,6 +3049,11 @@ void MapView::mousePressEvent(QMouseEvent* event)
     if(terrainMode == editing_mode::mccv)
     {
       shaderTool->pickColor(_world.get(), _cursor_pos);
+    }
+
+    if (terrainMode == editing_mode::water &&_liquid_id_below_cursor)
+    {
+      guiWater->select_liquid(_liquid_id_below_cursor.value(), true);
     }
 
     break;
