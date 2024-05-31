@@ -632,6 +632,9 @@ void MapChunk::prepare_draw ( const math::vector_3d& camera
     _indice_strips.clear();
 
     _need_indice_buffer_update = false;
+
+    indices_offsets[chunk_index()] = lod_indices_ptr(_lod_level);
+    indices_count[chunk_index()] = _indices_count_per_lod_level[_lod_level];
   }
 
   if (_need_vao_update)
