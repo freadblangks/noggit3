@@ -323,7 +323,9 @@ bool TextureSet::eraseUnusedTextures()
     {
       for (int i = 0; i < 4096; ++i)
       {
-        if (amaps[layer][i] > 0.f)
+        // use 0.01 to account for floating point imprecision
+        // while not preventing very low pressure brush from painting correctly
+        if (amaps[layer][i] > 0.01f)
         {
           visible_tex.emplace(layer);
           break; // texture visible, go to the next layer
