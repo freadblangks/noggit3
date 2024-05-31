@@ -263,6 +263,11 @@ bool liquid_chunk::is_visible ( const float& cull_distance
 {
   static const float chunk_radius = std::sqrt (CHUNKSIZE * CHUNKSIZE / 2.0f);
 
+  if (_layer_count < 1)
+  {
+    return false;
+  }
+
   float dist = display == display_mode::in_3D
              ? (camera - vcenter).length() - chunk_radius
              : std::abs(camera.y - vmax.y);
@@ -286,11 +291,23 @@ void liquid_chunk::intersect(math::ray const& ray, selection_result* results)
 
 void liquid_chunk::update_layers()
 {
-  for (liquid_layer& layer : _layers)
+  _layer_count = _layers.size();
+
+  if (_layer_count > 0)
   {
-    layer.update_indices();
-    vmin.y = std::min (vmin.y, layer.min());
-    vmax.y = std::max (vmax.y, layer.max());
+    vmin.y = std::numeric_limits<float>().max();
+    vmax.y = std::numeric_limits<float>().min();
+
+    for (liquid_layer& layer : _layers)
+    {
+      layer.update_indices();
+      vmin.y = std::min(vmin.y, layer.min());
+      vmax.y = std::max(vmax.y, layer.max());
+    }
+  }
+  else // default to 0 for empty chunks
+  {
+    vmin.y = vmax.y = 0.f;
   }
 
   vcenter = (vmin + vmax) * 0.5f;
@@ -299,8 +316,6 @@ void liquid_chunk::update_layers()
   _intersect_points = misc::intersection_points(vmin, vmax);
 
   _liquid_tile->require_buffer_update();
-
-  _layer_count = _layers.size();
 }
 
 bool liquid_chunk::hasData(size_t layer) const
