@@ -2402,7 +2402,10 @@ math::ray MapView::intersect_ray() const
     , _camera.position.z - (height() * 0.5f - mz) * _2d_zoom
     );
 
-    return { pos, math::vector_3d(0.f, -1.f, 0.f) };
+    // add tiny z offset to match camera angle
+    // and improve performance as straight down the ray.intersect_bound always return a value
+    // forcing to check for every triangle on every adt visible
+    return { pos, math::vector_3d(0.f, -1.f, -0.001f) };
   }
 }
 
