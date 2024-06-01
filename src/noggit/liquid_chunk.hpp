@@ -73,6 +73,7 @@ public:
                   , float opacity_factor
                   );
 
+  void clear_layers();
 
   float xbase, zbase;
 

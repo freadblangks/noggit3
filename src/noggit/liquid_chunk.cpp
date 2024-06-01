@@ -406,6 +406,15 @@ void liquid_chunk::paintLiquid( math::vector_3d const& pos
   _liquid_tile->require_buffer_regen();
 }
 
+void liquid_chunk::clear_layers()
+{
+  _layers.clear();
+  _liquid_tile->require_buffer_regen();
+
+  update_layers();
+  update_attributes();
+}
+
 void liquid_chunk::cleanup()
 {
   for (int i = _layer_count - 1; i >= 0; --i)
