@@ -65,6 +65,7 @@ public:
   void setEffect(size_t id, int value);
   bool is_animated(std::size_t id) const;
   void change_texture_flag(scoped_blp_texture_reference const& tex, std::size_t flag, bool add);
+  void clear_texture_flags();
 
   std::vector<std::vector<uint8_t>> save_alpha(bool big_alphamap);
 

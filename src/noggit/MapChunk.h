@@ -216,7 +216,9 @@ public:
   int addTexture(scoped_blp_texture_reference texture);
   void switchTexture(scoped_blp_texture_reference const& oldTexture, scoped_blp_texture_reference newTexture);
   void eraseTextures();
+  void remove_texture_duplicates();
   void change_texture_flag(scoped_blp_texture_reference const& tex, std::size_t flag, bool add);
+  void clear_texture_flags();
 
   void clear_shadows();
 

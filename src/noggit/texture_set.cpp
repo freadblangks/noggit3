@@ -715,6 +715,13 @@ void TextureSet::change_texture_flag(scoped_blp_texture_reference const& tex, st
     }
   }
 }
+void TextureSet::clear_texture_flags()
+{
+  for (size_t i = 0; i < nTextures; ++i)
+  {
+    _layers_info[i].flags = 0;
+  }
+}
 
 std::vector<std::vector<uint8_t>> TextureSet::save_alpha(bool big_alphamap)
 {
