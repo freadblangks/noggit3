@@ -239,6 +239,11 @@ public:
 
   template<typename Fun>
     void for_tile_at(const tile_index& pos, Fun&&);
+  template<typename Fun>
+    bool for_all_tiles_in_range ( math::vector_3d const& pos
+                                , float radius
+                                , Fun&& /* MapTile* -> bool changed */
+                                );
 
   MapChunk * get_chunk_at(math::vector_3d const& pos);
 

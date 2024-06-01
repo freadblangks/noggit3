@@ -2111,6 +2111,24 @@ template<typename Fun>
     }
   }
 
+template<typename Fun>
+  bool World::for_all_tiles_in_range(math::vector_3d const& pos, float radius, Fun&& fun)
+  {
+    bool changed = false;
+
+    for (MapTile* tile : mapIndex.tiles_in_range(pos, radius))
+    {
+      if (tile && tile->finishedLoading())
+      {
+        changed = true;
+        mapIndex.setChanged(tile);
+        fun(tile);
+      }
+    }
+
+    return changed;
+  }
+
 MapChunk * World::get_chunk_at(math::vector_3d const& pos)
 {
   MapTile* tile(mapIndex.getTile(pos));
