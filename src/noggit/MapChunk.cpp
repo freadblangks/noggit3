@@ -460,6 +460,7 @@ void MapChunk::clearHeight()
   for (int i = 0; i < mapbufsize; ++i)
   {
     vertices[i].position.y = 0.0f;
+    vertices[i].normal = { 0.f, 1.f, 0.f };
   }
 
   vmin.y = 0.0f;
