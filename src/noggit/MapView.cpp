@@ -15,6 +15,7 @@
 #include <noggit/World.h>
 #include <noggit/map_index.hpp>
 #include <noggit/uid_storage.hpp>
+#include <noggit/ui/clearing_tool.hpp>
 #include <noggit/ui/CurrentTexture.h>
 #include <noggit/ui/CursorSwitcher.h> // cursor_switcher
 #include <noggit/ui/DetailInfos.h> // detailInfos
@@ -129,7 +130,11 @@ void MapView::setToolPropertyWidgetVisibility(editing_mode mode)
 #ifdef NOGGIT_HAS_SCRIPTING
   case editing_mode::scripting:
     _script_tool_dock->setVisible(!ui_hidden);
+    break;
 #endif
+  case editing_mode::clearing:
+    _clearing_tool_dock->setVisible(!ui_hidden);
+    break;
   }
 }
 
@@ -282,6 +287,11 @@ void MapView::createGUI()
   _object_editor_dock->setWidget(objectEditor);
   _tool_properties_docks.insert(_object_editor_dock);
 
+  // clearing tool
+  _clearing_tool_dock = new QDockWidget("Clearing Tool", this);
+  _clearing_tool = new noggit::ui::clearing_tool(_clearing_tool_dock);
+  _clearing_tool_dock->setWidget(_clearing_tool);
+  _tool_properties_docks.insert(_clearing_tool_dock);
 
   for (auto widget : _tool_properties_docks)
   {
@@ -2067,6 +2077,12 @@ void MapView::tick (float dt)
             }
           }
           break;
+        case editing_mode::clearing:
+          if (!underMap && _mod_shift_down)
+          {
+            _clearing_tool->clear(_world.get(), _cursor_pos);
+          }
+          break;
         }
       }
     }
@@ -2583,6 +2599,9 @@ void MapView::draw_map()
     inner_radius = scriptingTool->get_settings()->innerRadius();
     break;
 #endif
+  case editing_mode::clearing:
+    radius = _clearing_tool->radius();
+    break;
   }
 
   bool use_liquid_intersect = terrainMode == editing_mode::water && guiWater->use_liquids_intersect();
@@ -2960,6 +2979,9 @@ void MapView::mouseMoveEvent (QMouseEvent* event)
       break;
     case editing_mode::mccv:
       shaderTool->changeRadius(relative_movement.dx() / XSENS);
+      break;
+    case editing_mode::clearing:
+      _clearing_tool->change_radius(relative_movement.dx() / XSENS);
       break;
     }
   }

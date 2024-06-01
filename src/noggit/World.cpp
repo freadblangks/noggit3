@@ -2034,6 +2034,100 @@ bool World::replaceTexture(math::vector_3d const& pos, float radius, scoped_blp_
     );
 }
 
+void World::clear_on_chunks ( math::vector_3d const& pos, float radius, bool height, bool textures, bool duplicate_textures
+                            , bool texture_flags, bool liquids, bool models, bool shadows, bool mccv, bool impassible_flag, bool holes
+                            )
+{
+  for_all_chunks_in_range
+  ( pos, radius
+    , [&](MapChunk* chunk)
+    {
+      clear_on_chunk ( chunk, height, textures, duplicate_textures, texture_flags
+                     , liquids, shadows, mccv, impassible_flag, holes
+                     );
+      return true;
+    }
+  );
+
+  // handle models separatly front the rest to avoid having to
+  // check for each model on each chunk
+  if (models)
+  {
+    _model_instance_storage.delete_instances_from_chunks_in_range(pos, radius);
+    need_model_updates = true;
+  }
+}
+void World::clear_on_tiles ( math::vector_3d const& pos, float radius, bool height, bool textures, bool duplicate_textures
+                           , bool texture_flags, bool liquids, bool models, bool shadows, bool mccv, bool impassible_flag, bool holes
+                           )
+{
+  for_all_tiles_in_range
+  ( pos, radius
+    , [&](MapTile* tile)
+    {
+      if (models)
+      {
+        _model_instance_storage.delete_instances_from_tile(tile->index);
+        need_model_updates = true;
+      }
+
+      for_all_chunks_on_tile({ tile->xbase + CHUNKSIZE, 0.f, tile->zbase + CHUNKSIZE },
+        [&](MapChunk* chunk)
+        {
+          clear_on_chunk ( chunk, height, textures, duplicate_textures, texture_flags
+                         , liquids, shadows, mccv, impassible_flag, holes
+                         );
+          return true;
+        }
+      );
+    }
+  );
+
+  need_model_updates = true;
+}
+
+void World::clear_on_chunk( MapChunk* chunk, bool height, bool textures, bool duplicate_textures
+                          , bool texture_flags, bool liquids, bool shadows, bool mccv, bool impassible_flag, bool holes
+                          )
+{
+  if (height)
+  {
+    chunk->clearHeight();
+  }
+  if (textures)
+  {
+    chunk->eraseTextures();
+  }
+  if (duplicate_textures)
+  {
+    chunk->remove_texture_duplicates();
+  }
+  if (texture_flags)
+  {
+    chunk->clear_texture_flags();
+  }
+  if (liquids)
+  {
+    chunk->liquid_chunk()->clear_layers();
+  }
+  if (shadows)
+  {
+    chunk->clear_shadows();
+  }
+  if (mccv)
+  {
+    chunk->reset_mccv();
+  }
+  if (impassible_flag)
+  {
+    chunk->setFlag(false, 0x2);
+  }
+  if (holes)
+  {
+    chunk->setHole(chunk->vcenter, true, false);
+  }
+}
+
 void World::eraseTextures(math::vector_3d const& pos)
 {
   for_chunk_at(pos, [](MapChunk* chunk) {chunk->eraseTextures();});

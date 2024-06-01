@@ -256,6 +256,7 @@ set ( noggit_root_sources
 set ( noggit_ui_sources
       src/noggit/ui/About.cpp
       src/noggit/ui/asset_browser.cpp
+      src/noggit/ui/clearing_tool.cpp
       src/noggit/ui/clickable_label.cpp
       src/noggit/ui/collapsible_widget.cpp
       src/noggit/ui/CurrentTexture.cpp
@@ -365,6 +366,7 @@ set ( noggit_root_headers
 set ( noggit_ui_headers
       src/noggit/ui/About.h
       src/noggit/ui/asset_browser.hpp
+      src/noggit/ui/clearing_tool.hpp
       src/noggit/ui/clickable_label.hpp
       src/noggit/ui/collapsible_widget.hpp
       src/noggit/ui/CurrentTexture.h

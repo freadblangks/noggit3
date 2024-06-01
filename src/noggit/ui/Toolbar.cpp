@@ -22,6 +22,7 @@ namespace noggit
 #ifdef NOGGIT_HAS_SCRIPTING
       add_tool_icon (editing_mode::scripting,    tr("Script Editor"),   font_awesome::book);
 #endif
+      add_tool_icon(editing_mode::clearing, tr("Clearing Tool"), font_awesome::eraser);
     }
 
     void toolbar::add_tool_icon(editing_mode mode, const QString& name, const font_awesome::icons& icon)

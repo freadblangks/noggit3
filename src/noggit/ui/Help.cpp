@@ -42,7 +42,7 @@ namespace noggit
       base_layout->addLayout(basic_controls_layout, 0, 0);
 
       base_widget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-      
+
       auto label = new QLabel("Basic controls:");
       label->setStyleSheet(header_style);
       basic_controls_layout->addRow(label);
@@ -64,7 +64,7 @@ namespace noggit
       generate_hotkey_row({font_noggit::alt, font_noggit::f4},                                "\a+\a - exit to main menu", basic_controls_layout);
       generate_hotkey_row({font_noggit::l},                                                   "\a - Change lookat (useful for assigning to graphic tablet styli buttons).", basic_controls_layout);
       generate_hotkey_row({},                                                                 "", basic_controls_layout); // padding
-       
+
       auto toggles_layout(new QFormLayout(this));
       base_layout->addLayout(toggles_layout, 0, 1);
 
@@ -294,6 +294,12 @@ namespace noggit
       generate_hotkey_row({ font_noggit::mmb },                          "\a - Pick shader color from the ground", shader_layout);
       generate_hotkey_row({ font_noggit::plus },                         "\a - Add current color to palette", shader_layout);
 
+      auto clearing_widget(new QWidget(this));
+      auto clearing_layout(new QFormLayout(clearing_widget));
+
+      generate_hotkey_row({ font_noggit::shift, font_noggit::lmb }, "\a+\a - Clear Area", clearing_layout);
+      generate_hotkey_row({ font_noggit::alt, font_noggit::lmb_drag }, "\a+\a - Change brush size", clearing_layout);
+
       layout->addWidget(tabs);
       tabs->addTab(base_widget, "Base");
       tabs->addTab(ground_widget, "Terrain");
@@ -302,6 +308,7 @@ namespace noggit
       tabs->addTab(object_widget, "Objects");
       tabs->addTab(shader_widget, "Shader");
       tabs->addTab(flag_widget, "Flags/Hole/Area");
+      tabs->addTab(clearing_widget, "Clearing");
     }
 
 
@@ -321,7 +328,7 @@ namespace noggit
             auto label = new QLabel(::std::string(from, description - from).c_str());
             row_layout->addWidget(label);
           }
-            
+
           auto label = new QLabel(this);
           QIcon hotkey_icon = font_noggit_icon(*icon++);
           label->setPixmap(hotkey_icon.pixmap(20, 20));
@@ -334,7 +341,7 @@ namespace noggit
           if (!from)
           {
             from = description;
-          }     
+          }
           ++description;
         }
       }

@@ -35,6 +35,7 @@ namespace noggit
   class camera;
   namespace ui
   {
+    class clearing_tool;
     class cursor_switcher;
     class detail_infos;
     class flatten_blur_tool;
@@ -335,4 +336,7 @@ private:
   noggit::scripting::scripting_tool* scriptingTool;
   QDockWidget* _script_tool_dock;
 #endif
+
+  noggit::ui::clearing_tool* _clearing_tool;
+  QDockWidget* _clearing_tool_dock;
 };
