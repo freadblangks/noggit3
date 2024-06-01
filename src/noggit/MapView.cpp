@@ -1633,14 +1633,132 @@ void MapView::paintGL()
   opengl::context::scoped_setter const _ (::gl, context());
   const qreal now(_startup_time.elapsed() / 1000.0);
 
-  _last_frame_durations.emplace_back (now - _last_update);
+  double dt = now - _last_update;
+
+  _last_frame_durations.emplace_back(dt);
 
   if (_fps_mode.get())
   {
-    auto h = _world->get_exact_height_at(_camera.position);
-    if (h)
+    // check at 3 spot to avoid falling into tiny cracks in the geometry (could be solved by using collision geometry for models)
+    math::ray ray3 { _camera.position + math::vector_3d( 0.5f, 0.2f,  0.5f), { 0.f, -1.f, 0.001f } };
+    math::ray ray2 { _camera.position + math::vector_3d(-0.5f, 0.2f, -0.5f), { 0.f, -1.f, 0.001f } };
+    math::ray ray1 { _camera.position + math::vector_3d( 0.0f, 0.2f,  0.0f), { 0.f, -1.f, 0.001f } };
+
+    selection_result results ( _world->intersect
+      ( model_view().transposed(), ray1
+      , false, true, true, true, true, true, true, false)
+      );
+
+    selection_result results2 ( _world->intersect
+      ( model_view().transposed(), ray2
+      , false, true, false, true, true, true, false, false) // no terrain or water, no need to check multiple times
+      );
+    selection_result results3 ( _world->intersect
+      ( model_view().transposed(), ray3
+      , false, true, false, true, true, true, false, false) // no terrain or water, no need to check multiple times
+      );
+
+
+    float cy = _camera.position.y;
+    boost::optional<float> c1, c2, c3, c_final;
+
+    if (!results.empty())
     {
-      _camera.position.y = *h + 2.f;
+      std::sort ( results.begin()
+                , results.end()
+                , [](selection_entry const& lhs, selection_entry const& rhs)
+                  {
+                    return lhs.first < rhs.first;
+                  }
+                );
+
+      auto hit = results.front().second;
+      if (hit.which() == eEntry_LiquidLayer)
+      {
+        auto h = _world->get_exact_height_at(_camera.position);
+        if (h)
+        {
+          c1 = std::max(ray1.position(results.front().first).y - 1.5f, *h);
+        }
+        else
+        {
+          c1 = ray1.position(results.front().first).y;
+        }
+      }
+      else
+      {
+        c1 = ray1.position(results.front().first).y;
+      }
+
+      c_final = *c1;
+    }
+    if (!results2.empty())
+    {
+      std::sort ( results2.begin()
+                , results2.end()
+                , [](selection_entry const& lhs, selection_entry const& rhs)
+                {
+                  return lhs.first < rhs.first;
+                }
+              );
+
+      c2 = ray2.position(results2.front().first).y;
+
+      if (!c_final)
+      {
+        c_final = *c2;
+      }
+    }
+    if (!results3.empty())
+    {
+      std::sort ( results3.begin()
+                , results3.end()
+                , [](selection_entry const& lhs, selection_entry const& rhs)
+                {
+                  return lhs.first < rhs.first;
+                }
+              );
+
+      c3 = ray3.position(results3.front().first).y;
+
+      if (!c_final)
+      {
+        c_final = *c3;
+      }
+    }
+
+    if (c_final)
+    {
+      // c_final = c1 if c1 != boost::none
+      if (c2)
+      {
+        c_final = std::max(*c2, *c_final);
+      }
+      if (c3)
+      {
+        c_final = std::max(*c3, *c_final);
+      }
+
+      float h = *c_final + 2.f;
+
+      if (h < cy)
+      {
+        float diff = cy - h;
+        float time_coef = std::max(1.f, (float)(dt * 10.0));
+        _camera.position.y = cy - (std::min(diff, 0.2f) * time_coef);
+      }
+      else
+      {
+        _camera.position.y = h;
+      }
+    }
+    else
+    {
+      auto h = _world->get_exact_height_at(_camera.position);
+      if (h)
+      {
+        _camera.position.y = *h + 2.f;
+      }
     }
   }
 
@@ -1648,7 +1766,7 @@ void MapView::paintGL()
 
   draw_map();
 
-  tick (now - _last_update);
+  tick(dt);
   _last_update = now;
 
   if (_world->uid_duplicates_found() && !_uid_duplicate_warning_shown)
