@@ -36,6 +36,16 @@ namespace math
       return _data;
     }
 
+    inline float length_squared() const
+    {
+      return x * x + y * y;
+    }
+
+    inline float length() const
+    {
+      return std::sqrt(length_squared());
+    }
+
     vector_2d operator* (float factor) const
     {
       return {x * factor, y * factor};
@@ -43,6 +53,10 @@ namespace math
     vector_2d operator+ (vector_2d const& other) const
     {
       return {x + other.x, y + other.y};
+    }
+    vector_2d operator- (vector_2d const& other) const
+    {
+      return {x - other.x, y - other.y};
     }
 
     bool operator== (vector_2d const& rhs) const
