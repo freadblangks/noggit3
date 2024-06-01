@@ -2,6 +2,7 @@
 
 #include <noggit/world_model_instances_storage.hpp>
 
+#include <math/vector_2d.hpp>
 #include <noggit/World.h>
 
 namespace noggit
@@ -57,7 +58,7 @@ namespace noggit
     return unsafe_add_model_instance_no_world_upd(std::move(instance));
   }
 
-  
+
   std::uint32_t world_model_instances_storage::add_wmo_instance(WMOInstance instance, bool from_reloading)
   {
     std::uint32_t uid = instance.mUniqueID;
@@ -102,6 +103,55 @@ namespace noggit
     instance.mUniqueID = _world->mapIndex.newGUID();
 
     return unsafe_add_wmo_instance_no_world_upd(std::move(instance));
+  }
+
+  void world_model_instances_storage::delete_instances_from_chunks_in_range(math::vector_3d const& pos, float radius)
+  {
+    std::vector<selection_type> instances_to_remove;
+
+    math::vector_2d orig = { pos.x, pos.z };
+
+    for (auto it = _m2s.begin(); it != _m2s.end(); ++it)
+    {
+      float dist = (math::vector_2d(it->second.pos.x, it->second.pos.z) - orig).length();
+
+      // in range for sure
+      if (dist < radius)
+      {
+        instances_to_remove.push_back(&it->second);
+      }
+      // maybe in range
+      else if (dist < radius + MAPCHUNK_RADIUS)
+      {
+        MapChunk* chunk = _world->get_chunk_at(it->second.pos);
+        if (chunk && misc::getShortestDist(pos.x, pos.z, chunk->xbase, chunk->zbase, CHUNKSIZE) <= radius)
+        {
+          instances_to_remove.push_back(&it->second);
+        }
+      }
+    }
+    for (auto it = _wmos.begin(); it != _wmos.end(); ++it)
+    {
+      float dist = (math::vector_2d(it->second.pos.x, it->second.pos.z) - orig).length();
+
+      // in range for sure
+      if (dist < radius)
+      {
+        instances_to_remove.push_back(&it->second);
+      }
+      // maybe in range
+      else if (dist < radius + MAPCHUNK_RADIUS)
+      {
+        MapChunk* chunk = _world->get_chunk_at(it->second.pos);
+        if (chunk && misc::getShortestDist(pos.x, pos.z, chunk->xbase, chunk->zbase, CHUNKSIZE) <= radius)
+        {
+          instances_to_remove.push_back(&it->second);
+        }
+      }
+    }
+
+
+    delete_instances(instances_to_remove);
   }
 
   void world_model_instances_storage::delete_instances_from_tile(tile_index const& tile)
@@ -224,7 +274,7 @@ namespace noggit
   boost::optional<selection_type> world_model_instances_storage::get_instance(std::uint32_t uid)
   {
     std::unique_lock<std::mutex> const lock (_mutex);
-    
+
     auto wmo_it = _wmos.find(uid);
 
     if (wmo_it != _wmos.end())

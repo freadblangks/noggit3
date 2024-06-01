@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <math/vector_3d.hpp>
 #include <noggit/ModelInstance.h>
 #include <noggit/Selection.h>
 #include <noggit/tile_index.hpp>
@@ -40,6 +41,7 @@ namespace noggit
     boost::optional<WMOInstance*> get_wmo_instance(std::uint32_t uid);
     boost::optional<selection_type> get_instance(std::uint32_t uid);
 
+    void delete_instances_from_chunks_in_range(math::vector_3d const& pos, float radius);
     void delete_instances_from_tile(tile_index const& tile);
     void delete_instances(std::vector<selection_type> const& instances);
     void delete_instance(std::uint32_t uid);
