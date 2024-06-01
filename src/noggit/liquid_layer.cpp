@@ -159,6 +159,7 @@ liquid_layer::liquid_layer(liquid_layer&& other)
   , _liquid_vertex_format(other._liquid_vertex_format)
   , _minimum(other._minimum)
   , _maximum(other._maximum)
+  , _center(other._center)
   , _subchunks(other._subchunks)
   , _vertices(other._vertices)
   , _indices_by_lod(other._indices_by_lod)
@@ -172,6 +173,7 @@ liquid_layer::liquid_layer(liquid_layer const& other)
   , _liquid_vertex_format(other._liquid_vertex_format)
   , _minimum(other._minimum)
   , _maximum(other._maximum)
+  , _center(other._center)
   , _subchunks(other._subchunks)
   , _vertices(other._vertices)
   , _indices_by_lod(other._indices_by_lod)
@@ -186,6 +188,7 @@ liquid_layer& liquid_layer::operator= (liquid_layer&& other)
   std::swap(_liquid_vertex_format, other._liquid_vertex_format);
   std::swap(_minimum, other._minimum);
   std::swap(_maximum, other._maximum);
+  std::swap(_center, other._center);
   std::swap(_subchunks, other._subchunks);
   std::swap(_vertices, other._vertices);
   std::swap(pos, other.pos);
@@ -203,6 +206,7 @@ liquid_layer& liquid_layer::operator=(liquid_layer const& other)
   _liquid_vertex_format = other._liquid_vertex_format;
   _minimum = other._minimum;
   _maximum = other._maximum;
+  _center = other._center;
   _subchunks = other._subchunks;
   _vertices = other._vertices;
   _indices_by_lod = other._indices_by_lod;
