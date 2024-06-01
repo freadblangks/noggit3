@@ -184,7 +184,7 @@ public:
                    );
   //! \todo only this function should be public, all others should be called from it
 
-  void intersect (math::ray const&, selection_result*);
+  void intersect (math::ray const& ray, selection_result* results, bool ignore_terrain_holes);
   bool ChangeMCCV(math::vector_3d const& pos, math::vector_4d const& color, float change, float radius, bool editMode);
   //! Initialize MCCV to 1,1,1, do nothing if already exists.
   void maybe_create_mccv();

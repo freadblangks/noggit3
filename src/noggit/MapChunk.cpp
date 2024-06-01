@@ -657,18 +657,27 @@ void* MapChunk::lod_indices_ptr(int lod) const
   return static_cast<char*>(0) + (indices_offset() + offset) * sizeof(chunk_indice);
 }
 
-void MapChunk::intersect (math::ray const& ray, selection_result* results)
+void MapChunk::intersect (math::ray const& ray, selection_result* results, bool ignore_terrain_holes)
 {
   if (!ray.intersect_bounds (vmin, vmax))
   {
     return;
   }
 
-  for (int i (0); i < strip_without_holes.size(); i += 3)
+  // regen indices when needed (only with fps camera so no need to keep them in memory all the time)
+  if(!ignore_terrain_holes && _indice_strips.empty())
   {
-    if ( auto distance = ray.intersect_triangle ( vertices[strip_without_holes[i + 0]].position
-                                                , vertices[strip_without_holes[i + 1]].position
-                                                , vertices[strip_without_holes[i + 2]].position
+    initStrip();
+  }
+
+  std::vector<chunk_indice> const& indices = ignore_terrain_holes ? strip_without_holes : _indice_strips[0];
+  chunk_indice offset = ignore_terrain_holes ? 0 : vertex_offset();
+
+  for (int i (0); i < indices.size(); i += 3)
+  {
+    if ( auto distance = ray.intersect_triangle ( vertices[indices[i + 0] - offset].position
+                                                , vertices[indices[i + 1] - offset].position
+                                                , vertices[indices[i + 2] - offset].position
                                                 )
        )
     {
@@ -676,9 +685,9 @@ void MapChunk::intersect (math::ray const& ray, selection_result* results)
         ( *distance
         , selected_chunk_type
             ( this
-            , std::make_tuple ( strip_without_holes[i]
-                              , strip_without_holes[i + 1]
-                              , strip_without_holes[i + 2]
+            , std::make_tuple ( indices[i + 0] - offset
+                              , indices[i + 1] - offset
+                              , indices[i + 2] - offset
                               )
             , ray.position (*distance)
             )

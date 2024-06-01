@@ -444,7 +444,7 @@ void MapTile::draw ( math::frustum const& frustum
   gl.multiDrawElements(GL_TRIANGLES, _indices_count.data(), GL_UNSIGNED_SHORT, _indices_offsets.data(), 256);
 }
 
-void MapTile::intersect (math::ray const& ray, selection_result* results)
+void MapTile::intersect (math::ray const& ray, selection_result* results, bool ignore_terrain_holes)
 {
   if (!finished)
   {
@@ -465,7 +465,7 @@ void MapTile::intersect (math::ray const& ray, selection_result* results)
   {
     for (size_t i (0); i < 16; ++i)
     {
-      mChunks[j][i]->intersect (ray, results);
+      mChunks[j][i]->intersect (ray, results, ignore_terrain_holes);
     }
   }
 }

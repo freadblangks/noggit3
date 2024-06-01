@@ -155,6 +155,7 @@ public:
                              , bool draw_models
                              , bool draw_hidden_models
                              , bool intersect_liquids
+                             , bool ignore_terrain_holes = true
                              );
 
   void initGlobalVBOs(GLuint* pDetailTexCoords);

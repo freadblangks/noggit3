@@ -1629,6 +1629,7 @@ selection_result World::intersect ( math::matrix_4x4 const& model_view
                                   , bool draw_models
                                   , bool draw_hidden_models
                                   , bool intersect_liquids
+                                  , bool ignore_terrain_holes
                                   )
 {
   selection_result results;
@@ -1637,7 +1638,7 @@ selection_result World::intersect ( math::matrix_4x4 const& model_view
   {
     for (auto&& tile : mapIndex.loaded_tiles())
     {
-      tile->intersect (ray, &results);
+      tile->intersect (ray, &results, ignore_terrain_holes);
     }
   }
 
@@ -1733,13 +1734,13 @@ std::optional<math::degrees::vec3> World::get_terrain_normal(math::vector_3d con
   {
     {
       math::ray intersect_ray(pos, math::vector_3d(0.f, -1.f, 0.f));
-      chunk->intersect(intersect_ray, &results);
+      chunk->intersect(intersect_ray, &results, true);
     }
     // object is below ground
     if (results.empty())
     {
       math::ray intersect_ray(pos, math::vector_3d(0.f, 1.f, 0.f));
-      chunk->intersect(intersect_ray, &results);
+      chunk->intersect(intersect_ray, &results, true);
     }
   });
 

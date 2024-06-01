@@ -69,7 +69,7 @@ public:
             , display_mode display
             , noggit::tileset_array_handler& tileset_handler
             );
-  void intersect (math::ray const&, selection_result*);
+  void intersect (math::ray const& ray, selection_result* results, bool ignore_terrain_holes);
   void intersect_liquids (math::ray const&, selection_result*);
 
 
