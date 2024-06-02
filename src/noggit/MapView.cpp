@@ -2488,6 +2488,19 @@ void MapView::tick (float dt)
 
           break;
         }
+      case eEntry_LiquidLayer:
+        {
+          auto layer(boost::get<selected_liquid_layer_type>(lastSelection).layer);
+
+          select_info << "\liquid id:" << layer->_liquid_id << " (\"" << gLiquidTypeDB.getLiquidName(layer->_liquid_id) << "\")\n";
+
+          if (layer->has_fatigue())
+          {
+            select_info << "fatigue\n";
+          }
+
+          break;
+        }
       }
 
       guidetailInfos->setText(select_info.str());
