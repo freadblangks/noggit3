@@ -70,7 +70,7 @@ namespace noggit
         f9 = 0xf898,
         f10 = 0xf899,
         f11 = 0xf89A,
-        f12 = 0xf89B     
+        f12 = 0xf89B
       };
     };
 

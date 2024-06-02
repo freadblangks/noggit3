@@ -298,7 +298,7 @@ void map_horizon::render::draw( math::matrix_4x4 const& model_view
                               , const math::vector_3d& color
                               , const float& cull_distance
                               , const math::frustum& frustum
-                              , const math::vector_3d& camera 
+                              , const math::vector_3d& camera
                               , display_mode display
                               )
 {
@@ -362,10 +362,10 @@ void map_horizon::render::draw( math::matrix_4x4 const& model_view
           , { GL_FRAGMENT_SHADER, opengl::shader::src_from_qrc("horizon_fs") }
           }
       );
-  
+
     _vaos.upload();
   }
-   
+
 
   opengl::scoped::use_program shader {*_map_horizon_program.get()};
 

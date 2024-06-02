@@ -41,7 +41,7 @@ namespace noggit
           { { GL_VERTEX_SHADER,   opengl::shader::src_from_qrc("cursor_vs") }
           , { GL_FRAGMENT_SHADER, opengl::shader::src_from_qrc("cursor_fs") }
           }
-      );    
+      );
 
     opengl::scoped::use_program shader {*_cursor_program.get()};
 
@@ -120,7 +120,7 @@ namespace noggit
 
       id_ofs += segment;
     }
-    
+
     for (int i = 0; i < segment; ++i)
     {
       for (int r = 0; r < rotation_plane; ++r)
@@ -128,7 +128,7 @@ namespace noggit
         indices.emplace_back(i + r*segment);
         indices.emplace_back(i + (r+1)*segment);
       }
-    }    
+    }
 
     _indices_count[mode::sphere] = indices.size();
 
@@ -150,7 +150,7 @@ namespace noggit
 
   void cursor_render::create_square_buffer(opengl::scoped::use_program& shader)
   {
-    std::vector<math::vector_3d> vertices = 
+    std::vector<math::vector_3d> vertices =
     {
        {-0.5f,0.f,-0.5f}
       ,{ 0.5f,0.f,-0.5f}
@@ -158,7 +158,7 @@ namespace noggit
       ,{-0.5f,0.f, 0.5f}
     };
 
-    std::vector<std::uint16_t> indices = {0,1, 1,2 ,2,3 ,3,0};    
+    std::vector<std::uint16_t> indices = {0,1, 1,2 ,2,3 ,3,0};
 
     _indices_count[mode::square] = indices.size();
 
@@ -194,8 +194,8 @@ namespace noggit
       , {-0.5f, 0.5f, 0.5f}
     };
 
-    std::vector<std::uint16_t> indices = 
-    {  
+    std::vector<std::uint16_t> indices =
+    {
         0,1, 1,2 ,2,3 ,3,0
       , 0,4, 1,5 ,2,6 ,3,7
       , 4,5, 5,6 ,6,7 ,7,4

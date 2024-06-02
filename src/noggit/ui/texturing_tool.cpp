@@ -98,7 +98,7 @@ namespace noggit
       _brush_level_slider->setRange (0, 255);
       _brush_level_slider->setSliderPosition (_brush_level);
 
-      QString _brush_level_slider_style = 
+      QString _brush_level_slider_style =
         "QSlider::groove:vertical { \n "
         "  background-color: qlineargradient(x1:0.5, y1:0, x2:0.5, y2:1, stop: 0 black, stop: 1 #FFFFFF); \n "
         "  width: 35px; \n"
@@ -106,7 +106,7 @@ namespace noggit
         "} \n "
         "QSlider::handle:vertical { \n"
         "  background-color: red; \n"
-        "  height: 5px; \n" 
+        "  height: 5px; \n"
         "} \n"
         "QSlider::vertical { \n"
         "  width: 35px; \n"
@@ -199,7 +199,7 @@ namespace noggit
       tabs->addTab(tool_widget, "Paint");
       tabs->addTab(_texture_switcher, "Swap");
       tabs->addTab(anim_widget, "Anim");
-      
+
       layout->addRow(tabs);
 
       connect ( _anim_group, &QGroupBox::toggled
@@ -492,7 +492,7 @@ namespace noggit
     }
 
     float texturing_tool::hardness() const
-    { 
+    {
       switch (_texturing_mode)
       {
         case texturing_mode::paint: return _hardness;
@@ -501,8 +501,8 @@ namespace noggit
     }
 
     bool texturing_tool::show_unpaintable_chunks() const
-    { 
-      return _show_unpaintable_chunks && _texturing_mode == texturing_mode::paint; 
+    {
+      return _show_unpaintable_chunks && _texturing_mode == texturing_mode::paint;
     }
 
     void texturing_tool::paint (World* world, math::vector_3d const& pos, float dt, scoped_blp_texture_reference texture)
@@ -521,7 +521,7 @@ namespace noggit
           else
           {
             world->overwriteTextureAtCurrentChunk(pos, to_swap.get(), texture);
-          }          
+          }
         }
       }
       else if (_texturing_mode == texturing_mode::paint)
@@ -548,7 +548,7 @@ namespace noggit
 
     void texturing_tool::change_tex_flag(World* world, math::vector_3d const& pos, bool add, scoped_blp_texture_reference texture)
     {
-      
+
       std::size_t flag = 0;
 
       flag |= FLAG_ANIMATE;
@@ -563,7 +563,7 @@ namespace noggit
       else
       {
         flag |= 0xF;
-      }      
+      }
 
       // the texture's flag glow is set if the property is true, removed otherwise
       if (_overbright_prop.get())

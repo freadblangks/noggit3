@@ -236,7 +236,7 @@ void Skies::update_sky_colors(math::vector_3d pos, int time)
   if (numSkies == 0 || (_last_time == time && _last_pos == pos))
   {
     return;
-  }  
+  }
 
   findSkyWeights(pos);
 
@@ -251,14 +251,14 @@ void Skies::update_sky_colors(math::vector_3d pos, int time)
   _ocean_deep_alpha = 0.f;
 
   // interpolation
-  for (size_t j = 0; j<skies.size(); j++) 
+  for (size_t j = 0; j<skies.size(); j++)
   {
     Sky const& sky = skies[j];
 
     if (sky.weight>0)
     {
       // now calculate the color rows
-      for (int i = 0; i<NUM_SkyColorNames; ++i) 
+      for (int i = 0; i<NUM_SkyColorNames; ++i)
       {
         if ((sky.colorFor(i, time).x>1.0f) || (sky.colorFor(i, time).y>1.0f) || (sky.colorFor(i, time).z>1.0f))
         {
@@ -282,7 +282,7 @@ void Skies::update_sky_colors(math::vector_3d pos, int time)
   _last_pos = pos;
   _last_time = time;
 
-  _need_color_buffer_update = true;  
+  _need_color_buffer_update = true;
 }
 
 bool Skies::draw( math::matrix_4x4 const& model_view
@@ -578,7 +578,7 @@ OutdoorLighting::OutdoorLighting(const std::string& fname)
   f.read(&d, 4); // d is now the final offset
   f.seek(8 + n * 8);
 
-  while (f.getPos() < d) 
+  while (f.getPos() < d)
   {
     OutdoorLightStats ols;
     ols.init(&f);

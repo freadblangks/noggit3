@@ -19,7 +19,7 @@ enum class async_priority : int
 
 class AsyncObject
 {
-private: 
+private:
   bool _loading_failed = false;
 protected:
   std::atomic<bool> finished = {false};
@@ -53,7 +53,7 @@ public:
 
     std::unique_lock<std::mutex> lock (_mutex);
 
-    _state_changed.wait 
+    _state_changed.wait
     ( lock
     , [&]
       {

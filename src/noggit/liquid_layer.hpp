@@ -76,11 +76,11 @@ public:
 
   static constexpr int lod_count = 3;
   static constexpr int vertex_buffer_size_required = 9 * 9 * sizeof(liquid_vertex);
-  static constexpr std::array<int, 4> max_indices_per_lod_level = 
+  static constexpr std::array<int, 4> max_indices_per_lod_level =
     { 8 * 8 * 2 * 3  // 2 triangles per quad
     , 4 * 4 * 2 * 3
-    , 2 * 2 * 2 * 3 
-    , 1 * 1 * 2 * 3 
+    , 2 * 2 * 2 * 3
+    , 1 * 1 * 2 * 3
     };
   static constexpr std::array<int, 4> lod_level_offset =
   { 0
@@ -88,7 +88,7 @@ public:
   , (64 + 16) * 6 * sizeof(liquid_indice)
   , (64 + 16 + 4) * 6 * sizeof(liquid_indice)
   };
-  static constexpr int max_total_indices = max_indices_per_lod_level[0] + max_indices_per_lod_level[1] 
+  static constexpr int max_total_indices = max_indices_per_lod_level[0] + max_indices_per_lod_level[1]
                                          + max_indices_per_lod_level[2];
   static constexpr int indice_buffer_size_required = max_total_indices * sizeof(liquid_indice);
 

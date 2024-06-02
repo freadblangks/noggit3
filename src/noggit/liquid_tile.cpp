@@ -192,9 +192,9 @@ int liquid_tile::getType(size_t layer)
   return 0;
 }
 
-bool liquid_tile::is_visible() const 
+bool liquid_tile::is_visible() const
 {
-  return tile->is_visible(); 
+  return tile->is_visible();
 }
 
 void liquid_tile::upload(opengl::scoped::use_program& water_shader, liquid_render& render)
@@ -318,8 +318,8 @@ void liquid_tile::recalc_extents()
   // notify the adt something changed
   // /!\ make sure the adt's _need_recalc_extents isn't set to false before
   //  the water tile extents are updated
-  tile->water_height_changed(); 
-  
+  tile->water_height_changed();
+
 }
 
 void liquid_tile::intersect(math::ray const& ray, selection_result* results)

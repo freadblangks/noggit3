@@ -116,7 +116,7 @@ void Model::finishLoading()
   // blend mode override
   if (header.Flags & 8)
   {
-    // go to the end of the header (where the blend override data is)    
+    // go to the end of the header (where the blend override data is)
     uint32_t const* blend_override_info = reinterpret_cast<uint32_t const*>(f.getBuffer() + sizeof(ModelHeader));
     uint32_t n_blend_override = *blend_override_info++;
     uint32_t ofs_blend_override = *blend_override_info;
@@ -166,18 +166,18 @@ bool Model::isAnimated(const MPQFile& f)
   _per_instance_animation = false;
 
   ModelVertex const* verts = reinterpret_cast<ModelVertex const*>(f.getBuffer() + header.ofsVertices);
-  for (size_t i = 0; i<header.nVertices && !animGeometry; ++i) 
+  for (size_t i = 0; i<header.nVertices && !animGeometry; ++i)
   {
-    for (size_t b = 0; b<4; b++) 
+    for (size_t b = 0; b<4; b++)
     {
-      if (verts[i].weights[b]>0) 
+      if (verts[i].weights[b]>0)
       {
         ModelBoneDef const& bb = bo[verts[i].bones[b]];
         bool billboard = (bb.flags & (0x78)); // billboard | billboard_lock_[xyz]
 
-        if ((bb.flags & 0x200) || billboard) 
+        if ((bb.flags & 0x200) || billboard)
         {
-          if (billboard) 
+          if (billboard)
           {
             // if we have billboarding, the model will need per-instance animation
             _per_instance_animation = true;
@@ -268,7 +268,7 @@ void Model::initCommon(const MPQFile& f)
     v.position = fixCoordSystem(v.position);
     v.normal = fixCoordSystem(v.normal);
   }
- 
+
   if (!animGeometry)
   {
     _current_vertices.swap(_vertices);
@@ -363,20 +363,20 @@ void Model::initCommon(const MPQFile& f)
     // render ops
     ModelGeoset const* model_geosets = reinterpret_cast<ModelGeoset const*>(g.getBuffer() + view->ofs_submesh);
     ModelTexUnit const* texture_unit = reinterpret_cast<ModelTexUnit const*>(g.getBuffer() + view->ofs_texture_unit);
-    
+
     _texture_lookup = M2Array<uint16_t>(f, header.ofsTexLookup, header.nTexLookup);
     _texture_animation_lookups = M2Array<int16_t>(f, header.ofsTexAnimLookup, header.nTexAnimLookup);
     _texture_unit_lookup = M2Array<int16_t>(f, header.ofsTexUnitLookup, header.nTexUnitLookup);
 
     showGeosets.resize (view->n_submesh);
-    for (size_t i = 0; i<view->n_submesh; ++i) 
+    for (size_t i = 0; i<view->n_submesh; ++i)
     {
       showGeosets[i] = true;
     }
 
     _render_flags = M2Array<ModelRenderFlags>(f, header.ofsRenderFlags, header.nRenderFlags);
 
-    for (size_t j = 0; j<view->n_texture_unit; j++) 
+    for (size_t j = 0; j<view->n_texture_unit; j++)
     {
       size_t geoset = texture_unit[j].submesh;
 
@@ -401,7 +401,7 @@ void Model::initCommon(const MPQFile& f)
     {
       pass.init_uv_types(this);
     }
-    
+
     // transparent parts come later
     std::sort(_render_passes.begin(), _render_passes.end());
 
@@ -410,7 +410,7 @@ void Model::initCommon(const MPQFile& f)
     {
       _fake_geometry.emplace(this);
     }
-  }  
+  }
 }
 
 void Model::fix_shader_id_blend_override()
@@ -419,7 +419,7 @@ void Model::fix_shader_id_blend_override()
   {
     if (pass.shader_id & 0x8000)
     {
-      continue; 
+      continue;
     }
 
     int shader = 0;
@@ -982,7 +982,7 @@ FakeGeometry::FakeGeometry(Model* m)
     1,5,6,  6,2,1,
     2,6,7,  7,3,2,
     5,6,7,  7,4,5
-  }; 
+  };
 }
 
 namespace
@@ -1088,7 +1088,7 @@ boost::optional<ModelPixelShader> GetPixelShader(uint16_t texture_count, uint16_
       pixel_shader = ModelPixelShader::Combiners_Mod_Mod2x;
     }
   }
- 
+
 
   return pixel_shader;
 }
@@ -1119,7 +1119,7 @@ boost::optional<ModelPixelShader> M2GetPixelShaderID (uint16_t texture_count, ui
     case 3:
       pixel_shader = ModelPixelShader::Combiners_Opaque_AddAlpha_Alpha;
       break;
-    }  
+    }
   }
 
   return pixel_shader;
@@ -1138,7 +1138,7 @@ void Model::initAnimated(const MPQFile& f)
 {
   std::vector<std::unique_ptr<MPQFile>> animation_files;
 
-  if (header.nAnimations > 0) 
+  if (header.nAnimations > 0)
   {
     std::vector<ModelAnimation> animations(header.nAnimations);
 
@@ -1168,9 +1168,9 @@ void Model::initAnimated(const MPQFile& f)
     {
       bones.emplace_back(f, mb[i], _global_sequences.data(), animation_files);
     }
-  }  
+  }
 
-  if (animTextures) 
+  if (animTextures)
   {
     ModelTexAnimDef const* ta = reinterpret_cast<ModelTexAnimDef const*>(f.getBuffer() + header.ofsTexAnims);
     for (size_t i=0; i<header.nTexAnims; ++i) {
@@ -1178,11 +1178,11 @@ void Model::initAnimated(const MPQFile& f)
     }
   }
 
-  
+
   // particle systems
   if (header.nParticleEmitters) {
     ModelParticleEmitterDef const* pdefs = reinterpret_cast<ModelParticleEmitterDef const*>(f.getBuffer() + header.ofsParticleEmitters);
-    for (size_t i = 0; i<header.nParticleEmitters; ++i) 
+    for (size_t i = 0; i<header.nParticleEmitters; ++i)
     {
       try
       {
@@ -1191,12 +1191,12 @@ void Model::initAnimated(const MPQFile& f)
       catch (std::logic_error error)
       {
         LogError << "Loading particles for '" << filename << "' " << error.what() << std::endl;
-      }      
+      }
     }
   }
-  
 
-  
+
+
   // ribbons
   if (header.nRibbonEmitters) {
     ModelRibbonEmitterDef const* rdefs = reinterpret_cast<ModelRibbonEmitterDef const*>(f.getBuffer() + header.ofsRibbonEmitters);
@@ -1204,7 +1204,7 @@ void Model::initAnimated(const MPQFile& f)
       _ribbons.emplace_back(this, f, rdefs[i], _global_sequences.data());
     }
   }
-  
+
 
   // init lights
   if (header.nLights) {
@@ -1269,12 +1269,12 @@ void Model::animate(math::matrix_4x4 const& model_view, int anim_id, int anim_ti
   _anim_time = t;
   _global_animtime = anim_time;
 
-  if (animBones) 
+  if (animBones)
   {
     calcBones(model_view, _current_anim_seq, t, _global_animtime);
   }
 
-  if (animGeometry) 
+  if (animGeometry)
   {
     // transform vertices
     _current_vertices = _vertices;
@@ -1303,9 +1303,9 @@ void Model::animate(math::matrix_4x4 const& model_view, int anim_id, int anim_ti
     gl.bufferData (GL_ARRAY_BUFFER, _current_vertices.size() * sizeof (ModelVertex), _current_vertices.data(), GL_STREAM_DRAW);
   }
 
-  for (size_t i=0; i<header.nLights; ++i) 
+  for (size_t i=0; i<header.nLights; ++i)
   {
-    if (_lights[i].parent >= 0) 
+    if (_lights[i].parent >= 0)
     {
       _lights[i].tpos = bones[_lights[i].parent].mat * _lights[i].pos;
       _lights[i].tdir = bones[_lights[i].parent].mrot * _lights[i].dir;
@@ -1319,7 +1319,7 @@ void Model::animate(math::matrix_4x4 const& model_view, int anim_id, int anim_ti
     particle.setup(_current_anim_seq, pt, _global_animtime);
   }
 
-  for (size_t i = 0; i<header.nRibbonEmitters; ++i) 
+  for (size_t i = 0; i<header.nRibbonEmitters; ++i)
   {
     _ribbons[i].setup(_current_anim_seq, t, _global_animtime);
   }
@@ -1333,15 +1333,15 @@ void Model::animate(math::matrix_4x4 const& model_view, int anim_id, int anim_ti
 void TextureAnim::calc(int anim, int time, int animtime)
 {
   mat = math::matrix_4x4::unit;
-  if (trans.uses(anim)) 
-  {  
+  if (trans.uses(anim))
+  {
     mat *= math::matrix_4x4 (math::matrix_4x4::translation, trans.getValue(anim, time, animtime));
   }
-  if (rot.uses(anim)) 
+  if (rot.uses(anim))
   {
     mat *= math::matrix_4x4 (math::matrix_4x4::rotation, rot.getValue(anim, time, animtime));
   }
-  if (scale.uses(anim)) 
+  if (scale.uses(anim))
   {
     mat *= math::matrix_4x4 (math::matrix_4x4::scale, scale.getValue(anim, time, animtime));
   }
@@ -1392,7 +1392,7 @@ void ModelLight::setup(int time, opengl::light, int animtime)
     p = math::vector_4d(tpos, 1.0f);
     LogError << "Light type " << type << " is unknown." << std::endl;
   }
- 
+
   // todo: use models' light
 }
 
@@ -1433,9 +1433,9 @@ void Bone::calcMatrix( math::matrix_4x4 const& model_view
   math::quaternion q;
 
   if ( flags.transformed
-    || flags.billboard 
-    || flags.cylindrical_billboard_lock_x 
-    || flags.cylindrical_billboard_lock_y 
+    || flags.billboard
+    || flags.cylindrical_billboard_lock_x
+    || flags.cylindrical_billboard_lock_y
     || flags.cylindrical_billboard_lock_z
       )
   {

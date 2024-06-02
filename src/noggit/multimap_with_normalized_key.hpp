@@ -45,7 +45,7 @@ namespace noggit
           return &_elements.at (normalized);
         }
       }
-        
+
 
       T* const obj ( [&]
                      {
@@ -59,10 +59,10 @@ namespace noggit
 
       AsyncLoader::instance->queue_for_load(static_cast<AsyncObject*>(obj));
 
-      return obj; 
+      return obj;
     }
     void erase (std::string const& filename)
-    {    
+    {
       std::string const normalized (_normalize (filename));
       AsyncObject* obj = nullptr;
 

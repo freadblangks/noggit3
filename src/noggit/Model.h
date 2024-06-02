@@ -221,9 +221,9 @@ struct ModelRenderPass : ModelTexUnit
     {
       return true;
     }
-    else if (priority_plane > m.priority_plane) 
-    { 
-      return false; 
+    else if (priority_plane > m.priority_plane)
+    {
+      return false;
     }
     else
     {

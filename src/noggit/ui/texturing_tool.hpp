@@ -57,7 +57,7 @@ namespace noggit
       void change_spray_size (float change);
       void change_spray_pressure (float change);
 
-      void paint (World* world, math::vector_3d const& pos, float dt, scoped_blp_texture_reference texture);      
+      void paint (World* world, math::vector_3d const& pos, float dt, scoped_blp_texture_reference texture);
 
       Brush const& texture_brush() const
       {

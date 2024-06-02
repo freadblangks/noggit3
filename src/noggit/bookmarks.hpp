@@ -26,7 +26,7 @@ namespace noggit
     void reload();
     bookmark const& add(math::vector_3d const& pos, math::degrees yaw, math::degrees pitch, std::uint32_t map, std::uint32_t area);
     std::vector<bookmark> const& bookmarks() const { return _bookmarks; }
-    
+
     static bookmark_manager& instance()
     {
       static bookmark_manager inst;

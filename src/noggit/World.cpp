@@ -1475,7 +1475,7 @@ void World::draw ( math::matrix_4x4 const& model_view
   gl.enable(GL_BLEND);
   gl.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  // render before the water and enable depth right 
+  // render before the water and enable depth right
   // so it's visible under water
   // the checker board pattern is used to see the water under it
   if (angled_mode || use_ref_pos)
@@ -1601,7 +1601,7 @@ void World::draw ( math::matrix_4x4 const& model_view
     gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
   }
 
-  
+
 
   // draw last because of the transparency
   if (draw_mfbo)

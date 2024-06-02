@@ -112,7 +112,7 @@ namespace noggit
       _angle_slider->setToolTip("Angle");
       _angle_slider->setMinimumHeight(80);
       angle_layout->addWidget(_angle_slider, 0, 1);
-      
+
       flatten_only_layout->addRow(_angle_group);
 
       _lock_group = new QGroupBox("Lock mode", this);

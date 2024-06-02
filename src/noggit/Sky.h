@@ -43,7 +43,7 @@ public:
   OutdoorLightStats getLightStats(int time);
 };
 
-struct SkyColor 
+struct SkyColor
 {
   math::vector_3d color;
   int time;
@@ -51,7 +51,7 @@ struct SkyColor
   SkyColor(int t, int col);
 };
 
-class Sky 
+class Sky
 {
 public:
   boost::optional<ModelInstance> skybox;
@@ -90,7 +90,7 @@ private:
   float _ocean_deep_alpha;
 };
 
-enum SkyColorNames 
+enum SkyColorNames
 {
   LIGHT_GLOBAL_DIFFUSE,
   LIGHT_GLOBAL_AMBIENT,
@@ -113,7 +113,7 @@ enum SkyColorNames
   NUM_SkyColorNames,
 };
 
-class Skies 
+class Skies
 {
 private:
   int numSkies = 0;

@@ -275,7 +275,7 @@ void ParticleSystem::draw( math::matrix_4x4 const& model_view
   // setup blend mode
   float alpha_test = -1.f;
 
-  switch (blend) 
+  switch (blend)
   {
   case 0:
     gl.disable(GL_BLEND);
@@ -327,7 +327,7 @@ void ParticleSystem::draw( math::matrix_4x4 const& model_view
 
   std::uint16_t indice = 0;
 
-  if (billboard) 
+  if (billboard)
   {
     vRight = math::vector_3d(model_view[0], model_view[4], model_view[8]);
     vUp = math::vector_3d(model_view[1], model_view[5], model_view[9]); // Spherical billboarding
@@ -353,16 +353,16 @@ void ParticleSystem::draw( math::matrix_4x4 const& model_view
   * 1  large quad from the particle's origin to its position (used in Moonwell water effects)
   * 2  seems to be the same as 0 (found some in the Deeprun Tram blinky-lights-sign thing)
   */
-  if (type == 0 || type == 2) 
+  if (type == 0 || type == 2)
   {
     //! \todo figure out type 2 (deeprun tram subway sign)
     // - doesn't seem to be any different from 0 -_-
     // regular particles
 
-    if (billboard) 
+    if (billboard)
     {
       //! \todo per-particle rotation in a non-expensive way?? :|
-      for (ParticleList::iterator it = particles.begin(); it != particles.end(); ++it) 
+      for (ParticleList::iterator it = particles.begin(); it != particles.end(); ++it)
       {
         if (tiles.size() - 1 < it->tile) // Alfred, 2009.08.07, error prevent
         {
@@ -394,9 +394,9 @@ void ParticleSystem::draw( math::matrix_4x4 const& model_view
         add_quad_indices(indice);
       }
     }
-    else 
+    else
     {
-      for (ParticleList::iterator it = particles.begin(); it != particles.end(); ++it) 
+      for (ParticleList::iterator it = particles.begin(); it != particles.end(); ++it)
       {
         if (tiles.size() - 1 < it->tile) // Alfred, 2009.08.07, error prevent
         {
@@ -422,8 +422,8 @@ void ParticleSystem::draw( math::matrix_4x4 const& model_view
         add_quad_indices(indice);
       }
     }
-  }  
-  else if (type == 1) 
+  }
+  else if (type == 1)
   { // Sphere particles
     // particles from origin to position
     /*
@@ -435,7 +435,7 @@ void ParticleSystem::draw( math::matrix_4x4 const& model_view
     bv1 = mbb * math::vector_3d(1.0f,0,0);
     */
 
-    for (ParticleList::iterator it = particles.begin(); it != particles.end(); ++it) 
+    for (ParticleList::iterator it = particles.begin(); it != particles.end(); ++it)
     {
       if (tiles.size() - 1 < it->tile) // Alfred, 2009.08.07, error prevent
       {
@@ -864,10 +864,10 @@ void RibbonEmitter::setup(int anim, int time, int animtime)
   bool erasemode = false;
   for (auto& it = segs.begin(); it != segs.end();)
   {
-    if (!erasemode) 
+    if (!erasemode)
     {
       l += it->len;
-      if (l > length) 
+      if (l > length)
       {
         it->len = l - length;
         erasemode = true;
@@ -875,7 +875,7 @@ void RibbonEmitter::setup(int anim, int time, int animtime)
 
       ++it;
     }
-    else 
+    else
     {
       it = segs.erase(it);
     }
@@ -917,7 +917,7 @@ void RibbonEmitter::draw( opengl::scoped::use_program& shader
   shader.uniform("index_in_array", tex_p->pos_in_array->second);
 
   gl.enable(GL_BLEND);
-  
+
   shader.uniform("color", tcolor);
 
   std::uint16_t indice = 0;
@@ -936,7 +936,7 @@ void RibbonEmitter::draw( opengl::scoped::use_program& shader
 
   std::list<RibbonSegment>::iterator it = segs.begin();
   float l = 0;
-  for (; it != segs.end(); ++it) 
+  for (; it != segs.end(); ++it)
   {
     float u = l / length;
 
@@ -950,7 +950,7 @@ void RibbonEmitter::draw( opengl::scoped::use_program& shader
     add_quad_indices(indice);
   }
 
-  if (segs.size() > 1) 
+  if (segs.size() > 1)
   {
     // last segment...?
     --it;

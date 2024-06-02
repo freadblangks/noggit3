@@ -27,7 +27,7 @@ namespace noggit
                                          , QRect const& rect
                                          , QIcon::Mode mode
                                          , QIcon::State state
-                                         ) 
+                                         )
     {
     painter->save();
       {
@@ -62,7 +62,7 @@ namespace noggit
     QPixmap font_awesome_icon_engine::pixmap ( QSize const& size
                                              , QIcon::Mode mode
                                              , QIcon::State state
-                                             ) 
+                                             )
     {
       QPixmap pm (size);
       pm.fill (Qt::transparent);

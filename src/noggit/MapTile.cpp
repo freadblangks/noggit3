@@ -254,7 +254,7 @@ void MapTile::finishLoading()
     assert(fourcc == 'MTXF');
 
     int count = size / 0x4;
-    
+
     std::vector<mtxf_entry> mtxf_data(count);
 
     theFile.read(mtxf_data.data(), size);
@@ -1085,7 +1085,7 @@ void MapTile::create_combined_alpha_shadow_map()
     {
       gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB5_A1, 64, 64, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     }
-    
+
 
     for (size_t i = 0; i < 16; i++)
     {

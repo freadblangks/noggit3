@@ -54,7 +54,7 @@ public:
              , const math::vector_3d& color
              , const float& cull_distance
              , const math::frustum& frustum
-             , const math::vector_3d& camera 
+             , const math::vector_3d& camera
              , display_mode display
              );
 

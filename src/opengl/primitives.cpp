@@ -51,7 +51,7 @@ void main()
                  }
     {
       std::vector<math::vector_3d> positions (math::box_points (min_point, max_point));
-      
+
       static std::array<std::uint8_t, 16> const indices
         {{5, 7, 3, 2, 0, 1, 3, 1, 5, 4, 0, 4, 6, 2, 6, 7}};
 
@@ -91,13 +91,13 @@ void main()
 
       opengl::scoped::bool_setter<GL_LINE_SMOOTH, GL_TRUE> const line_smooth;
       gl.hint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-      
+
       opengl::scoped::vao_binder const _(_vao[0]);
       wire_box_shader.attrib(_, "position", _positions, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
       gl.drawElements (GL_LINE_STRIP, 16, GL_UNSIGNED_BYTE, _indices);
     }
-  
+
 
     void sphere::draw( math::matrix_4x4 const& mvp
                      , math::vector_3d const& pos
@@ -120,7 +120,7 @@ void main()
       opengl::scoped::vao_binder const _(_vao[0]);
       gl.drawElements(GL_TRIANGLES, _indice_count, GL_UNSIGNED_SHORT, _indices_vbo);
     }
-  
+
 
     void sphere::setup_buffers()
     {
@@ -196,10 +196,10 @@ void main()
             indices.emplace_back(i + (rotation_step+1) * segment);
             indices.emplace_back(((i + 1) % segment) + rotation_step * segment);
             indices.emplace_back(((i + 1) % segment) + (rotation_step+1) * segment);
-          }          
+          }
         }
       }
-      
+
       _indice_count = indices.size();
 
       gl.bufferData<GL_ARRAY_BUFFER, math::vector_3d>
@@ -222,7 +222,7 @@ void main()
 
       _buffers_are_setup = true;
     }
-  
+
 
     void square::draw( math::matrix_4x4 const& mvp
                      , math::vector_3d const& pos
@@ -256,7 +256,7 @@ void main()
       _vao.upload();
       _buffers.upload();
 
-      std::vector<math::vector_3d> vertices = 
+      std::vector<math::vector_3d> vertices =
       {
          {-1.f, 0.f, -1.f}
         ,{-1.f, 0.f,  1.f}

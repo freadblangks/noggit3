@@ -65,9 +65,9 @@ namespace noggit
       layout->setSizeConstraint(QLayout::SetFixedSize);
 
       collapsible_widget* copy_widget = new collapsible_widget("Copy options", true, this);
-      // to avoid width changes when the widget expand/collapse 
+      // to avoid width changes when the widget expand/collapse
       // which can make part of the UI go out of screen
-      copy_widget->setFixedWidth(200); 
+      copy_widget->setFixedWidth(200);
       auto copy_layout = new QFormLayout (copy_widget);
       copy_widget->setTitle("test");
       copy_widget->add_layout(copy_layout);

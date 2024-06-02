@@ -30,7 +30,7 @@ namespace noggit
       );
       label1->setWordWrap(true);
       layout->addWidget(label1);
-      
+
       auto get_max (new QPushButton("Get max UID", this));
       layout->addWidget(get_max);
 
@@ -60,7 +60,7 @@ namespace noggit
       layout->addWidget(label3);
 
       auto fix_all_fuckporting_edition (new QPushButton("Fix all UIDs but potentially fuck up collisions and culling for models", this));
-      layout->addWidget(fix_all_fuckporting_edition);      
+      layout->addWidget(fix_all_fuckporting_edition);
 
       connect ( get_max, &QPushButton::clicked
               , [=]

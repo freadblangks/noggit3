@@ -62,7 +62,7 @@ namespace opengl
 
     class square
     {
-    public:      
+    public:
       void draw( math::matrix_4x4 const& mvp
                , math::vector_3d const& pos
                , float radius // radius of the biggest circle fitting inside the square drawn

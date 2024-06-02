@@ -114,7 +114,7 @@ namespace noggit
       QObject::connect(_slide_saturation, SIGNAL(valueChanged(int)), _spin_saturation, SLOT(setValue(int)));
       QObject::connect(_slide_value, SIGNAL(valueChanged(int)), _spin_value, SLOT(setValue(int)));
       QObject::connect(_slide_hue, SIGNAL(valueChanged(int)), _spin_hue, SLOT(setValue(int)));
-      
+
       QObject::connect(_spin_saturation, SIGNAL(valueChanged(int)), _slide_saturation, SLOT(setValue(int)));
       QObject::connect(_spin_hue, SIGNAL(valueChanged(int)), _slide_hue, SLOT(setValue(int)));
       QObject::connect(_spin_value, SIGNAL(valueChanged(int)), _slide_value, SLOT(setValue(int)));
@@ -126,7 +126,7 @@ namespace noggit
                   _color_palette->setColorAt(_color_palette->colors().length() - 1, color_wheel->color());
                 }
               );
-     
+
       connect ( _radius_spin, qOverload<double> (&QDoubleSpinBox::valueChanged)
               , [&] (double v)
                 {

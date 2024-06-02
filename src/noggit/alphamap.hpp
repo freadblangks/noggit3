@@ -25,7 +25,7 @@ private:
   void readBigAlpha(MPQFile *f);
   void readNotCompressed(MPQFile *f, bool do_not_fix_alpha_map);
 
-  void createNew(); 
+  void createNew();
 
   uint8_t amap[64 * 64];
 };

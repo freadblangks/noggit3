@@ -47,7 +47,7 @@ namespace noggit
 
     b.map_id = map;
     b.area_id = area;
-    b.pos = pos;    
+    b.pos = pos;
     b.camera_yaw = yaw._;
     b.camera_pitch = pitch._;
 

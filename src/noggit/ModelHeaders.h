@@ -196,21 +196,21 @@ struct ModelTexUnit {
   uint8_t flags;    // Flags
   uint8_t priority_plane;
   uint16_t shader_id;    // If set to 0x8000: shaders. Used in skyboxes to ditch the need for depth buffering. See below.
-  uint16_t submesh;      
-  uint16_t geoset_index;  
+  uint16_t submesh;
+  uint16_t geoset_index;
   int16_t color_index;  // color or -1
   uint16_t renderflag_index;  // more flags...
   uint16_t material_layer;    // Texture unit (0 or 1)
   uint16_t texture_count;      // ? (seems to be always 1)
   uint16_t texture_combo_index;  // Texture id (index into global texture list)
-  uint16_t texture_coord_combo_index;  
+  uint16_t texture_coord_combo_index;
   uint16_t transparency_combo_index;    // transparency id (index into transparency list)
   uint16_t animation_combo_index;  // texture animation id
 };
 
 // block X - render flags
 struct ModelRenderFlags {
-  struct 
+  struct
   {
     uint16_t unlit : 1;
     uint16_t unfogged : 1;

@@ -40,7 +40,7 @@ std::string AreaDB::getAreaName(int pAreaID)
   if (!pAreaID || pAreaID == -1)
   {
     return "Unknown location";
-  }    
+  }
 
   unsigned int regionID = 0;
   std::string areaName = "";

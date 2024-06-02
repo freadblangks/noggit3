@@ -58,8 +58,8 @@ namespace noggit
       _radius_slider = new QSlider (Qt::Orientation::Horizontal, brush_content);
       _radius_slider->setRange (0, 100);
       _radius_slider->setSliderPosition (_radius);
-      brush_layout->addRow (_radius_slider);      
-      
+      brush_layout->addRow (_radius_slider);
+
       connect(select, &QPushButton::clicked, [&]() {
         _texture_to_swap = selected_texture::get();
         if (_texture_to_swap)

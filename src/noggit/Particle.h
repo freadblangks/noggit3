@@ -52,7 +52,7 @@ struct TexCoordSet {
   math::vector_2d tc[4];
 };
 
-class ParticleSystem 
+class ParticleSystem
 {
   Model *model;
   int emitter_type;
@@ -117,7 +117,7 @@ private:
 };
 
 
-struct RibbonSegment 
+struct RibbonSegment
 {
   math::vector_3d pos, up, back;
   float len, len0;
@@ -127,7 +127,7 @@ struct RibbonSegment
   {}
 };
 
-class RibbonEmitter 
+class RibbonEmitter
 {
   Model *model;
 

@@ -23,7 +23,7 @@ namespace noggit
     {
       new QVBoxLayout(this);
       this->layout()->addWidget(_area_tree);
-      
+
 
       connect ( _area_tree, &QTreeWidget::itemSelectionChanged
               , [this]
@@ -116,7 +116,7 @@ namespace noggit
       QTreeWidgetItem* item = create_or_get_tree_widget_item(area_id);
 
       std::uint32_t parent_area_id = gAreaDB.get_area_parent(area_id);
-      
+
       if (parent_area_id && parent_area_id != area_id)
       {
         QTreeWidgetItem* parent_item = add_area(parent_area_id);
