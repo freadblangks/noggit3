@@ -163,37 +163,47 @@ liquid_layer::liquid_layer(liquid_layer&& other)
   , _subchunks(other._subchunks)
   , _vertices(other._vertices)
   , _indices_by_lod(other._indices_by_lod)
+  , _indices_count_by_lod(other._indices_count_by_lod)
+  , _fatigue_enabled(other._fatigue_enabled)
+  , _need_data_update(other._need_data_update)
   , pos(other.pos)
 {
+  // update liquid type and vertex format
   changeLiquidID(_liquid_id);
 }
 
 liquid_layer::liquid_layer(liquid_layer const& other)
   : _liquid_id(other._liquid_id)
-  , _liquid_vertex_format(other._liquid_vertex_format)
   , _minimum(other._minimum)
   , _maximum(other._maximum)
   , _center(other._center)
   , _subchunks(other._subchunks)
   , _vertices(other._vertices)
   , _indices_by_lod(other._indices_by_lod)
+  , _indices_count_by_lod(other._indices_count_by_lod)
+  , _fatigue_enabled(other._fatigue_enabled)
+  , _need_data_update(other._need_data_update)
   , pos(other.pos)
 {
+  // update liquid type and vertex format
   changeLiquidID(_liquid_id);
 }
 
 liquid_layer& liquid_layer::operator= (liquid_layer&& other)
 {
   std::swap(_liquid_id, other._liquid_id);
-  std::swap(_liquid_vertex_format, other._liquid_vertex_format);
   std::swap(_minimum, other._minimum);
   std::swap(_maximum, other._maximum);
   std::swap(_center, other._center);
   std::swap(_subchunks, other._subchunks);
   std::swap(_vertices, other._vertices);
-  std::swap(pos, other.pos);
   std::swap(_indices_by_lod, other._indices_by_lod);
+  std::swap(_indices_count_by_lod, other._indices_count_by_lod);
+  std::swap(_fatigue_enabled, other._fatigue_enabled);
+  std::swap(_need_data_update, other._need_data_update);
+  std::swap(pos, other.pos);
 
+  // update liquid type and vertex format
   changeLiquidID(_liquid_id);
   other.changeLiquidID(other._liquid_id);
 
@@ -202,7 +212,6 @@ liquid_layer& liquid_layer::operator= (liquid_layer&& other)
 
 liquid_layer& liquid_layer::operator=(liquid_layer const& other)
 {
-  changeLiquidID(other._liquid_id);
   _liquid_vertex_format = other._liquid_vertex_format;
   _minimum = other._minimum;
   _maximum = other._maximum;
@@ -210,7 +219,12 @@ liquid_layer& liquid_layer::operator=(liquid_layer const& other)
   _subchunks = other._subchunks;
   _vertices = other._vertices;
   _indices_by_lod = other._indices_by_lod;
+  _indices_count_by_lod = other._indices_count_by_lod;
+  _fatigue_enabled = other._fatigue_enabled;
   pos = other.pos;
+
+  // update liquid type and vertex format
+  changeLiquidID(_liquid_id);
 
   return *this;
 }
