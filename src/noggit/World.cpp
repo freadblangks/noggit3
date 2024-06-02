@@ -1705,7 +1705,7 @@ void World::clearHeight(math::vector_3d const& pos)
 
 void World::clearAllModelsOnADT(tile_index const& tile)
 {
-  _model_instance_storage.delete_instances_from_tile(tile);
+  _model_instance_storage.delete_instances_from_tile(tile, true, true);
   update_models_by_filename();
 }
 
@@ -2036,7 +2036,7 @@ bool World::replaceTexture(math::vector_3d const& pos, float radius, scoped_blp_
 }
 
 void World::clear_on_chunks ( math::vector_3d const& pos, float radius, bool height, bool textures, bool duplicate_textures
-                            , bool texture_flags, bool liquids, bool models, bool shadows, bool mccv, bool impassible_flag, bool holes
+                            , bool texture_flags, bool liquids, bool m2s, bool wmos, bool shadows, bool mccv, bool impassible_flag, bool holes
                             )
 {
   for_all_chunks_in_range
@@ -2052,23 +2052,23 @@ void World::clear_on_chunks ( math::vector_3d const& pos, float radius, bool hei
 
   // handle models separatly front the rest to avoid having to
   // check for each model on each chunk
-  if (models)
+  if (m2s || wmos)
   {
-    _model_instance_storage.delete_instances_from_chunks_in_range(pos, radius);
+    _model_instance_storage.delete_instances_from_chunks_in_range(pos, radius, m2s, wmos);
     need_model_updates = true;
   }
 }
 void World::clear_on_tiles ( math::vector_3d const& pos, float radius, bool height, bool textures, bool duplicate_textures
-                           , bool texture_flags, bool liquids, bool models, bool shadows, bool mccv, bool impassible_flag, bool holes
+                           , bool texture_flags, bool liquids, bool m2s, bool wmos, bool shadows, bool mccv, bool impassible_flag, bool holes
                            )
 {
   for_all_tiles_in_range
   ( pos, radius
     , [&](MapTile* tile)
     {
-      if (models)
+      if (m2s || wmos)
       {
-        _model_instance_storage.delete_instances_from_tile(tile->index);
+        _model_instance_storage.delete_instances_from_tile(tile->index, m2s, wmos);
         need_model_updates = true;
       }
 

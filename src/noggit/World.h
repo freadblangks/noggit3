@@ -259,11 +259,11 @@ public:
   bool sprayTexture(math::vector_3d const& pos, Brush *brush, float strength, float pressure, float spraySize, float sprayPressure, scoped_blp_texture_reference texture);
   bool replaceTexture(math::vector_3d const& pos, float radius, scoped_blp_texture_reference const& old_texture, scoped_blp_texture_reference new_texture);
 
-  void clear_on_chunks ( math::vector_3d const& pos, float radius, bool height, bool textures, bool duplicate_textures
-                       , bool texture_flags, bool liquids, bool models, bool shadows, bool mccv, bool impassible_flag, bool holes
+  void clear_on_chunks ( math::vector_3d const& pos, float radius, bool height, bool textures, bool duplicate_textures, bool texture_flags
+                       , bool liquids, bool m2s, bool wmos, bool shadows, bool mccv, bool impassible_flag, bool holes
                        );
-  void clear_on_tiles ( math::vector_3d const& pos, float radius, bool height, bool textures, bool duplicate_textures
-                      , bool texture_flags, bool liquids, bool models, bool shadows, bool mccv, bool impassible_flag, bool holes
+  void clear_on_tiles ( math::vector_3d const& pos, float radius, bool height, bool textures, bool duplicate_textures, bool texture_flags
+                      , bool liquids, bool m2s, bool wmos, bool shadows, bool mccv, bool impassible_flag, bool holes
                       );
 
   void eraseTextures(math::vector_3d const& pos);

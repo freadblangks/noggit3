@@ -37,7 +37,8 @@ namespace noggit
       bool_toggle_property _clear_duplicate_textures;
       bool_toggle_property _clear_texture_flags;
       bool_toggle_property _clear_liquids;
-      bool_toggle_property _clear_models;
+      bool_toggle_property _clear_m2s;
+      bool_toggle_property _clear_wmos;
       bool_toggle_property _clear_shadows;
       bool_toggle_property _clear_mccv;
       bool_toggle_property _clear_impassible_flag;

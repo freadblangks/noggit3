@@ -105,47 +105,53 @@ namespace noggit
     return unsafe_add_wmo_instance_no_world_upd(std::move(instance));
   }
 
-  void world_model_instances_storage::delete_instances_from_chunks_in_range(math::vector_3d const& pos, float radius)
+  void world_model_instances_storage::delete_instances_from_chunks_in_range(math::vector_3d const& pos, float radius, bool m2s, bool wmos)
   {
     std::vector<selection_type> instances_to_remove;
 
     math::vector_2d orig = { pos.x, pos.z };
 
-    for (auto it = _m2s.begin(); it != _m2s.end(); ++it)
+    if (m2s)
     {
-      float dist = (math::vector_2d(it->second.pos.x, it->second.pos.z) - orig).length();
+      for (auto it = _m2s.begin(); it != _m2s.end(); ++it)
+      {
+        float dist = (math::vector_2d(it->second.pos.x, it->second.pos.z) - orig).length();
 
-      // in range for sure
-      if (dist < radius)
-      {
-        instances_to_remove.push_back(&it->second);
-      }
-      // maybe in range
-      else if (dist < radius + MAPCHUNK_RADIUS)
-      {
-        MapChunk* chunk = _world->get_chunk_at(it->second.pos);
-        if (chunk && misc::getShortestDist(pos.x, pos.z, chunk->xbase, chunk->zbase, CHUNKSIZE) <= radius)
+        // in range for sure
+        if (dist < radius)
         {
           instances_to_remove.push_back(&it->second);
         }
+        // maybe in range
+        else if (dist < radius + MAPCHUNK_RADIUS)
+        {
+          MapChunk* chunk = _world->get_chunk_at(it->second.pos);
+          if (chunk && misc::getShortestDist(pos.x, pos.z, chunk->xbase, chunk->zbase, CHUNKSIZE) <= radius)
+          {
+            instances_to_remove.push_back(&it->second);
+          }
+        }
       }
     }
-    for (auto it = _wmos.begin(); it != _wmos.end(); ++it)
+    if (wmos)
     {
-      float dist = (math::vector_2d(it->second.pos.x, it->second.pos.z) - orig).length();
+      for (auto it = _wmos.begin(); it != _wmos.end(); ++it)
+      {
+        float dist = (math::vector_2d(it->second.pos.x, it->second.pos.z) - orig).length();
 
-      // in range for sure
-      if (dist < radius)
-      {
-        instances_to_remove.push_back(&it->second);
-      }
-      // maybe in range
-      else if (dist < radius + MAPCHUNK_RADIUS)
-      {
-        MapChunk* chunk = _world->get_chunk_at(it->second.pos);
-        if (chunk && misc::getShortestDist(pos.x, pos.z, chunk->xbase, chunk->zbase, CHUNKSIZE) <= radius)
+        // in range for sure
+        if (dist < radius)
         {
           instances_to_remove.push_back(&it->second);
+        }
+        // maybe in range
+        else if (dist < radius + MAPCHUNK_RADIUS)
+        {
+          MapChunk* chunk = _world->get_chunk_at(it->second.pos);
+          if (chunk && misc::getShortestDist(pos.x, pos.z, chunk->xbase, chunk->zbase, CHUNKSIZE) <= radius)
+          {
+            instances_to_remove.push_back(&it->second);
+          }
         }
       }
     }
@@ -154,22 +160,28 @@ namespace noggit
     delete_instances(instances_to_remove);
   }
 
-  void world_model_instances_storage::delete_instances_from_tile(tile_index const& tile)
+  void world_model_instances_storage::delete_instances_from_tile(tile_index const& tile, bool m2s, bool wmos)
   {
     std::vector<selection_type> instances_to_remove;
 
-    for (auto it = _m2s.begin(); it != _m2s.end(); ++it)
+    if (m2s)
     {
-      if (tile_index(it->second.pos) == tile)
+      for (auto it = _m2s.begin(); it != _m2s.end(); ++it)
       {
-        instances_to_remove.push_back(&it->second);
+        if (tile_index(it->second.pos) == tile)
+        {
+          instances_to_remove.push_back(&it->second);
+        }
       }
     }
-    for (auto it = _wmos.begin(); it != _wmos.end(); ++it)
+    if (wmos)
     {
-      if (tile_index(it->second.pos) == tile)
+      for (auto it = _wmos.begin(); it != _wmos.end(); ++it)
       {
-        instances_to_remove.push_back(&it->second);
+        if (tile_index(it->second.pos) == tile)
+        {
+          instances_to_remove.push_back(&it->second);
+        }
       }
     }
 

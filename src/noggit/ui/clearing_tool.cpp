@@ -30,7 +30,8 @@ namespace noggit
       , _clear_duplicate_textures(false)
       , _clear_texture_flags(false)
       , _clear_liquids(false)
-      , _clear_models(false)
+      , _clear_m2s(false)
+      , _clear_wmos(false)
       , _clear_shadows(false)
       , _clear_mccv(false)
       , _clear_impassible_flag(false)
@@ -46,7 +47,8 @@ namespace noggit
       clearing_option_layout->addWidget(new checkbox("Textures", &_clear_textures, clearing_option_group));
       clearing_option_layout->addWidget(new checkbox("Texture Duplicates", &_clear_duplicate_textures, clearing_option_group));
       clearing_option_layout->addWidget(new checkbox("Liquids", &_clear_liquids, clearing_option_group));
-      clearing_option_layout->addWidget(new checkbox("Models", &_clear_models, clearing_option_group));
+      clearing_option_layout->addWidget(new checkbox("M2s", &_clear_m2s, clearing_option_group));
+      clearing_option_layout->addWidget(new checkbox("WMOs", &_clear_wmos, clearing_option_group));
       clearing_option_layout->addWidget(new checkbox("Shadows", &_clear_shadows, clearing_option_group));
       clearing_option_layout->addWidget(new checkbox("Vertex Colors", &_clear_mccv, clearing_option_group));
       clearing_option_layout->addWidget(new checkbox("Impassible Flag", &_clear_impassible_flag, clearing_option_group));
@@ -125,7 +127,8 @@ namespace noggit
           , _clear_duplicate_textures.get()
           , _clear_texture_flags.get()
           , _clear_liquids.get()
-          , _clear_models.get()
+          , _clear_m2s.get()
+          , _clear_wmos.get()
           , _clear_shadows.get()
           , _clear_mccv.get()
           , _clear_impassible_flag.get()
@@ -141,7 +144,8 @@ namespace noggit
           , _clear_duplicate_textures.get()
           , _clear_texture_flags.get()
           , _clear_liquids.get()
-          , _clear_models.get()
+          , _clear_m2s.get()
+          , _clear_wmos.get()
           , _clear_shadows.get()
           , _clear_mccv.get()
           , _clear_impassible_flag.get()
