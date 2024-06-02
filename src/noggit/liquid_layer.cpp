@@ -776,6 +776,8 @@ void liquid_layer::update_min_max()
   {
     _liquid_vertex_format = 2;
   }
+
+  _fatigue_enabled = check_fatigue();
 }
 
 void liquid_layer::copy_subchunk_height(int x, int z, liquid_layer const& from)
