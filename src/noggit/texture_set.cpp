@@ -306,12 +306,19 @@ math::vector_3d TextureSet::anim_param(int layer) const
   return { -anim_dir_x[dir_index], anim_dir_y[dir_index], speed };
 }
 
-bool TextureSet::eraseUnusedTextures()
+bool TextureSet::eraseUnusedTextures(float threshold)
 {
+  if (threshold >= 255.f)
+  {
+    eraseTextures();
+  }
+
   if (nTextures < 2)
   {
     return false;
   }
+
+  int i_threshold = static_cast<int>(threshold);
 
   std::set<int> visible_tex;
 
@@ -325,7 +332,7 @@ bool TextureSet::eraseUnusedTextures()
       {
         // use 0.01 to account for floating point imprecision
         // while not preventing very low pressure brush from painting correctly
-        if (amaps[layer][i] > 0.01f)
+        if (amaps[layer][i] >= threshold)
         {
           visible_tex.emplace(layer);
           break; // texture visible, go to the next layer
@@ -342,7 +349,7 @@ bool TextureSet::eraseUnusedTextures()
       {
         uint8_t a = alphamaps[n]->getAlpha(i);
         sum += a;
-        if (a > 0)
+        if (a > i_threshold)
         {
           visible_tex.emplace(n + 1);
         }

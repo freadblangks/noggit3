@@ -25,9 +25,11 @@ namespace noggit
     clearing_tool::clearing_tool(QWidget* parent)
       : QWidget(parent)
       , _radius(15.0f)
+      , _texture_threshold(1.0f)
       , _clear_height(false)
       , _clear_textures(false)
       , _clear_duplicate_textures(false)
+      , _clear_textures_under_threshold(false)
       , _clear_texture_flags(false)
       , _clear_liquids(false)
       , _clear_m2s(false)
@@ -46,6 +48,7 @@ namespace noggit
       clearing_option_layout->addWidget(new checkbox("Height", &_clear_height, clearing_option_group));
       clearing_option_layout->addWidget(new checkbox("Textures", &_clear_textures, clearing_option_group));
       clearing_option_layout->addWidget(new checkbox("Texture Duplicates", &_clear_duplicate_textures, clearing_option_group));
+      clearing_option_layout->addWidget(new checkbox("Textures below Threshold", &_clear_textures_under_threshold, clearing_option_group));
       clearing_option_layout->addWidget(new checkbox("Liquids", &_clear_liquids, clearing_option_group));
       clearing_option_layout->addWidget(new checkbox("M2s", &_clear_m2s, clearing_option_group));
       clearing_option_layout->addWidget(new checkbox("WMOs", &_clear_wmos, clearing_option_group));
@@ -79,18 +82,36 @@ namespace noggit
 
       layout->addRow(mode_option_group);
 
-      _radius_spin = new QDoubleSpinBox (this);
+      auto parameters_group(new QGroupBox("Parameters", this));
+      auto parameters_layout(new QFormLayout(parameters_group));
+
+      _radius_spin = new QDoubleSpinBox (parameters_group);
       _radius_spin->setRange (0.0f, 1000.0f);
-      _radius_spin->setDecimals (2);
+      _radius_spin->setDecimals(2);
       _radius_spin->setValue (_radius);
 
-      layout->addRow ("Radius:", _radius_spin);
+      parameters_layout->addRow("Radius:", _radius_spin);
 
-      _radius_slider = new QSlider (Qt::Orientation::Horizontal, this);
+      _radius_slider = new QSlider (Qt::Orientation::Horizontal, parameters_group);
       _radius_slider->setRange (0, 1000);
       _radius_slider->setSliderPosition (_radius);
 
-      layout->addRow (_radius_slider);
+      parameters_layout->addRow(_radius_slider);
+
+      _texture_threshold_spin = new QDoubleSpinBox(parameters_group);
+      _texture_threshold_spin->setRange(0., 255.);
+      _texture_threshold_spin->setValue(_texture_threshold);
+
+      parameters_layout->addRow("Texture Alpha Threshold:", _texture_threshold_spin);
+
+      _texture_threshold_slider = new QSlider(Qt::Orientation::Horizontal, parameters_group);
+      _texture_threshold_slider->setRange(0, 255);
+      _texture_threshold_slider->setSliderPosition(_texture_threshold);
+
+      parameters_layout->addRow(_texture_threshold_slider);
+
+
+      layout->addRow(parameters_group);
 
 
 
@@ -112,6 +133,22 @@ namespace noggit
                 }
               );
 
+      connect ( _texture_threshold_spin, qOverload<double> (&QDoubleSpinBox::valueChanged)
+              , [&] (double v)
+                {
+                  _texture_threshold = v;
+                  QSignalBlocker const blocker(_texture_threshold_slider);
+                  _texture_threshold_slider->setSliderPosition((int)std::round(v));
+                }
+              );
+      connect ( _texture_threshold_slider, &QSlider::valueChanged
+              , [&] (int v)
+                {
+                  _texture_threshold = v;
+                  QSignalBlocker const blocker(_texture_threshold_spin);
+                  _texture_threshold_spin->setValue(v);
+                }
+              );
       setMinimumWidth(sizeHint().width());
 
     }
@@ -125,6 +162,8 @@ namespace noggit
           , _clear_height.get()
           , _clear_textures.get()
           , _clear_duplicate_textures.get()
+          , _clear_textures_under_threshold.get()
+          , _texture_threshold
           , _clear_texture_flags.get()
           , _clear_liquids.get()
           , _clear_m2s.get()
@@ -142,6 +181,8 @@ namespace noggit
           , _clear_height.get()
           , _clear_textures.get()
           , _clear_duplicate_textures.get()
+          , _clear_textures_under_threshold.get()
+          , _texture_threshold
           , _clear_texture_flags.get()
           , _clear_liquids.get()
           , _clear_m2s.get()

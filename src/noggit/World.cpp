@@ -2036,15 +2036,16 @@ bool World::replaceTexture(math::vector_3d const& pos, float radius, scoped_blp_
 }
 
 void World::clear_on_chunks ( math::vector_3d const& pos, float radius, bool height, bool textures, bool duplicate_textures
-                            , bool texture_flags, bool liquids, bool m2s, bool wmos, bool shadows, bool mccv, bool impassible_flag, bool holes
+                            , bool textures_below_threshold, float alpha_threshold, bool texture_flags, bool liquids
+                            , bool m2s, bool wmos, bool shadows, bool mccv, bool impassible_flag, bool holes
                             )
 {
   for_all_chunks_in_range
   ( pos, radius
     , [&](MapChunk* chunk)
     {
-      clear_on_chunk ( chunk, height, textures, duplicate_textures, texture_flags
-                     , liquids, shadows, mccv, impassible_flag, holes
+      clear_on_chunk ( chunk, height, textures, duplicate_textures, textures_below_threshold, alpha_threshold
+                     , texture_flags, liquids, shadows, mccv, impassible_flag, holes
                      );
       return true;
     }
@@ -2059,7 +2060,8 @@ void World::clear_on_chunks ( math::vector_3d const& pos, float radius, bool hei
   }
 }
 void World::clear_on_tiles ( math::vector_3d const& pos, float radius, bool height, bool textures, bool duplicate_textures
-                           , bool texture_flags, bool liquids, bool m2s, bool wmos, bool shadows, bool mccv, bool impassible_flag, bool holes
+                           , bool textures_below_threshold, float alpha_threshold, bool texture_flags, bool liquids
+                           , bool m2s, bool wmos, bool shadows, bool mccv, bool impassible_flag, bool holes
                            )
 {
   for_all_tiles_in_range
@@ -2075,8 +2077,8 @@ void World::clear_on_tiles ( math::vector_3d const& pos, float radius, bool heig
       for_all_chunks_on_tile({ tile->xbase + CHUNKSIZE, 0.f, tile->zbase + CHUNKSIZE },
         [&](MapChunk* chunk)
         {
-          clear_on_chunk ( chunk, height, textures, duplicate_textures, texture_flags
-                         , liquids, shadows, mccv, impassible_flag, holes
+          clear_on_chunk ( chunk, height, textures, duplicate_textures, textures_below_threshold, alpha_threshold
+                         , texture_flags, liquids, shadows, mccv, impassible_flag, holes
                          );
           return true;
         }
@@ -2088,7 +2090,8 @@ void World::clear_on_tiles ( math::vector_3d const& pos, float radius, bool heig
 }
 
 void World::clear_on_chunk( MapChunk* chunk, bool height, bool textures, bool duplicate_textures
-                          , bool texture_flags, bool liquids, bool shadows, bool mccv, bool impassible_flag, bool holes
+                          , bool textures_below_threshold, float alpha_threshold, bool texture_flags
+                          , bool liquids, bool shadows, bool mccv, bool impassible_flag, bool holes
                           )
 {
   if (height)
@@ -2102,6 +2105,10 @@ void World::clear_on_chunk( MapChunk* chunk, bool height, bool textures, bool du
   if (duplicate_textures)
   {
     chunk->remove_texture_duplicates();
+  }
+  if (textures_below_threshold)
+  {
+    chunk->remove_unused_textures(alpha_threshold);
   }
   if (texture_flags)
   {

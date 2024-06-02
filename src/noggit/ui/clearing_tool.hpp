@@ -30,11 +30,13 @@ namespace noggit
 
     private:
       float _radius;
+      float _texture_threshold;
       int _mode = 0;
 
       bool_toggle_property _clear_height;
       bool_toggle_property _clear_textures;
       bool_toggle_property _clear_duplicate_textures;
+      bool_toggle_property _clear_textures_under_threshold;
       bool_toggle_property _clear_texture_flags;
       bool_toggle_property _clear_liquids;
       bool_toggle_property _clear_m2s;
@@ -46,6 +48,8 @@ namespace noggit
 
       QSlider* _radius_slider;
       QDoubleSpinBox* _radius_spin;
+      QSlider* _texture_threshold_slider;
+      QDoubleSpinBox* _texture_threshold_spin;
 
     };
   }

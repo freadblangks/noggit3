@@ -1079,10 +1079,17 @@ void MapChunk::eraseTextures()
   texture_set_changed();
   texture_set->eraseTextures();
 }
+
 void MapChunk::remove_texture_duplicates()
 {
   texture_set_changed();
   texture_set->removeDuplicate();
+}
+
+void MapChunk::remove_unused_textures(float threshold)
+{
+  texture_set_changed();
+  texture_set->eraseUnusedTextures(threshold);
 }
 
 void MapChunk::change_texture_flag(scoped_blp_texture_reference const& tex, std::size_t flag, bool add)
