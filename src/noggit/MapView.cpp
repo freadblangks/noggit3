@@ -2395,7 +2395,7 @@ void MapView::tick (float dt)
                       << "\nrotation X/Y/Z: " << instance->dir.x << " / " << instance->dir.y << " / " << instance->dir.z
                       << "\nscale: " << instance->scale
 
-                      << "\nServer-side   position  X:  " << (ZEROPOINT - instance->pos.z) << "     Y:  " << (ZEROPOINT - instance->pos.x) << "     Z:  " << instance->pos.y
+                      << "\nServer-side  position  X:  " << (ZEROPOINT - instance->pos.z) << "     Y:  " << (ZEROPOINT - instance->pos.x) << "     Z:  " << instance->pos.y
                       << "\nServer-side  orientation:  " << fabs(2 * math::constants::pi - math::constants::pi / 180.0 * (float(instance->dir.y) < 0 ? fabs(float(instance->dir.y)) + 180.0 : fabs(float(instance->dir.y) - 180.0)))
 
                       << "\ntextures Used: " << instance->model->header.nTextures
@@ -2462,24 +2462,32 @@ void MapView::tick (float dt)
           // liquid details if the chunk has liquid data
           if (chunk->mt->Water.hasData(0))
           {
-              liquid_chunk* waterchunk = chunk->liquid_chunk();
-              MH2O_Attributes attributes = waterchunk->attributes;
+            liquid_chunk* waterchunk = chunk->liquid_chunk();
+            MH2O_Attributes attributes = waterchunk->attributes;
 
-              if (waterchunk->hasData(0))
+            int layer_count = waterchunk->layer_count();
+
+            if (layer_count > 0)
+            {
+              select_info << "\n---\nliquids:";
+
+              for (int i = 0; i < layer_count; ++i)
               {
-                  liquid_layer liquid = waterchunk->_layers[0]; // only getting data from layer 0, maybe loop them ?
+                liquid_layer liquid = waterchunk->_layers[i];
 
-                  select_info << "\nliquid id: " << liquid.liquid_id() << " (\"" << gLiquidTypeDB.getLiquidName(liquid.liquid_id()) << "\")"
-                              << "\nliquid flags: "
-                                // getting flags from the center tile
-                              << ((attributes.fishable >> (4 * 8 + 4)) & 1 ? "fishable " : "")
-                              << (liquid.has_fatigue() ? "fatigue" : "");
-
+                select_info << "\n[" << i << "]: id: " << liquid.liquid_id() << " (\"" << gLiquidTypeDB.getLiquidName(liquid.liquid_id()) << "\")"
+                            << " - flags: "
+                            // getting flags from the center tile
+                            << ((attributes.fishable >> (4 * 8 + 4)) & 1 ? "fishable " : "")
+                            << (liquid.has_fatigue() ? "fatigue" : "");
               }
+
+              select_info << "\n---";
+            }
           }
           else
           {
-              select_info << "\nno liquid data";
+            select_info << "\nno liquid data";
           }
 
           //! \todo get a list of textures and their flags as well as detail doodads.
