@@ -105,6 +105,8 @@ public:
   int get_lod_level(math::vector_3d const& camera_pos) const;
   void set_lod_level(int lod_level, std::vector<void*>& indices_offsets, std::vector<int>& indices_count);
 
+  int liquid_id() const { return _liquid_id; }
+  int liquid_type() const { return _liquid_type; }
   bool has_fatigue() const { return _fatigue_enabled; }
 private:
   bool check_fatigue() const;
@@ -140,8 +142,5 @@ private:
   std::map<int, std::vector<liquid_indice>> _indices_by_lod;
   std::map<int, int> _indices_count_by_lod;
 
-private:
   math::vector_3d pos;
-
-  friend class MapView;
 };

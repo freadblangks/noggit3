@@ -2469,7 +2469,7 @@ void MapView::tick (float dt)
               {
                   liquid_layer liquid = waterchunk->_layers[0]; // only getting data from layer 0, maybe loop them ?
 
-                  select_info << "\nliquid type: " << liquid._liquid_id << " (\"" << gLiquidTypeDB.getLiquidName(liquid._liquid_id) << "\")"
+                  select_info << "\nliquid id: " << liquid.liquid_id() << " (\"" << gLiquidTypeDB.getLiquidName(liquid.liquid_id()) << "\")"
                               << "\nliquid flags: "
                                 // getting flags from the center tile
                               << ((attributes.fishable >> (4 * 8 + 4)) & 1 ? "fishable " : "")
@@ -2492,7 +2492,7 @@ void MapView::tick (float dt)
         {
           auto layer(boost::get<selected_liquid_layer_type>(lastSelection).layer);
 
-          select_info << "\liquid id:" << layer->_liquid_id << " (\"" << gLiquidTypeDB.getLiquidName(layer->_liquid_id) << "\")\n";
+          select_info << "\liquid id:" << layer->liquid_id() << " (\"" << gLiquidTypeDB.getLiquidName(layer->liquid_id()) << "\")\n";
 
           if (layer->has_fatigue())
           {
