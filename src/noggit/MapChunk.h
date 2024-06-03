@@ -143,7 +143,7 @@ public:
                   , display_mode display
                   ) const;
 
-  int indices_count() const { return _indices_count_per_lod_level.at(0); }
+  int current_lod_indices_count() const { return _indices_count_per_lod_level.at(_lod_level); }
 
   bool is_currently_visible() const { return _is_visible; }
 

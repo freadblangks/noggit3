@@ -1111,7 +1111,7 @@ void MapTile::upload()
   for (int i = 0; i < 256; ++i)
   {
     _indices_offsets.push_back(static_cast<char*>(0) + i * MapChunk::total_indices_count_with_lods() * sizeof(chunk_indice));
-    _indices_count.push_back(mChunks[i / 16][i % 16]->indices_count());
+    _indices_count.push_back(mChunks[i / 16][i % 16]->current_lod_indices_count());
   }
 
   _uploaded = true;
