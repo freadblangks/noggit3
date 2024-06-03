@@ -80,18 +80,16 @@ public:
   }
 
 private:
+  static std::vector<chunk_indice> strip_without_holes; // it's always the same, no need to recreate it each time
+
   chunk_shader_data _shader_data;
   tile_mode _mode;
 
-  bool hasMCCV;
-
-  int holes;
-
-  unsigned int areaID;
+  bool _has_mccv;
+  std::uint32_t _4x4_holes;
+  unsigned int _area_id;
 
   std::unique_ptr<chunk_shadow> _chunk_shadow;
-
-  static std::vector<chunk_indice> strip_without_holes; // it's always the same, no need to recreate it each time
 
   std::map<int, std::vector<chunk_indice>> _indice_strips;
   std::map<int, int> _indices_count_per_lod_level;
@@ -182,7 +180,6 @@ public:
                    , std::vector<void*>& indices_offsets
                    , std::vector<int>& indices_count
                    );
-  //! \todo only this function should be public, all others should be called from it
 
   void intersect (math::ray const& ray, selection_result* results, bool ignore_terrain_holes);
   bool ChangeMCCV(math::vector_3d const& pos, math::vector_4d const& color, float change, float radius, bool editMode);

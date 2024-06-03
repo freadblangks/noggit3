@@ -30,7 +30,7 @@ MapChunk::MapChunk(MapTile *maintile, MPQFile *f, bool bigAlpha, tile_mode mode)
 
   size_t base = f->getPos();
 
-  hasMCCV = false;
+  _has_mccv = false;
 
   // - MCNK ----------------------------------------------
   {
@@ -41,7 +41,7 @@ MapChunk::MapChunk(MapTile *maintile, MPQFile *f, bool bigAlpha, tile_mode mode)
 
     f->read(&header, 0x80);
 
-    areaID = header.areaid;
+    _area_id = header.areaid;
 
     px = header.ix;
     py = header.iy;
@@ -53,7 +53,7 @@ MapChunk::MapChunk(MapTile *maintile, MPQFile *f, bool bigAlpha, tile_mode mode)
     ybase = header.ypos;
 
 
-    holes = header.holes;
+    _4x4_holes = header.holes;
 
     vmin = math::vector_3d(9999999.0f, 9999999.0f, 9999999.0f);
     vmax = math::vector_3d(-9999999.0f, -9999999.0f, -9999999.0f);
@@ -169,7 +169,7 @@ MapChunk::MapChunk(MapTile *maintile, MPQFile *f, bool bigAlpha, tile_mode mode)
       header.flags.flags.has_mccv = 1;
     }
 
-    hasMCCV = true;
+    _has_mccv = true;
 
     unsigned char t[4];
     for (int i = 0; i < mapbufsize; ++i)
@@ -577,7 +577,7 @@ void MapChunk::update_shader_data ( bool selected_texture_changed
   }
 
   csd.draw_impassible_flag = header.flags.flags.impass ? 1 : 0;
-  csd.areaid_color = (math::vector_4d)area_id_colors[areaID];
+  csd.areaid_color = (math::vector_4d)area_id_colors[_area_id];
 
   gl.bufferSubData(GL_UNIFORM_BUFFER, (sizeof(chunk_shader_data) * (py * 16 + px)), sizeof(chunk_shader_data), &csd);
 
@@ -839,25 +839,25 @@ bool MapChunk::changeTerrain(math::vector_3d const& pos, float change, float rad
 
 void MapChunk::reset_mccv()
 {
-  hasMCCV = false;
+  _has_mccv = false;
   maybe_create_mccv();
 }
 
 bool MapChunk::hasColors()
 {
-  return hasMCCV;
+  return _has_mccv;
 }
 
 void MapChunk::maybe_create_mccv()
 {
-  if (!hasMCCV)
+  if (!_has_mccv)
   {
     for (int i = 0; i < mapbufsize; ++i)
     {
       vertices[i].color = math::vector_3d(1.f, 1.f, 1.f);
     }
 
-    hasMCCV = true;
+    _has_mccv = true;
   }
 }
 
@@ -866,7 +866,7 @@ bool MapChunk::ChangeMCCV(math::vector_3d const& pos, math::vector_4d const& col
   float dist;
   bool changed = false;
 
-  if (!hasMCCV)
+  if (!_has_mccv)
   {
     for (int i = 0; i < mapbufsize; ++i)
     {
@@ -877,7 +877,7 @@ bool MapChunk::ChangeMCCV(math::vector_3d const& pos, math::vector_4d const& col
 
     changed = true;
     header.flags.flags.has_mccv = 1;
-    hasMCCV = true;
+    _has_mccv = true;
   }
 
   for (int i = 0; i < mapbufsize; ++i)
@@ -919,7 +919,7 @@ math::vector_3d MapChunk::pickMCCV(math::vector_3d const& pos)
   float dist;
   float cur_dist = UNITSIZE;
 
-  if (!hasMCCV)
+  if (!_has_mccv)
   {
     return math::vector_3d(1.0f, 1.0f, 1.0f);
   }
@@ -1141,19 +1141,19 @@ void MapChunk::clear_shadows()
 
 bool MapChunk::isHole(int i, int j) const
 {
-  return (holes & ((1 << ((j * 4) + i)))) != 0;
+  return (_4x4_holes & ((1 << ((j * 4) + i)))) != 0;
 }
 
 void MapChunk::setHole(math::vector_3d const& pos, bool big, bool add)
 {
   if (big)
   {
-    holes = add ? 0xFFFFFFFF : 0x0;
+    _4x4_holes = add ? 0xFFFFFFFF : 0x0;
   }
   else
   {
     int v = 1 << ((int)((pos.z - zbase) / MINICHUNKSIZE) * 4 + (int)((pos.x - xbase) / MINICHUNKSIZE));
-    holes = add ? (holes | v) : (holes & ~v);
+    _4x4_holes = add ? (_4x4_holes | v) : (_4x4_holes & ~v);
   }
 
   initStrip();
@@ -1161,14 +1161,14 @@ void MapChunk::setHole(math::vector_3d const& pos, bool big, bool add)
 
 void MapChunk::setAreaID(int ID)
 {
-  areaID = ID;
+  _area_id = ID;
 
   require_shader_data_update();
 }
 
 int MapChunk::getAreaID()
 {
-  return areaID;
+  return _area_id;
 }
 
 
@@ -1209,8 +1209,8 @@ void MapChunk::save( util::sExtendableArray &lADTFile
   header.flags.flags.do_not_fix_alpha_map = use_mclq_liquids ? 0 : 1;
 
   lMCNK_header->flags = header.flags;
-  lMCNK_header->holes = holes;
-  lMCNK_header->areaid = areaID;
+  lMCNK_header->holes = _4x4_holes;
+  lMCNK_header->areaid = _area_id;
 
   lMCNK_header->nLayers = -1;
   lMCNK_header->nDoodadRefs = -1;
@@ -1271,7 +1271,7 @@ void MapChunk::save( util::sExtendableArray &lADTFile
 
   // MCCV
   int lMCCV_Size = 0;
-  if (hasMCCV)
+  if (_has_mccv)
   {
     lMCCV_Size = mapbufsize * sizeof(unsigned int);
     lADTFile.Extend(8 + lMCCV_Size);
