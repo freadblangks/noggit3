@@ -12,6 +12,11 @@ struct chunk_shader_data
   vec4 areaid_color;
   ivec4 tex_param_0;
   ivec4 tex_param_1;
+
+  bool is_copied;
+  bool is_in_paste_zone;
+  bool pad_1;
+  bool pad_2;
 };
 
 layout (std140) uniform chunk_data
@@ -26,6 +31,7 @@ uniform sampler2DArray alphamap;
 uniform sampler2DArray texture_arrays[31];
 
 
+uniform bool show_selection_data;
 uniform bool show_unpaintable_chunks;
 uniform bool draw_impassible_flag;
 uniform bool draw_areaid_overlay;
@@ -284,6 +290,23 @@ void main()
   if (draw_terrain_height_contour)
   {
     out_color = vec4(out_color.rgb * contour_alpha(4.0, vary_position.y+0.1, fw.y), 1.0);
+  }
+
+  if(show_selection_data)
+  {
+    
+    if(ubo_data[chunk_id].is_copied && ubo_data[chunk_id].is_in_paste_zone)
+    {
+      out_color.rgb = mix(out_color.rgb, vec3(0.8, 0.3, 0.8), 0.5);
+    }
+    else if(ubo_data[chunk_id].is_copied)
+    {
+      out_color.rgb = mix(out_color.rgb, vec3(0.4, 0.95, 0.3), 0.5);
+    }
+    else if(ubo_data[chunk_id].is_in_paste_zone)
+    {
+      out_color.rgb = mix(out_color.rgb, vec3(0.34, 0.6, 0.9), 0.5);
+    }
   }
 
   bool lines_drawn = false;

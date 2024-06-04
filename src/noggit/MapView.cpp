@@ -1336,7 +1336,7 @@ void MapView::createGUI()
   addHotkey (Qt::Key_4, MOD_alt, [this] { texturingTool->set_brush_level(255.0f* 0.75f); });
   addHotkey (Qt::Key_5, MOD_alt, [this] { texturingTool->set_brush_level(255.0f); });
 
-  addHotkey(Qt::Key_1, MOD_none, [this] { set_editing_mode(editing_mode::ground); }, [this] { return !_mod_num_down;  });
+  addHotkey (Qt::Key_1, MOD_none, [this] { set_editing_mode(editing_mode::ground); }, [this] { return !_mod_num_down;  });
   addHotkey (Qt::Key_2, MOD_none, [this] { set_editing_mode (editing_mode::flatten_blur); }, [this] { return !_mod_num_down;  });
   addHotkey (Qt::Key_3, MOD_none, [this] { set_editing_mode (editing_mode::paint); }, [this] { return !_mod_num_down;  });
   addHotkey (Qt::Key_4, MOD_none, [this] { set_editing_mode (editing_mode::holes); }, [this] { return !_mod_num_down;  });
@@ -1356,6 +1356,8 @@ void MapView::createGUI()
   addHotkey(Qt::Key_7, MOD_ctrl, [this] { change_selected_wmo_doodadset(7); });
   addHotkey(Qt::Key_8, MOD_ctrl, [this] { change_selected_wmo_doodadset(8); });
   addHotkey(Qt::Key_9, MOD_ctrl, [this] { change_selected_wmo_doodadset(9); });
+
+  addHotkey(Qt::Key_V, MOD_none, [this] { _chunk_mover.apply(); }, [this] { return terrainMode == editing_mode::chunk_mover; });
 
   connect(_main_window, &noggit::ui::main_window::exit_prompt_opened, this, &MapView::on_exit_prompt);
 }
@@ -1400,6 +1402,7 @@ MapView::MapView( math::degrees camera_yaw0
   : _camera (camera_pos, camera_yaw0, camera_pitch0)
   , _debug_cam (camera_pos, camera_yaw0, camera_pitch0)
   , _world (std::move (world))
+  , _chunk_mover(_world.get())
   , mTimespeed(0.0f)
   , _uid_fix (uid_fix)
   , _from_bookmark (from_bookmark)
@@ -2023,6 +2026,38 @@ void MapView::tick (float dt)
       }
     }
 
+    if (terrainMode == editing_mode::chunk_mover && leftMouse)
+    {
+      selection_result results
+      ( _world->intersect
+        ( model_view().transposed()
+        , intersect_ray()
+        , false
+        , true
+        , _draw_terrain.get()
+        , _draw_wmo.get()
+        , _draw_models.get()
+        , _draw_hidden_models.get()
+        , false
+        )
+      );
+
+      if(!results.empty())
+      {
+        auto& hit = results.front().second;
+
+        if (_mod_shift_down)
+        {
+          _chunk_mover.add_to_selection(hit);
+        }
+        if (_mod_ctrl_down)
+        {
+          _chunk_mover.remove_from_selection(hit);
+        }
+      }
+    }
+
+
     for (auto& selection : currentSelection)
     {
 #ifdef NOGGIT_HAS_SCRIPTING
@@ -2620,6 +2655,11 @@ void MapView::update_cursor_pos()
     else
     {
       _cursor_pos = boost::get<selected_chunk_type>(hit).position;
+    }
+
+    if (terrainMode == editing_mode::chunk_mover)
+    {
+      _chunk_mover.update_selection_target(_cursor_pos);
     }
   }
 }

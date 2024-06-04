@@ -23,6 +23,7 @@ namespace noggit
       add_tool_icon (editing_mode::scripting,    tr("Script Editor"),   font_awesome::book);
 #endif
       add_tool_icon(editing_mode::clearing, tr("Clearing Tool"), font_awesome::eraser);
+      add_tool_icon(editing_mode::chunk_mover, tr("Chunk Mover"), font_awesome::arrowsalt);
     }
 
     void toolbar::add_tool_icon(editing_mode mode, const QString& name, const font_awesome::icons& icon)

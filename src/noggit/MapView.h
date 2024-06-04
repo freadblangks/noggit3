@@ -5,6 +5,7 @@
 #include <math/ray.hpp>
 #include <math/vector_4d.hpp>
 #include <noggit/bookmarks.hpp>
+#include <noggit/chunk_mover.hpp>
 #include <noggit/Misc.h>
 #include <noggit/Selection.h>
 #include <noggit/bool_toggle_property.hpp>
@@ -115,6 +116,7 @@ private:
 public:
   noggit::bool_toggle_property _draw_hidden_models = {false};
 private:
+  noggit::chunk_mover _chunk_mover;
   boost::optional<int> _liquid_id_below_cursor;
 
   int _selected_area_id = -1;

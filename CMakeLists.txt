@@ -216,6 +216,7 @@ set ( noggit_root_sources
       src/noggit/AsyncLoader.cpp
       src/noggit/bookmarks.cpp
       src/noggit/Brush.cpp
+      src/noggit/chunk_mover.cpp
       src/noggit/cursor_render.cpp
       src/noggit/DBC.cpp
       src/noggit/DBCFile.cpp
@@ -256,6 +257,7 @@ set ( noggit_root_sources
 set ( noggit_ui_sources
       src/noggit/ui/About.cpp
       src/noggit/ui/asset_browser.cpp
+      src/noggit/ui/chunk_mover.cpp
       src/noggit/ui/clearing_tool.cpp
       src/noggit/ui/clickable_label.cpp
       src/noggit/ui/collapsible_widget.cpp
@@ -319,6 +321,7 @@ set ( noggit_root_headers
       src/noggit/bookmarks.hpp
       src/noggit/Brush.h
       src/noggit/camera.hpp
+      src/noggit/chunk_mover.hpp
       src/noggit/cursor_render.hpp
       src/noggit/DBC.h
       src/noggit/DBCFile.h
@@ -366,6 +369,7 @@ set ( noggit_root_headers
 set ( noggit_ui_headers
       src/noggit/ui/About.h
       src/noggit/ui/asset_browser.hpp
+      src/noggit/ui/chunk_mover.hpp
       src/noggit/ui/clearing_tool.hpp
       src/noggit/ui/clickable_label.hpp
       src/noggit/ui/collapsible_widget.hpp

@@ -4,6 +4,7 @@
 #include <math/quaternion.hpp>
 #include <math/vector_3d.hpp>
 #include <noggit/Brush.h>
+#include <noggit/chunk_mover.hpp>
 #include <noggit/liquid_tile.hpp>
 #include <noggit/Log.h>
 #include <noggit/MapChunk.h>
@@ -212,6 +213,83 @@ MapChunk::MapChunk(MapTile *maintile, MPQFile *f, bool bigAlpha, tile_mode mode)
   }
 
   vcenter = (vmin + vmax) * 0.5f;
+}
+
+
+noggit::chunk_data MapChunk::get_chunk_data()
+{
+  noggit::chunk_data data;
+
+  data.origin = math::vector_3d(xbase, ybase, zbase);
+  std::memcpy(&data.vertices, vertices.data(), mapbufsize * sizeof(chunk_vertex));
+  data.area_id = _area_id;
+  data.holes = _4x4_holes;
+  data.flags = header.flags;
+  data.adt_id = mt->index;
+  data.id_x = px;
+  data.id_z = py;
+
+  if (_chunk_shadow)
+  {
+    data.shadows.emplace();
+    std::memcpy(&data.shadows.value().data, _chunk_shadow.get(), sizeof(chunk_shadow));
+  }
+
+  std::memcpy(data.low_quality_texture_map.data(), header.low_quality_texture_map,  8 * 2);
+  std::memcpy(data.disable_doodads_map.data(), header.disable_doodads_map, 8);
+
+  texture_set->copy_data(data);
+
+  return data;
+}
+
+void MapChunk::override_data(noggit::chunk_data& data)
+{
+  vertices = data.vertices;
+  _area_id = data.area_id;
+  _4x4_holes = data.holes;
+
+  header.flags = data.flags;
+
+  if (data.shadows)
+  {
+    _chunk_shadow = std::make_unique<chunk_shadow>();
+    std::memcpy(_chunk_shadow->data, data.shadows->data, sizeof(chunk_shadow));
+  }
+  else
+  {
+    _chunk_shadow.reset();
+  }
+
+  std::memcpy(header.low_quality_texture_map, data.low_quality_texture_map.data(), 8 * 2);
+  std::memcpy(header.disable_doodads_map, data.disable_doodads_map.data(), 8);
+
+  texture_set->override_data(data);
+
+
+  // force update
+  _need_indice_buffer_update = true;
+  _need_lod_update = true;
+  _need_vao_update = true;
+  _need_visibility_update = true;
+  _shader_data_need_update = true;
+
+  updateVerticesData();
+  texture_set_changed();
+  initStrip();
+
+  mt->chunk_height_changed();
+}
+
+void MapChunk::set_copied(bool v)
+{
+  _is_copied = v;
+  require_shader_data_update();
+}
+void MapChunk::set_is_in_paste_zone(bool v)
+{
+  _is_in_paste_zone = v;
+  require_shader_data_update();
 }
 
 int MapChunk::indexLoD(int z, int x)
@@ -562,6 +640,8 @@ void MapChunk::update_shader_data ( bool selected_texture_changed
   // normalize "bool" values
   csd.is_textured = texture_count ? 1 : 0;
   csd.has_shadow = _chunk_shadow ? 1 : 0;
+  csd.is_copied = _is_copied ? 1 : 0;
+  csd.is_in_paste_zone = _is_in_paste_zone ? 1 : 0;
 
   // todo: only check if the textures have changed on the chunk
   // or the current selected texture has changed

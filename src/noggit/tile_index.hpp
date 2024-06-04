@@ -8,7 +8,7 @@
 struct tile_index
 {
   tile_index(const math::vector_3d& pos) : tile_index(std::floor(pos.x / TILESIZE), std::floor(pos.z / TILESIZE)) { }
-  tile_index(std::size_t tileX, std::size_t tileZ) : x(tileX), z(tileZ) { }
+  tile_index(std::size_t tileX = 0, std::size_t tileZ = 0) : x(tileX), z(tileZ) { }
 
   friend bool operator== (tile_index const& lhs, tile_index const& rhs)
   {

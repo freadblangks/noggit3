@@ -1097,6 +1097,7 @@ void World::draw ( math::matrix_4x4 const& model_view
     mcnk_shader.uniform ("draw_terrain_height_contour", (int)draw_contour);
     mcnk_shader.uniform ("draw_impassible_flag", (int)draw_chunk_flag_overlay);
     mcnk_shader.uniform ("show_unpaintable_chunks", (int)show_unpaintable_chunks);
+    mcnk_shader.uniform ("show_selection_data", terrainMode == editing_mode::chunk_mover ? 1 : 0);
 
     mcnk_shader.uniform ("draw_wireframe", (int)draw_wireframe);
 

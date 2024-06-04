@@ -13,6 +13,11 @@ class Brush;
 class MapTile;
 struct chunk_shadow;
 
+namespace noggit
+{
+  class chunk_data;
+}
+
 struct tmp_edit_alpha_values
 {
   using alpha_layer = std::array<float, 64 * 64>;
@@ -38,6 +43,9 @@ public:
             , bool do_not_convert_alphamaps
             , chunk_shadow* shadow
             );
+
+  void copy_data(noggit::chunk_data& data);
+  void override_data(noggit::chunk_data& data);
 
   math::vector_3d anim_param(int layer) const;
 

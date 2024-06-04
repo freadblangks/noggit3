@@ -81,6 +81,7 @@ enum class editing_mode
   scripting,
 #endif
   clearing,
+  chunk_mover,
 };
 
 enum water_opacity

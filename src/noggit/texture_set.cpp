@@ -1,6 +1,7 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
 
 #include <noggit/Brush.h>
+#include <noggit/chunk_mover.hpp>
 #include <noggit/Log.h>
 #include <noggit/MapTile.h>
 #include <noggit/Misc.h>
@@ -94,6 +95,56 @@ TextureSet::TextureSet ( MapChunkHeader const& header
     }
     _need_amap_update = true;
   }
+}
+
+
+void TextureSet::copy_data(noggit::chunk_data& data)
+{
+  apply_alpha_changes();
+
+  data.texture_count = nTextures;
+
+  for (int i = 0; i < nTextures; ++i)
+  {
+    data.textures[i] = _textures[i];
+    data.texture_flags[i] = _layers_info[i];
+
+    if (i > 0)
+    {
+      data.alphamaps[i - 1].setAlpha(alphamaps[i - 1].get()->getAlpha());
+    }
+  }
+}
+
+void TextureSet::override_data(noggit::chunk_data& data)
+{
+  tmp_edit_values.reset();
+
+  nTextures = data.texture_count;
+  _textures.resize(nTextures);
+
+  for (int i = 0; i < nTextures; ++i)
+  {
+    _textures[i] = data.textures[i];
+    _layers_info[i] = data.texture_flags[i];
+
+    if (i > 0)
+    {
+      alphamaps[i - 1] = std::make_unique<Alphamap>();
+      alphamaps[i - 1]->setAlpha(data.alphamaps[i - 1].getAlpha());
+    }
+  }
+  for (int i = nTextures; i < 4; ++i)
+  {
+    if (i > 0)
+    {
+      alphamaps[i - 1].reset();
+    }
+
+    _layers_info[i] = ENTRY_MCLY();
+  }
+
+  require_update();
 }
 
 int TextureSet::addTexture (scoped_blp_texture_reference texture)

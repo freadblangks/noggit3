@@ -49,6 +49,9 @@ struct chunk_shader_data
   math::vector_4d areaid_color;
   int tex_array_index[4] = { 0,0,0,0 };
   int tex_index_in_array[4] = { 0,0,0,0 };
+  int is_copied = 0;
+  int is_in_paste_zone = 0;
+  int pad_1, pad_2;
 };
 
 struct chunk_vertex
@@ -57,6 +60,11 @@ struct chunk_vertex
   math::vector_3d normal;
   math::vector_3d color;
 };
+
+namespace noggit
+{
+  class chunk_data;
+}
 
 class MapChunk
 {
@@ -113,8 +121,15 @@ private:
   bool _need_lod_update = true;
   bool _need_vao_update = true;
 
+  bool _is_copied = false;
+  bool _is_in_paste_zone = false;
+
 public:
   MapChunk(MapTile* mt, MPQFile* f, bool bigAlpha, tile_mode mode);
+  noggit::chunk_data get_chunk_data();
+  void override_data(noggit::chunk_data& data);
+  void set_copied(bool v);
+  void set_is_in_paste_zone(bool v);
 
   MapTile *mt;
   math::vector_3d vmin, vmax, vcenter;
