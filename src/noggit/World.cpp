@@ -1675,6 +1675,14 @@ selection_result World::intersect ( math::matrix_4x4 const& model_view
     }
   }
 
+  std::sort ( results.begin()
+          , results.end()
+          , [](selection_entry const& lhs, selection_entry const& rhs)
+            {
+              return lhs.first < rhs.first;
+            }
+          );
+
   return results;
 }
 

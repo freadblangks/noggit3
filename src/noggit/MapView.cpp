@@ -1664,14 +1664,6 @@ void MapView::paintGL()
 
     if (!results.empty())
     {
-      std::sort ( results.begin()
-                , results.end()
-                , [](selection_entry const& lhs, selection_entry const& rhs)
-                  {
-                    return lhs.first < rhs.first;
-                  }
-                );
-
       auto hit = results.front().second;
       if (hit.which() == eEntry_LiquidLayer)
       {
@@ -1694,14 +1686,6 @@ void MapView::paintGL()
     }
     if (!results2.empty())
     {
-      std::sort ( results2.begin()
-                , results2.end()
-                , [](selection_entry const& lhs, selection_entry const& rhs)
-                {
-                  return lhs.first < rhs.first;
-                }
-              );
-
       c2 = ray2.position(results2.front().first).y;
 
       if (!c_final)
@@ -1711,14 +1695,6 @@ void MapView::paintGL()
     }
     if (!results3.empty())
     {
-      std::sort ( results3.begin()
-                , results3.end()
-                , [](selection_entry const& lhs, selection_entry const& rhs)
-                {
-                  return lhs.first < rhs.first;
-                }
-              );
-
       c3 = ray3.position(results3.front().first).y;
 
       if (!c_final)
@@ -2579,14 +2555,6 @@ selection_result MapView::intersect_result(bool terrain_only, bool intersect_liq
     , intersect_liquids
     )
   );
-
-  std::sort ( results.begin()
-            , results.end()
-            , [](selection_entry const& lhs, selection_entry const& rhs)
-              {
-                return lhs.first < rhs.first;
-              }
-            );
 
   return results;
 }
