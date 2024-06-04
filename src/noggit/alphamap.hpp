@@ -6,17 +6,19 @@
 #include <noggit/MPQ.h>
 #include <opengl/texture.hpp>
 
+#include <array>
+
 class Alphamap
 {
 public:
   Alphamap();
   Alphamap(MPQFile* f, unsigned int flags, bool use_big_alphamaps, bool do_not_fix_alpha_map);
 
-  void setAlpha(size_t offset, unsigned char value);
-  void setAlpha(unsigned char *pAmap);
+  void setAlpha(size_t offset, std::uint8_t value);
+  void setAlpha(const std::uint8_t *pAmap);
 
-  unsigned char getAlpha(size_t offset) const;
-  const unsigned char *getAlpha();
+  std::uint8_t getAlpha(size_t offset) const;
+  const std::uint8_t *getAlpha();
 
   std::vector<uint8_t> compress() const;
 
@@ -25,7 +27,7 @@ private:
   void readBigAlpha(MPQFile *f);
   void readNotCompressed(MPQFile *f, bool do_not_fix_alpha_map);
 
-  void createNew();
+  void reset();
 
-  uint8_t amap[64 * 64];
+  std::array<std::uint8_t, 64 * 64> amap;
 };

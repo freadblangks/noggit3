@@ -7,12 +7,12 @@
 
 Alphamap::Alphamap()
 {
-  createNew();
+  reset();
 }
 
 Alphamap::Alphamap(MPQFile *f, unsigned int flags, bool use_big_alphamaps, bool do_not_fix_alpha_map)
 {
-  createNew();
+  reset();
 
   if (use_big_alphamaps)
   {
@@ -89,7 +89,7 @@ void Alphamap::readCompressed(MPQFile *f)
 
 void Alphamap::readBigAlpha(MPQFile *f)
 {
-  memcpy(amap, f->getPointer(), 64 * 64);
+  memcpy(amap.data(), f->getPointer(), 64 * 64);
   f->seekRelative(0x1000);
 }
 
@@ -128,34 +128,34 @@ void Alphamap::readNotCompressed(MPQFile *f, bool do_not_fix_alpha_map)
   f->seekRelative(0x800);
 }
 
-void Alphamap::createNew()
+void Alphamap::reset()
 {
-  memset(amap, 0, 64 * 64);
+  amap.fill(0);
 }
 
-void Alphamap::setAlpha(size_t offset, unsigned char value)
+void Alphamap::setAlpha(size_t offset, std::uint8_t value)
 {
   amap[offset] = value;
 }
 
-void Alphamap::setAlpha(unsigned char *pAmap)
+void Alphamap::setAlpha(const std::uint8_t *pAmap)
 {
-  memcpy(amap, pAmap, 64*64);
+  memcpy(amap.data(), pAmap, 64 * 64);
 }
 
-unsigned char Alphamap::getAlpha(size_t offset) const
+std::uint8_t Alphamap::getAlpha(size_t offset) const
 {
   return amap[offset];
 }
 
-const unsigned char *Alphamap::getAlpha()
+const std::uint8_t *Alphamap::getAlpha()
 {
-  return amap;
+  return amap.data();
 }
 
 std::vector<uint8_t> Alphamap::compress() const
 {
-  std::vector<uint8_t> data(amap, amap+4096);
+  std::vector<uint8_t> data(amap.data(), amap.data() + 4096);
   auto current (data.begin());
   auto const end (data.end());
   int column_pos = 0;
