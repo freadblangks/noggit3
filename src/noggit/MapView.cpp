@@ -135,6 +135,9 @@ void MapView::setToolPropertyWidgetVisibility(editing_mode mode)
   case editing_mode::clearing:
     _clearing_tool_dock->setVisible(!ui_hidden);
     break;
+  case editing_mode::chunk_mover:
+    _chunk_mover_dock->setVisible(!ui_hidden);
+    break;
   }
 }
 
@@ -292,6 +295,12 @@ void MapView::createGUI()
   _clearing_tool = new noggit::ui::clearing_tool(_clearing_tool_dock);
   _clearing_tool_dock->setWidget(_clearing_tool);
   _tool_properties_docks.insert(_clearing_tool_dock);
+
+  // chunk mover tool
+  _chunk_mover_dock = new QDockWidget("Chunk Mover", this);
+  _chunk_mover_ui = new noggit::ui::chunk_mover_ui(&_chunk_mover, _chunk_mover_dock);
+  _chunk_mover_dock->setWidget(_chunk_mover_ui);
+  _tool_properties_docks.insert(_chunk_mover_dock);
 
   for (auto widget : _tool_properties_docks)
   {
@@ -3316,6 +3325,13 @@ void MapView::wheelEvent (QWheelEvent* event)
     {
       //! \note not actual range
       guiWater->change_height (delta_for_range (40.f));
+    }
+  }
+  else if (terrainMode == editing_mode::chunk_mover)
+  {
+    if (_mod_space_down)
+    {
+      _chunk_mover_ui->change_height_offset(delta_for_range(10.f));
     }
   }
 }

@@ -6,6 +6,7 @@
 #include <math/vector_4d.hpp>
 #include <noggit/bookmarks.hpp>
 #include <noggit/chunk_mover.hpp>
+#include <noggit/ui/chunk_mover.hpp>
 #include <noggit/Misc.h>
 #include <noggit/Selection.h>
 #include <noggit/bool_toggle_property.hpp>
@@ -341,4 +342,6 @@ private:
 
   noggit::ui::clearing_tool* _clearing_tool;
   QDockWidget* _clearing_tool_dock;
+  noggit::ui::chunk_mover_ui* _chunk_mover_ui;
+  QDockWidget* _chunk_mover_dock;
 };

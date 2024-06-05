@@ -12,6 +12,7 @@ namespace noggit
 {
   chunk_mover::chunk_mover(World* world)
     : _world(world)
+    , _height_ofs_property(0.f)
   {
 
   }
@@ -135,7 +136,7 @@ namespace noggit
     int ofs_z = _last_cursor_chunk.second - _selection_center.second;
 
     static const math::vector_3d chunk_center_ofs(CHUNKSIZE * 0.5f, 0.f, CHUNKSIZE * 0.5f);
-    math::vector_3d offset = math::vector_3d(ofs_x * CHUNKSIZE, _height_ofs, ofs_z * CHUNKSIZE);
+    math::vector_3d offset = math::vector_3d(ofs_x * CHUNKSIZE, _height_ofs_property.get(), ofs_z * CHUNKSIZE);
 
     for (auto const& it : _selected_chunks)
     {

@@ -4,6 +4,7 @@
 
 #include <math/vector_3d.hpp>
 #include <math/trig.hpp>
+#include <noggit/float_property.hpp>
 #include <noggit/MapChunk.h>
 #include <noggit/MapHeaders.h>
 #include <noggit/Selection.h>
@@ -69,13 +70,14 @@ namespace noggit
     void remove_from_selection(selection_type selection, bool from_multi_select = false);
     void remove_from_selection(std::vector<selection_type> selection);
 
-    void set_height_offset(float ofs) { _height_ofs = ofs; }
     void apply();
 
     std::pair<int, int> selection_size() const { return _selection_size; }
     std::pair<int, int> selection_center() const { return _selection_center; }
 
     void update_selection_target(math::vector_3d const& cursor_pos);
+
+    float_property& height_offset_property() { return _height_ofs_property; }
 
   private:
     void clear_selection_target_display();
@@ -84,7 +86,7 @@ namespace noggit
   private:
     World* _world;
 
-    float _height_ofs = 0.f;
+    float_property _height_ofs_property;
 
     // in chunks
     std::pair<int, int> _selection_size = { 0, 0 };
