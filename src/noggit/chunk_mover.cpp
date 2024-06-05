@@ -212,11 +212,16 @@ namespace noggit
         {
           for (int z = 0; z < _selection_size.second; ++z)
           {
-            MapChunk* chunk = _world->get_chunk_at(orig + math::vector_3d(x * CHUNKSIZE, 0.f, z * CHUNKSIZE));
+            int id = x + z * _selection_size.first;
 
-            if (chunk)
+            if (_selection_grid_data[id])
             {
-              chunk->set_is_in_paste_zone(true);
+              MapChunk* chunk = _world->get_chunk_at(orig + math::vector_3d(x * CHUNKSIZE, 0.f, z * CHUNKSIZE));
+
+              if (chunk)
+              {
+                chunk->set_is_in_paste_zone(true);
+              }
             }
           }
         }
@@ -258,8 +263,8 @@ namespace noggit
     for (auto const& it : _selected_chunks)
     {
       auto const& cd = it.second;
-      int x = cd.adt_id.x * 16 + cd.id_x;
-      int z = cd.adt_id.z * 16 + cd.id_z;
+      int x = cd.world_id_x();
+      int z = cd.world_id_z();
 
       min_x = std::min(x, min_x);
       max_x = std::max(x, max_x);
@@ -287,6 +292,23 @@ namespace noggit
 
 
 
-    //todo: store a grid of the selection to be able to check individual chunks and display the true form
+    _selection_grid_data.clear();
+
+    // initialize the grid
+    for (int i = 0; i < _selection_size.first * _selection_size.second; ++i)
+    {
+      _selection_grid_data[i] = false;
+    }
+
+    for (auto const& it : _selected_chunks)
+    {
+      auto const& cd = it.second;
+      int x = cd.world_id_x() - min_x;
+      int z = cd.world_id_z() - min_z;
+
+      int id = x + z * _selection_size.first;
+
+      _selection_grid_data[id] = true;
+    }
   }
 }

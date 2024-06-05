@@ -49,6 +49,10 @@ namespace noggit
     std::array<ENTRY_MCLY, 4> texture_flags;
     std::array<Alphamap, 3> alphamaps;
 
+    // index of the chunk in the world
+    int world_id_x() const { return adt_id.x * 16 + id_x; }
+    int world_id_z() const { return adt_id.z * 16 + id_z; }
+
     bool operator==(chunk_data const& other)
     {
       return adt_id == other.adt_id && id_x == other.id_x && id_z == other.id_z;
@@ -89,6 +93,9 @@ namespace noggit
     std::pair<int, int> _selection_start;
     std::pair<int, int> _selection_center;
     std::pair<int, int> _last_cursor_chunk = { -1, -1 };
+
+    // <pos in grid, is selected>
+    std::unordered_map<int, bool> _selection_grid_data;
 
     std::unordered_map<int, selected_model_data> _selected_models;
     // <tile index * 4096 + chunk index, chunk data>
