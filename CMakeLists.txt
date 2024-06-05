@@ -509,6 +509,7 @@ ENDIF(WIN32)
 list (APPEND headers_to_moc
   src/noggit/MapView.h
   src/noggit/bool_toggle_property.hpp
+  src/noggit/float_property.hpp
   src/noggit/ui/asset_browser.hpp
   src/noggit/ui/collapsible_widget.hpp
   src/noggit/ui/terrain_tool.hpp
