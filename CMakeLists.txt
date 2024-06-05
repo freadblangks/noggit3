@@ -377,6 +377,7 @@ set ( noggit_ui_headers
       src/noggit/ui/CurrentTexture.h
       src/noggit/ui/CursorSwitcher.h
       src/noggit/ui/DetailInfos.h
+      src/noggit/ui/double_spinbox.hpp
       src/noggit/ui/FlattenTool.hpp
       src/noggit/ui/font_awesome.hpp
       src/noggit/ui/font_noggit.hpp
