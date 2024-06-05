@@ -3134,7 +3134,7 @@ void MapView::mouseMoveEvent (QMouseEvent* event)
       guiWater->changeRadius(relative_movement.dx() / XSENS);
       break;
     case editing_mode::mccv:
-      shaderTool->changeRadius(relative_movement.dx() / XSENS);
+      shaderTool->change_radius(relative_movement.dx() / XSENS);
       break;
     case editing_mode::clearing:
       _clearing_tool->change_radius(relative_movement.dx() / XSENS);
