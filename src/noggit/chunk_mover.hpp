@@ -53,6 +53,7 @@ namespace noggit
     void clear_selection_target_display();
     void update_selection_infos();
 
+    void recalc_normals_around_selection();
     void fix_gaps();
   private:
     World* _world;

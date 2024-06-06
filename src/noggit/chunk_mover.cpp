@@ -181,6 +181,8 @@ namespace noggit
       fix_gaps();
     }
 
+    recalc_normals_around_selection();
+
     for (auto& it : _selected_models)
     {
       it.second.position += offset;
@@ -316,6 +318,33 @@ namespace noggit
       int id = x + z * _selection_size.first;
 
       _selection_grid_data[id] = true;
+    }
+  }
+
+  void chunk_mover::recalc_normals_around_selection()
+  {
+    if (_selection_size.first < 1 || _last_cursor_chunk.first < 0)
+    {
+      return;
+    }
+
+    // update normals around the paste area too
+    int px = _last_cursor_chunk.first - (_selection_size.first / 2);
+    int pz = _last_cursor_chunk.second - (_selection_size.second / 2);
+
+    math::vector_3d orig(px * CHUNKSIZE + 5.f, 0.f, pz * CHUNKSIZE + 5.f);
+
+    for (int x = -1; x < _selection_size.first + 1; ++x)
+    {
+      for (int z = -1; z < _selection_size.second + 1; ++z)
+      {
+        MapChunk* chunk = _world->get_chunk_at(orig + math::vector_3d(x * CHUNKSIZE, 0.f, z * CHUNKSIZE));
+
+        if (chunk)
+        {
+          _world->recalc_norms(chunk);
+        }
+      }
     }
   }
 
