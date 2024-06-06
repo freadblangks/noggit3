@@ -45,6 +45,8 @@ namespace noggit::ui
 
     param_layout->addRow("Height Offset:", spinbox);
 
+    param_layout->addRow(new checkbox("Fix Gaps", &_fix_gaps, param_group));
+
     layout->addRow(param_group);
   }
 
@@ -62,6 +64,8 @@ namespace noggit::ui
     params.shadows = _override_shadows.get();
     params.area_id = _override_area_id.get();
     params.holes = _override_holes.get();
+
+    params.fix_gaps = _fix_gaps.get();
 
     _chunk_mover->apply(params);
   }

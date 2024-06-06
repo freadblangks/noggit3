@@ -175,6 +175,12 @@ namespace noggit
         chunk->mt->changed.store(true);
       }
     }
+
+    if (params.fix_gaps)
+    {
+      fix_gaps();
+    }
+
     for (auto& it : _selected_models)
     {
       it.second.position += offset;
@@ -310,6 +316,44 @@ namespace noggit
       int id = x + z * _selection_size.first;
 
       _selection_grid_data[id] = true;
+    }
+  }
+
+  void chunk_mover::fix_gaps()
+  {
+    if (_selection_size.first < 1 || _last_cursor_chunk.first < 0)
+    {
+      return;
+    }
+
+    int px = _last_cursor_chunk.first - (_selection_size.first / 2);
+    int pz = _last_cursor_chunk.second - (_selection_size.second / 2);
+
+    math::vector_3d orig(px * CHUNKSIZE + 5.f, 0.f, pz * CHUNKSIZE + 5.f);
+    math::vector_3d ofs_left(-CHUNKSIZE, 0.f, 0.f);
+    math::vector_3d ofs_up(0.f, 0.f, -CHUNKSIZE);
+
+    for (int x = -1; x <= _selection_size.first; ++x)
+    {
+      for (int z = -1; z <= _selection_size.second; ++z)
+      {
+        MapChunk* chunk = _world->get_chunk_at(orig + math::vector_3d(x * CHUNKSIZE, 0.f, z * CHUNKSIZE));
+
+        if (chunk)
+        {
+          MapChunk* left = _world->get_chunk_at(orig + math::vector_3d(x * CHUNKSIZE, 0.f, z * CHUNKSIZE) + ofs_left);
+          MapChunk* up = _world->get_chunk_at(orig + math::vector_3d(x * CHUNKSIZE, 0.f, z * CHUNKSIZE) + ofs_up);
+
+          if (left)
+          {
+            chunk->fixGapLeft(left);
+          }
+          if (up)
+          {
+            chunk->fixGapAbove(up);
+          }
+        }
+      }
     }
   }
 }
