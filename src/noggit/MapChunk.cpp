@@ -262,12 +262,12 @@ void MapChunk::override_data(noggit::chunk_data& data, noggit::chunk_override_pa
 
   header.flags = data.flags;
 
-  if (data.shadows && params.shadows)
+  if (data.shadows && params.shadows && !params.clear_shadows)
   {
     _chunk_shadow = std::make_unique<chunk_shadow>();
     std::memcpy(_chunk_shadow->data, data.shadows->data, sizeof(chunk_shadow));
   }
-  else if(params.shadows)
+  else if(params.shadows || params.clear_shadows)
   {
     _chunk_shadow.reset();
   }

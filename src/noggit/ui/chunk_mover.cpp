@@ -17,10 +17,11 @@ namespace noggit::ui
     , _override_height(true)
     , _override_textures(true)
     , _override_alphamaps(true)
-    , _override_shadows(true)
+    , _override_shadows(false)
     , _override_area_id(true)
     , _override_holes(true)
     , _fix_gaps(true)
+    , _clear_shadows(true)
   {
     auto layout(new QFormLayout(this));
 
@@ -46,6 +47,7 @@ namespace noggit::ui
     param_layout->addRow("Height Offset:", spinbox);
 
     param_layout->addRow(new checkbox("Fix Gaps", &_fix_gaps, param_group));
+    param_layout->addRow(new checkbox("Clear Shadows", &_clear_shadows, param_group));
 
     layout->addRow(param_group);
   }
@@ -66,6 +68,7 @@ namespace noggit::ui
     params.holes = _override_holes.get();
 
     params.fix_gaps = _fix_gaps.get();
+    params.clear_shadows = _clear_shadows.get();
 
     _chunk_mover->apply(params);
   }

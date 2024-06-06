@@ -87,6 +87,7 @@ namespace noggit
     bool area_id;
     bool holes;
 
+    bool clear_shadows;
     bool fix_gaps;
   };
 }

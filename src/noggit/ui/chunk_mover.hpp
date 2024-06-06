@@ -27,5 +27,6 @@ namespace noggit::ui
     bool_toggle_property _override_holes;
 
     bool_toggle_property _fix_gaps;
+    bool_toggle_property _clear_shadows;
   };
 }
