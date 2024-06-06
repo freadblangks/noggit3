@@ -40,7 +40,7 @@ public:
             );
 
   void copy_data(noggit::chunk_data& data);
-  void override_data(noggit::chunk_data& data);
+  void override_data(noggit::chunk_data& data, noggit::chunk_override_params const& params);
 
   math::vector_3d anim_param(int layer) const;
 

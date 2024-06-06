@@ -228,6 +228,7 @@ noggit::chunk_data MapChunk::get_chunk_data()
   data.adt_id = mt->index;
   data.id_x = px;
   data.id_z = py;
+  data.use_vertex_colors = _has_mccv;
 
   if (_chunk_shadow)
   {
@@ -243,28 +244,42 @@ noggit::chunk_data MapChunk::get_chunk_data()
   return data;
 }
 
-void MapChunk::override_data(noggit::chunk_data& data)
+void MapChunk::override_data(noggit::chunk_data& data, noggit::chunk_override_params const& params)
 {
-  vertices = data.vertices;
-  _area_id = data.area_id;
-  _4x4_holes = data.holes;
+  if (params.height)
+  {
+    vertices = data.vertices;
+  }
+
+  if (params.area_id)
+  {
+    _area_id = data.area_id;
+  }
+  if (params.holes)
+  {
+    _4x4_holes = data.holes;
+  }
 
   header.flags = data.flags;
 
-  if (data.shadows)
+  if (data.shadows && params.shadows)
   {
     _chunk_shadow = std::make_unique<chunk_shadow>();
     std::memcpy(_chunk_shadow->data, data.shadows->data, sizeof(chunk_shadow));
   }
-  else
+  else if(params.shadows)
   {
     _chunk_shadow.reset();
   }
 
-  std::memcpy(header.low_quality_texture_map, data.low_quality_texture_map.data(), 8 * 2);
-  std::memcpy(header.disable_doodads_map, data.disable_doodads_map.data(), 8);
+  // todo: make its own thing ?
+  if (params.alphamaps)
+  {
+    std::memcpy(header.low_quality_texture_map, data.low_quality_texture_map.data(), 8 * 2);
+    std::memcpy(header.disable_doodads_map, data.disable_doodads_map.data(), 8);
+  }
 
-  texture_set->override_data(data);
+  texture_set->override_data(data, params);
 
 
   // force update
@@ -273,6 +288,8 @@ void MapChunk::override_data(noggit::chunk_data& data)
   _need_vao_update = true;
   _need_visibility_update = true;
   _shader_data_need_update = true;
+
+  _has_mccv = data.use_vertex_colors;
 
   updateVerticesData();
   texture_set_changed();

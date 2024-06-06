@@ -125,7 +125,7 @@ namespace noggit
     update_selection_infos();
   }
 
-  void chunk_mover::apply()
+  void chunk_mover::apply(chunk_override_params const& params)
   {
     if (_selection_size.first <= 0 || _last_cursor_chunk.first < 0)
     {
@@ -171,7 +171,7 @@ namespace noggit
 
       if (chunk)
       {
-        chunk->override_data();
+        chunk->override_data(cd, params);
         chunk->mt->changed.store(true);
       }
     }

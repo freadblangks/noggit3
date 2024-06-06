@@ -98,7 +98,7 @@ private:
 public:
   MapChunk(MapTile* mt, MPQFile* f, bool bigAlpha, tile_mode mode);
   noggit::chunk_data get_chunk_data();
-  void override_data(noggit::chunk_data& data);
+  void override_data(noggit::chunk_data& data, noggit::chunk_override_params const& params);
   void set_copied(bool v);
   void set_is_in_paste_zone(bool v);
 

@@ -58,6 +58,7 @@ namespace noggit
     int id_x, id_z;
 
     mcnk_flags flags;
+    bool use_vertex_colors;
     std::optional<chunk_shadow> shadows;
     std::array<std::uint8_t, 16> low_quality_texture_map;
     std::array<std::uint8_t, 8> disable_doodads_map;
@@ -75,6 +76,16 @@ namespace noggit
     {
       return adt_id == other.adt_id && id_x == other.id_x && id_z == other.id_z;
     }
+  };
+
+  struct chunk_override_params
+  {
+    bool height;
+    bool textures;
+    bool alphamaps;
+    bool shadows;
+    bool area_id;
+    bool holes;
   };
 }
 

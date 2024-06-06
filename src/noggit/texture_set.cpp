@@ -116,22 +116,41 @@ void TextureSet::copy_data(noggit::chunk_data& data)
   }
 }
 
-void TextureSet::override_data(noggit::chunk_data& data)
+void TextureSet::override_data(noggit::chunk_data& data, noggit::chunk_override_params const& params)
 {
-  tmp_edit_values.reset();
+  if (params.alphamaps)
+  {
+    tmp_edit_values.reset();
+  }
 
-  nTextures = data.texture_count;
-  _textures.resize(nTextures);
+  int old_tex_count = nTextures;
+
+  if (params.textures)
+  {
+    nTextures = data.texture_count;
+    _textures.resize(nTextures);
+  }
 
   for (int i = 0; i < nTextures; ++i)
   {
-    _textures[i] = data.textures[i];
-    _layers_info[i] = data.texture_flags[i];
+    if (params.textures)
+    {
+      _textures[i] = data.textures[i];
+      _layers_info[i] = data.texture_flags[i];
+    }
 
     if (i > 0)
     {
-      alphamaps[i - 1] = std::make_unique<Alphamap>();
-      alphamaps[i - 1]->setAlpha(data.alphamaps[i - 1].getAlpha());
+      if (params.alphamaps)
+      {
+        alphamaps[i - 1] = std::make_unique<Alphamap>();
+        alphamaps[i - 1]->setAlpha(data.alphamaps[i - 1].getAlpha());
+      }
+      // create empty alphamap otherwise to match the texture count
+      else if(i >= old_tex_count)
+      {
+        alphamaps[i - 1] = std::make_unique<Alphamap>();
+      }
     }
   }
   for (int i = nTextures; i < 4; ++i)
@@ -139,6 +158,7 @@ void TextureSet::override_data(noggit::chunk_data& data)
     if (i > 0)
     {
       alphamaps[i - 1].reset();
+
     }
 
     _layers_info[i] = ENTRY_MCLY();

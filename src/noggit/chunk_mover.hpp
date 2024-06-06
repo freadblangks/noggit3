@@ -40,7 +40,7 @@ namespace noggit
     void remove_from_selection(selection_type selection, bool from_multi_select = false);
     void remove_from_selection(std::vector<selection_type> selection);
 
-    void apply();
+    void apply(chunk_override_params const& params);
 
     std::pair<int, int> selection_size() const { return _selection_size; }
     std::pair<int, int> selection_center() const { return _selection_center; }
