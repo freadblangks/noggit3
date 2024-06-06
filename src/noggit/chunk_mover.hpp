@@ -5,7 +5,7 @@
 #include <math/vector_3d.hpp>
 #include <math/trig.hpp>
 #include <noggit/float_property.hpp>
-#include <noggit/MapChunk.h>
+#include <noggit/map_chunk_headers.hpp>
 #include <noggit/MapHeaders.h>
 #include <noggit/Selection.h>
 #include <noggit/tile_index.hpp>
@@ -29,36 +29,6 @@ namespace noggit
     float scale = 1.f;
   };
 
-  class chunk_data
-  {
-  public:
-    math::vector_3d origin;
-    std::array<chunk_vertex, 145> vertices;
-    std::uint32_t area_id;
-    std::uint32_t holes;
-
-    tile_index adt_id;
-    int id_x, id_z;
-
-    mcnk_flags flags;
-    std::optional<chunk_shadow> shadows;
-    std::array<std::uint8_t, 16> low_quality_texture_map;
-    std::array<std::uint8_t, 8> disable_doodads_map;
-
-    int texture_count;
-    std::array<std::string, 4> textures;
-    std::array<ENTRY_MCLY, 4> texture_flags;
-    std::array<Alphamap, 3> alphamaps;
-
-    // index of the chunk in the world
-    int world_id_x() const { return adt_id.x * 16 + id_x; }
-    int world_id_z() const { return adt_id.z * 16 + id_z; }
-
-    bool operator==(chunk_data const& other)
-    {
-      return adt_id == other.adt_id && id_x == other.id_x && id_z == other.id_z;
-    }
-  };
 
   class chunk_mover
   {

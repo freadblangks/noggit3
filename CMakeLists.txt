@@ -329,6 +329,7 @@ set ( noggit_root_headers
       src/noggit/Log.h
       src/noggit/MPQ.h
       src/noggit/map_enums.hpp
+      src/noggit/map_chunk_headers.hpp
       src/noggit/MapChunk.h
       src/noggit/MapHeaders.h
       src/noggit/MapTile.h

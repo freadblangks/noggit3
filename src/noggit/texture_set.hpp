@@ -4,6 +4,7 @@
 
 #include <noggit/MPQ.h>
 #include <noggit/alphamap.hpp>
+#include <noggit/map_chunk_headers.hpp>
 #include <noggit/MapHeaders.h>
 
 #include <cstdint>
@@ -11,12 +12,6 @@
 
 class Brush;
 class MapTile;
-struct chunk_shadow;
-
-namespace noggit
-{
-  class chunk_data;
-}
 
 struct tmp_edit_alpha_values
 {

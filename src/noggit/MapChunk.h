@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <noggit/map_chunk_headers.hpp>
+
 #include <math/quaternion.hpp> // math::vector_4d
 #include <noggit/Misc.h>
 #include <noggit/ModelInstance.h>
@@ -29,37 +31,6 @@ class Brush;
 class liquid_chunk;
 class MapTile;
 
-using chunk_indice = uint16_t;
-static const int mapbufsize = 9 * 9 + 8 * 8; // chunk size
-
-
-struct chunk_shadow
-{
-  uint64_t data[64];
-};
-
-struct chunk_shader_data
-{
-  // use ints to match the layout in glsl
-  int has_shadow;
-  int is_textured;
-  int cant_paint;
-  int draw_impassible_flag;
-  math::vector_4d tex_animations[4]; // anim direction + anim speed, 4th value is padding
-  math::vector_4d areaid_color;
-  int tex_array_index[4] = { 0,0,0,0 };
-  int tex_index_in_array[4] = { 0,0,0,0 };
-  int is_copied = 0;
-  int is_in_paste_zone = 0;
-  int pad_1, pad_2;
-};
-
-struct chunk_vertex
-{
-  math::vector_3d position;
-  math::vector_3d normal;
-  math::vector_3d color;
-};
 
 namespace noggit
 {
