@@ -18,7 +18,7 @@
 
 struct chunk_shadow
 {
-  std::uint64_t data[64];
+  std::array<std::uint64_t, 64> data;
 };
 
 struct chunk_shader_data

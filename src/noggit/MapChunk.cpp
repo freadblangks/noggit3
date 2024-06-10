@@ -265,7 +265,7 @@ void MapChunk::override_data(noggit::chunk_data& data, noggit::chunk_override_pa
   if (data.shadows && params.shadows && !params.clear_shadows)
   {
     _chunk_shadow = std::make_unique<chunk_shadow>();
-    std::memcpy(_chunk_shadow->data, data.shadows->data, sizeof(chunk_shadow));
+    std::memcpy(_chunk_shadow->data.data(), data.shadows->data.data(), sizeof(chunk_shadow));
   }
   else if(params.shadows || params.clear_shadows)
   {
@@ -1536,7 +1536,7 @@ void MapChunk::save( util::sExtendableArray &lADTFile
 
     auto const lLayer = lADTFile.GetPointer<char>(lCurrentPosition + 8);
 
-    memcpy(lLayer.get(), _chunk_shadow->data, 0x200);
+    memcpy(lLayer.get(), _chunk_shadow->data.data(), 0x200);
 
     lCurrentPosition += 8 + lMCSH_Size;
     lMCNK_Size += 8 + lMCSH_Size;
