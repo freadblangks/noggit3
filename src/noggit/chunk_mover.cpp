@@ -10,6 +10,8 @@
 
 namespace noggit
 {
+  std::array<int, mapbufsize> chunk_mover::chunk_vertex_rot_90_lookup = chunk_mover::make_chunk_vertex_rot_90_lookup();
+
   chunk_mover::chunk_mover(World* world)
     : _world(world)
     , _height_ofs_property(0.f)
@@ -138,7 +140,9 @@ namespace noggit
     static const math::vector_3d chunk_center_ofs(CHUNKSIZE * 0.5f, 0.f, CHUNKSIZE * 0.5f);
     math::vector_3d offset = math::vector_3d(ofs_x * CHUNKSIZE, _height_ofs_property.get(), ofs_z * CHUNKSIZE);
 
-    for (auto const& it : _selected_chunks)
+    std::unordered_map<int, chunk_data> const& chunks = _target_chunks.empty() ? _selected_chunks : _target_chunks;
+
+    for (auto const& it : chunks)
     {
       // don't use a ref, otherwise the coordinates get changed each time
       // and we don't want that, and rotations prevent us from simply passing the offset
@@ -146,21 +150,8 @@ namespace noggit
       auto cd = it.second;
       cd.origin += offset;
 
-      cd.id_x += ofs_x;
-      cd.id_z += ofs_z;
-
-      // clamp the ids to [0;15]
-      if (cd.id_x < 0)
-      {
-        cd.id_x += 16 * (1 + cd.id_x / 16);
-      }
-      if (cd.id_z < 0)
-      {
-        cd.id_z += 16 * (1 + cd.id_z / 16);
-      }
-
-      cd.id_x = cd.id_x % 16;
-      cd.id_z = cd.id_z % 16;
+      cd.world_id_x += ofs_x;
+      cd.world_id_z += ofs_z;
 
       for (chunk_vertex& v : cd.vertices)
       {
@@ -189,7 +180,7 @@ namespace noggit
     }
   }
 
-  void chunk_mover::update_selection_target(math::vector_3d const& cursor_pos)
+  void chunk_mover::update_selection_target(math::vector_3d const& cursor_pos, bool force_update)
   {
     if (_selection_size.first <= 0)
     {
@@ -204,26 +195,29 @@ namespace noggit
       int pz = chunk->py + chunk->mt->index.z * 16;
 
       std::pair<int, int> pos = { px, pz };
+      std::pair<int, int> const& size = _target_size.first > 0 ? _target_size : _selection_size;
+      std::unordered_map<int, bool> const& grid = _target_size.first > 0 ? _target_grid_data : _selection_grid_data;
 
-      if (_last_cursor_chunk != pos)
+
+      if (_last_cursor_chunk != pos || force_update)
       {
         clear_selection_target_display();
 
         _last_cursor_chunk = pos;
 
         // move to the start
-        px -= _selection_size.first / 2;
-        pz -= _selection_size.second / 2;
+        px -= size.first / 2;
+        pz -= size.second / 2;
 
         math::vector_3d orig(px * CHUNKSIZE + 5.f, 0.f, pz * CHUNKSIZE + 5.f);
 
-        for (int x = 0; x < _selection_size.first; ++x)
+        for (int x = 0; x < size.first; ++x)
         {
-          for (int z = 0; z < _selection_size.second; ++z)
+          for (int z = 0; z < size.second; ++z)
           {
-            int id = x + z * _selection_size.first;
+            int id = x + z * size.first;
 
-            if (_selection_grid_data[id])
+            if (grid.at(id))
             {
               MapChunk* chunk = _world->get_chunk_at(orig + math::vector_3d(x * CHUNKSIZE, 0.f, z * CHUNKSIZE));
 
@@ -238,18 +232,192 @@ namespace noggit
     }
   }
 
+  void chunk_mover::rotate_90_deg()
+  {
+    if (_selection_size.first <= 0)
+    {
+      _target_size = { 0,0 };
+      return;
+    }
+
+    clear_selection_target_display();
+
+    if (_target_chunks.empty())
+    {
+      _target_chunks = std::unordered_map<int, chunk_data>(_selected_chunks);
+      _target_start = _selection_start;
+      _target_size = _selection_size;
+    }
+
+    _target_size = { _target_size.second, _target_size.first };
+
+    auto previous_start = _target_start;
+
+    _target_start = { _selection_center.first - _target_size.first / 2, _selection_center.second - _target_size.second / 2 };
+
+    std::unordered_map<int, bool> rotated_grid;
+
+    for (int i = 0; i < _target_size.first * _target_size.second; ++i)
+    {
+      rotated_grid[i] = false;
+    }
+
+    for (auto& it : _target_chunks)
+    {
+      // no ref, we need to keep the original data intact for now
+      chunk_data cd = it.second;
+      chunk_data const& orig = it.second;
+
+      int old_grid_px = orig.world_id_x - previous_start.first;
+      int old_grid_pz = orig.world_id_z - previous_start.second;
+
+      int new_grid_px = old_grid_pz;
+      int new_grid_pz = old_grid_px;
+
+      if (_target_size.second > 1)
+      {
+        new_grid_pz = _target_size.second - new_grid_pz - 1;
+      }
+
+      int n_id = new_grid_px + new_grid_pz * _target_size.first;
+      rotated_grid[n_id] = true;
+
+      int px = _target_start.first + new_grid_px;
+      int pz = _target_start.second + new_grid_pz;
+
+      cd.world_id_x = px;
+      cd.world_id_z = pz;
+
+      float diff_x = (orig.world_id_x  - cd.world_id_x) * CHUNKSIZE;
+      float diff_z = (orig.world_id_z  - cd.world_id_z) * CHUNKSIZE;
+
+      cd.origin.x -= diff_x;
+      cd.origin.z -= diff_z;
+
+      for (int i = 0; i < mapbufsize; ++i)
+      {
+        int lookup = chunk_vertex_rot_90_lookup[i];
+        cd.vertices[lookup] = orig.vertices[i];
+        cd.vertices[lookup].position.x = orig.vertices[lookup].position.x - diff_x;
+        cd.vertices[lookup].position.z = orig.vertices[lookup].position.z - diff_z;
+      }
+
+      for (int layer = 0; layer < cd.texture_count - 1; ++layer)
+      {
+        Alphamap const& orig_amap = orig.alphamaps[layer];
+        Alphamap& amap = cd.alphamaps[layer];
+
+        for (int x = 0; x < 64; ++x)
+        {
+          int inv_x = 63 - x;
+
+          for (int z = 0; z < 64; ++z)
+          {
+            amap.setAlpha(inv_x * 64 + z, orig_amap.getAlpha(z * 64 + x));
+          }
+        }
+      }
+
+      for (int layer = 0; layer < cd.texture_count; ++layer)
+      {
+        // animation enabled
+        if (cd.texture_flags[layer].flags & 0x40)
+        {
+          int rotation_flags = cd.texture_flags[layer].flags & 0x7;
+          // clear rotation values
+          cd.texture_flags[layer].flags &= ~0x7;
+
+          // add 90° to the animation rotation
+          rotation_flags -= 2;
+          if (rotation_flags < 0)
+          {
+            rotation_flags += 8;
+          }
+
+          cd.texture_flags[layer].flags |= rotation_flags & 0x7;
+        }
+      }
+
+      if (cd.shadows)
+      {
+        cd.shadows->data.fill(0);
+
+        for (int x = 0; x < 64; ++x)
+        {
+          int inv_x = 63 - x;
+
+          for (int z = 0; z < 64; ++z)
+          {
+            if (orig.shadows->data[z] & std::uint64_t(1) << x)
+            {
+              cd.shadows->data[inv_x] |= std::uint64_t(1) << z;
+            }
+          }
+        }
+      }
+
+      cd.holes = 0;
+
+      for (int x = 0; x < 4; ++x)
+      {
+        int inv_x = 3 - x;
+
+        for (int z = 0; z < 4; ++z)
+        {
+          if (orig.holes & (1 << ((z * 4) + x)))
+          {
+            cd.holes |= (1 << ((inv_x * 4) + z));
+          }
+        }
+      }
+
+      cd.low_quality_texture_map.fill(0);
+      cd.disable_doodads_map.fill(0);
+
+      for (int x = 0; x < 8; ++x)
+      {
+        int inv_x = 7 - x;
+
+        for (int z = 0; z < 8; ++z)
+        {
+          cd.disable_doodads_map[inv_x] |= (orig.disable_doodads_map[z] >> x & 0x1) << z;
+          cd.low_quality_texture_map[inv_x] |= (orig.low_quality_texture_map[z] >> x & 0x3) << z;
+        }
+      }
+
+      it.second = cd;
+    }
+
+    _target_grid_data = rotated_grid;
+
+    if (_last_cursor_chunk.first > -1)
+    {
+      update_selection_target(math::vector_3d(_last_cursor_chunk.first * CHUNKSIZE + 5.f, 0.f, _last_cursor_chunk.second * CHUNKSIZE + 5.f), true);
+    }
+  }
+
   void chunk_mover::clear_selection_target_display()
   {
     if (_selection_size.first > 0 && _last_cursor_chunk.first > -1)
     {
-      int px = _last_cursor_chunk.first - (_selection_size.first / 2);
-      int pz = _last_cursor_chunk.second - (_selection_size.second/ 2);
+      int sx = _selection_size.first;
+      int sz = _selection_size.second;
+
+      if (_target_size.first > 0)
+      {
+        sx = std::max(sx, _target_size.first);
+        sz = std::max(sz, _target_size.second);
+      }
+
+      int px = _last_cursor_chunk.first - (sx / 2);
+      int pz = _last_cursor_chunk.second - (sz / 2);
 
       math::vector_3d orig(px * CHUNKSIZE + 5.f, 0.f, pz * CHUNKSIZE + 5.f);
 
-      for (int x = 0; x < _selection_size.first; ++x)
+
+      for (int x = 0; x < sx; ++x)
       {
-        for (int z = 0; z < _selection_size.second; ++z)
+        for (int z = 0; z < sz; ++z)
         {
           MapChunk* chunk = _world->get_chunk_at(orig + math::vector_3d(x * CHUNKSIZE, 0.f, z * CHUNKSIZE));
 
@@ -272,8 +440,8 @@ namespace noggit
     for (auto const& it : _selected_chunks)
     {
       auto const& cd = it.second;
-      int x = cd.world_id_x();
-      int z = cd.world_id_z();
+      int x = cd.world_id_x;
+      int z = cd.world_id_z;
 
       min_x = std::min(x, min_x);
       max_x = std::max(x, max_x);
@@ -297,6 +465,8 @@ namespace noggit
       // it's used to check if there is any chunk selected
       _selection_size = { 0,0 };
       _selection_grid_data.clear();
+      _target_size = { 0,0 };
+      _target_grid_data.clear();
     }
 
 
@@ -312,13 +482,17 @@ namespace noggit
     for (auto const& it : _selected_chunks)
     {
       auto const& cd = it.second;
-      int x = cd.world_id_x() - min_x;
-      int z = cd.world_id_z() - min_z;
+      int x = cd.world_id_x - min_x;
+      int z = cd.world_id_z - min_z;
 
       int id = x + z * _selection_size.first;
 
       _selection_grid_data[id] = true;
     }
+
+    _target_chunks.clear();
+    _target_grid_data.clear();
+    _target_size = { 0,0 };
   }
 
   void chunk_mover::recalc_normals_around_selection()
@@ -328,15 +502,17 @@ namespace noggit
       return;
     }
 
-    // update normals around the paste area too
-    int px = _last_cursor_chunk.first - (_selection_size.first / 2);
-    int pz = _last_cursor_chunk.second - (_selection_size.second / 2);
+    std::pair<int, int> const& size = _target_size.first > 0 ? _target_size : _selection_size;
+
+    // update normals around the target area too
+    int px = _last_cursor_chunk.first - (size.first / 2);
+    int pz = _last_cursor_chunk.second - (size.second / 2);
 
     math::vector_3d orig(px * CHUNKSIZE + 5.f, 0.f, pz * CHUNKSIZE + 5.f);
 
-    for (int x = -1; x < _selection_size.first + 1; ++x)
+    for (int x = -1; x < size.first + 1; ++x)
     {
-      for (int z = -1; z < _selection_size.second + 1; ++z)
+      for (int z = -1; z < size.second + 1; ++z)
       {
         MapChunk* chunk = _world->get_chunk_at(orig + math::vector_3d(x * CHUNKSIZE, 0.f, z * CHUNKSIZE));
 
@@ -355,16 +531,18 @@ namespace noggit
       return;
     }
 
-    int px = _last_cursor_chunk.first - (_selection_size.first / 2);
-    int pz = _last_cursor_chunk.second - (_selection_size.second / 2);
+    std::pair<int, int> const& size = _target_size.first > 0 ? _target_size : _selection_size;
+
+    int px = _last_cursor_chunk.first - (size.first / 2);
+    int pz = _last_cursor_chunk.second - (size.second / 2);
 
     math::vector_3d orig(px * CHUNKSIZE + 5.f, 0.f, pz * CHUNKSIZE + 5.f);
     math::vector_3d ofs_left(-CHUNKSIZE, 0.f, 0.f);
     math::vector_3d ofs_up(0.f, 0.f, -CHUNKSIZE);
 
-    for (int x = -1; x <= _selection_size.first; ++x)
+    for (int x = -1; x <= size.first; ++x)
     {
-      for (int z = -1; z <= _selection_size.second; ++z)
+      for (int z = -1; z <= size.second; ++z)
       {
         MapChunk* chunk = _world->get_chunk_at(orig + math::vector_3d(x * CHUNKSIZE, 0.f, z * CHUNKSIZE));
 

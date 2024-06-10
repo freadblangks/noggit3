@@ -225,9 +225,8 @@ noggit::chunk_data MapChunk::get_chunk_data()
   data.area_id = _area_id;
   data.holes = _4x4_holes;
   data.flags = header.flags;
-  data.adt_id = mt->index;
-  data.id_x = px;
-  data.id_z = py;
+  data.world_id_x = mt->index.x * 16 + px;
+  data.world_id_z = mt->index.z * 16 + py;
   data.use_vertex_colors = _has_mccv;
 
   if (_chunk_shadow)

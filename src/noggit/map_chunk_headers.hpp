@@ -54,8 +54,13 @@ namespace noggit
     std::uint32_t area_id;
     std::uint32_t holes;
 
-    tile_index adt_id;
-    int id_x, id_z;
+    // index of the chunk in the world
+    int world_id_x;
+    int world_id_z;
+
+    tile_index tile_index() const { return ::tile_index(origin); };
+    int id_x() const { return world_id_x % 16; }
+    int id_z() const { return world_id_z % 16; }
 
     mcnk_flags flags;
     bool use_vertex_colors;
@@ -68,13 +73,10 @@ namespace noggit
     std::array<ENTRY_MCLY, 4> texture_flags;
     std::array<Alphamap, 3> alphamaps;
 
-    // index of the chunk in the world
-    int world_id_x() const { return adt_id.x * 16 + id_x; }
-    int world_id_z() const { return adt_id.z * 16 + id_z; }
 
     bool operator==(chunk_data const& other)
     {
-      return adt_id == other.adt_id && id_x == other.id_x && id_z == other.id_z;
+      return world_id_x == other.world_id_x && world_id_z == other.world_id_z;
     }
   };
 

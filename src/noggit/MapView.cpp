@@ -1367,6 +1367,7 @@ void MapView::createGUI()
   addHotkey(Qt::Key_9, MOD_ctrl, [this] { change_selected_wmo_doodadset(9); });
 
   addHotkey(Qt::Key_V, MOD_none, [this] { _chunk_mover_ui->paste_selection(); }, [this] { return terrainMode == editing_mode::chunk_mover; });
+  addHotkey(Qt::Key_R, MOD_none, [this] { _chunk_mover.rotate_90_deg(); }, [this] { return terrainMode == editing_mode::chunk_mover; });
 
   connect(_main_window, &noggit::ui::main_window::exit_prompt_opened, this, &MapView::on_exit_prompt);
 }
