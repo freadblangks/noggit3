@@ -230,7 +230,7 @@ void liquid_tile::regen_buffer(liquid_render& render)
 
   gl.bufferData<GL_ARRAY_BUFFER>(_vertices_vbo, total_layer_count * liquid_layer::vertex_buffer_size_required, NULL, GL_STATIC_DRAW);
   gl.bufferData<GL_ELEMENT_ARRAY_BUFFER>(_indices_vbo, total_layer_count * liquid_layer::indice_buffer_size_required, NULL, GL_STATIC_DRAW);
-  gl.bufferData<GL_UNIFORM_BUFFER>(_chunks_data_ubo, total_layer_count * sizeof(liquid_layer_data), NULL, GL_STATIC_DRAW);
+  gl.bufferData<GL_UNIFORM_BUFFER>(_chunks_data_ubo, total_layer_count * sizeof(liquid_layer_ubo_data), NULL, GL_STATIC_DRAW);
 
   opengl::scoped::vao_binder const _ (_vao);
 

@@ -15,7 +15,7 @@
 #include <string>
 
 
-liquid_layer_data liquid_render::ubo_data(int liquid_id)
+liquid_layer_ubo_data liquid_render::ubo_data(int liquid_id)
 {
   auto& it = _liquids_ubo_data.find(liquid_id);
 
@@ -26,7 +26,7 @@ liquid_layer_data liquid_render::ubo_data(int liquid_id)
   else
   {
     std::string filename;
-    liquid_layer_data data;
+    liquid_layer_ubo_data data;
     try
     {
       DBCFile::Record lLiquidTypeRow = gLiquidTypeDB.getByID(liquid_id);

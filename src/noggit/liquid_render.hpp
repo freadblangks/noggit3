@@ -24,7 +24,7 @@ struct liquid_vertex
   liquid_vertex(math::vector_3d const& pos, math::vector_2d const& uv, float depth) : position(pos), uv(uv), depth(depth) {}
 };
 
-struct liquid_layer_data
+struct liquid_layer_ubo_data
 {
   int liquid_type;
   int array_id;
@@ -43,7 +43,7 @@ public:
     return program;
   }
 
-  liquid_layer_data ubo_data(int liquid_id);
+  liquid_layer_ubo_data ubo_data(int liquid_id);
   void bind_arrays();
   int array_count() const { return _texture_arrays.size(); }
 private:
@@ -56,7 +56,7 @@ private:
   std::map<int, int> _liquid_id_types;
   std::map<int, math::vector_2d> _float_param_by_liquid_id;
 
-  std::map<int, liquid_layer_data> _liquids_ubo_data;
+  std::map<int, liquid_layer_ubo_data> _liquids_ubo_data;
   // todo: make sure it doesn't go over the shader's array size
   std::vector<opengl::texture_array> _texture_arrays;
   std::vector<GLint> _arrays_format;

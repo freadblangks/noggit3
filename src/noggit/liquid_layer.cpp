@@ -836,7 +836,7 @@ void liquid_layer::update_data(liquid_render& render)
 {
   update_indices();
 
-  liquid_layer_data data = render.ubo_data(_liquid_id);
+  liquid_layer_ubo_data data = render.ubo_data(_liquid_id);
   int offset = 0;
 
   for (int i = 0; i < lod_count; ++i)
@@ -847,7 +847,7 @@ void liquid_layer::update_data(liquid_render& render)
   }
 
   gl.bufferSubData(GL_ARRAY_BUFFER, _index_in_tile * vertex_buffer_size_required, _vertices.size() * sizeof(liquid_vertex), _vertices.data());
-  gl.bufferSubData(GL_UNIFORM_BUFFER, _index_in_tile * sizeof(liquid_layer_data), sizeof(liquid_layer_data), &data);
+  gl.bufferSubData(GL_UNIFORM_BUFFER, _index_in_tile * sizeof(liquid_layer_ubo_data), sizeof(liquid_layer_ubo_data), &data);
 
   _indices_by_lod.clear();
 

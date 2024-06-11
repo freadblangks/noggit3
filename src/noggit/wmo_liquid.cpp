@@ -211,7 +211,7 @@ void wmo_liquid::upload(opengl::scoped::use_program& water_shader, liquid_render
 
   gl.bufferData<GL_ELEMENT_ARRAY_BUFFER, std::uint16_t>(_indices_buffer, indices, GL_STATIC_DRAW);
   gl.bufferData<GL_ARRAY_BUFFER>(_vertices_buffer, _vertices.size() * sizeof(liquid_vertex), _vertices.data(), GL_STATIC_DRAW);
-  gl.bufferData<GL_UNIFORM_BUFFER>(_liquid_ubo, sizeof(liquid_layer_data), &ubo_data, GL_STATIC_DRAW);
+  gl.bufferData<GL_UNIFORM_BUFFER>(_liquid_ubo, sizeof(liquid_layer_ubo_data), &ubo_data, GL_STATIC_DRAW);
 
   opengl::scoped::index_buffer_manual_binder indices_binder (_indices_buffer);
 
