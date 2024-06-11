@@ -338,7 +338,7 @@ void MapChunk::update_intersect_points()
 int MapChunk::get_lod_level(math::vector_3d const& camera_pos, display_mode display) const
 {
   // use lod 4 (single quad) only for flat chunks without more than 1 textures
-  if (std::abs(vmin.y - vmax.y) < 0.1f && texture_set->nTextures < 2)
+  if (std::abs(vmin.y - vmax.y) < 0.1f && texture_set->nTextures < 2 && !_has_mccv)
   {
     return std::min(lod_count, 4);
   }
