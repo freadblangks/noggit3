@@ -4,6 +4,7 @@
 
 #include <noggit/MapHeaders.h>
 
+#include <math/vector_2d.hpp>
 #include <math/vector_3d.hpp>
 #include <math/vector_4d.hpp>
 
@@ -44,8 +45,26 @@ struct chunk_vertex
   math::vector_3d color;
 };
 
+struct liquid_vertex
+{
+  math::vector_3d position;
+  math::vector_2d uv;
+  float depth;
+
+  liquid_vertex() = default;
+  liquid_vertex(math::vector_3d const& pos, math::vector_2d const& uv, float depth) : position(pos), uv(uv), depth(depth) {}
+};
+
 namespace noggit
 {
+  struct liquid_layer_data
+  {
+    int liquid_id;
+    int liquid_type;
+    std::uint64_t subchunk_mask;
+    std::vector<liquid_vertex> vertices;
+  };
+
   class chunk_data
   {
   public:
@@ -73,6 +92,9 @@ namespace noggit
     std::array<ENTRY_MCLY, 4> texture_flags;
     std::array<Alphamap, 3> alphamaps;
 
+    int liquid_layer_count;
+    MH2O_Attributes liquid_attributes;
+    std::vector<liquid_layer_data> liquid_layers;
 
     bool operator==(chunk_data const& other)
     {
@@ -85,6 +107,7 @@ namespace noggit
     bool height;
     bool textures;
     bool alphamaps;
+    bool liquids;
     bool shadows;
     bool area_id;
     bool holes;

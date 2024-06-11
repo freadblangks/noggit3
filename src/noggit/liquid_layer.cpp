@@ -154,6 +154,15 @@ liquid_layer::liquid_layer(MPQFile &f, std::size_t base_pos, math::vector_3d con
   update_min_max();
 }
 
+liquid_layer::liquid_layer(math::vector_3d const& base, noggit::liquid_layer_data const& data)
+  : pos(base)
+  , _vertices(data.vertices)
+  , _subchunks(data.subchunk_mask)
+{
+  changeLiquidID(data.liquid_id);
+  update_min_max();
+}
+
 liquid_layer::liquid_layer(liquid_layer&& other)
   : _liquid_id(other._liquid_id)
   , _liquid_vertex_format(other._liquid_vertex_format)
@@ -227,6 +236,18 @@ liquid_layer& liquid_layer::operator=(liquid_layer const& other)
   changeLiquidID(_liquid_id);
 
   return *this;
+}
+
+void liquid_layer::copy_data(noggit::chunk_data& data) const
+{
+  noggit::liquid_layer_data lld;
+
+  lld.liquid_id = _liquid_id;
+  lld.liquid_type = _liquid_type;
+  lld.subchunk_mask = _subchunks;
+  lld.vertices = _vertices;
+
+  data.liquid_layers.push_back(lld);
 }
 
 void liquid_layer::create_vertices(float height)

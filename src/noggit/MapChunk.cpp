@@ -239,6 +239,7 @@ noggit::chunk_data MapChunk::get_chunk_data()
   std::memcpy(data.disable_doodads_map.data(), header.disable_doodads_map, 8);
 
   texture_set->copy_data(data);
+  liquid_chunk()->copy_data(data);
 
   return data;
 }
@@ -280,6 +281,10 @@ void MapChunk::override_data(noggit::chunk_data& data, noggit::chunk_override_pa
 
   texture_set->override_data(data, params);
 
+  if (params.liquids)
+  {
+    liquid_chunk()->override_data(data, params);
+  }
 
   // force update
   _need_indice_buffer_update = true;

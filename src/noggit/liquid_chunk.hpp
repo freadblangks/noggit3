@@ -6,6 +6,7 @@
 #include <math/ray.hpp>
 #include <math/vector_3d.hpp>
 #include <noggit/liquid_layer.hpp>
+#include <noggit/map_chunk_headers.hpp>
 #include <noggit/MapHeaders.h>
 #include <noggit/Selection.h>
 #include <noggit/tool_enums.hpp>
@@ -41,6 +42,9 @@ public:
   void fromFile(MPQFile &f, size_t basePos);
   void save(util::sExtendableArray& adt, int base_pos, int& header_pos, int& current_pos);
   void save_mclq(util::sExtendableArray& adt, int mcnk_pos, int& current_pos);
+
+  void copy_data(noggit::chunk_data& data) const;
+  void override_data(noggit::chunk_data const& data, noggit::chunk_override_params const& params);
 
 
   bool is_visible ( const float& cull_distance

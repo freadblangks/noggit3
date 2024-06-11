@@ -216,6 +216,34 @@ void liquid_chunk::save_mclq(util::sExtendableArray& adt, int mcnk_pos, int& cur
   }
 }
 
+void liquid_chunk::copy_data(noggit::chunk_data& data) const
+{
+  data.liquid_layer_count = _layer_count;
+  data.liquid_attributes = attributes;
+
+  for (liquid_layer const& layer : _layers)
+  {
+    layer.copy_data(data);
+  }
+}
+
+void liquid_chunk::override_data(noggit::chunk_data const& data, noggit::chunk_override_params const& params)
+{
+  _layers.clear();
+
+  attributes = data.liquid_attributes;
+  _layer_count = data.liquid_layer_count;
+
+  for (noggit::liquid_layer_data const& layer_data : data.liquid_layers)
+  {
+    _layers.emplace_back(math::vector_3d(data.origin.x, 0.f, data.origin.z), layer_data);
+  }
+
+  update_layers();
+  _liquid_tile->require_buffer_regen();
+  _liquid_tile->set_has_water();
+}
+
 void liquid_chunk::autoGen(MapChunk *chunk, float factor)
 {
   for (liquid_layer& layer : _layers)

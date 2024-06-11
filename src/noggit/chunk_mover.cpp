@@ -158,6 +158,14 @@ namespace noggit
         v.position += offset;
       }
 
+      for (liquid_layer_data& lld : cd.liquid_layers)
+      {
+        for (liquid_vertex& lv : lld.vertices)
+        {
+          lv.position += offset;
+        }
+      }
+
       MapChunk* chunk = _world->get_chunk_at(cd.origin + chunk_center_ofs);
 
       if (chunk)
@@ -338,9 +346,65 @@ namespace noggit
         }
       }
 
+      cd.liquid_attributes.fatigue = std::uint64_t(0);
+      cd.liquid_attributes.fishable = std::uint64_t(0);
+
+      for (int x = 0; x < 8; ++x)
+      {
+        int inv_x = 7 - x;
+
+        for (int z = 0; z < 8; ++z)
+        {
+          int shift_orig = z * 8 + x;
+          int shift_rot = inv_x * 8 + z;
+
+          cd.liquid_attributes.fatigue |= (orig.liquid_attributes.fatigue >> shift_orig) << shift_rot;
+          cd.liquid_attributes.fishable |= (orig.liquid_attributes.fishable >> shift_orig) << shift_rot;
+        }
+      }
+
+      for (int layer = 0; layer < cd.liquid_layer_count; ++layer)
+      {
+        liquid_layer_data const& orig_layer = orig.liquid_layers.at(layer);
+        liquid_layer_data& target_layer = cd.liquid_layers.at(layer);
+
+        target_layer.subchunk_mask = std::uint64_t(0);
+
+        for (int x = 0; x < 8; ++x)
+        {
+          int inv_x = 7 - x;
+
+          for (int z = 0; z < 8; ++z)
+          {
+            target_layer.subchunk_mask |= (orig_layer.subchunk_mask >> (z * 8 + x)) << (inv_x * 8 + z);
+          }
+        }
+
+        for (int x = 0; x < 9; ++x)
+        {
+          int inv_x = 8 - x;
+
+          for (int z = 0; z < 9; ++z)
+          {
+            int id_orig = z * 9 + x;
+            int id_rot = inv_x * 9 + z;
+
+            target_layer.vertices[id_rot] = orig_layer.vertices[id_orig];
+            target_layer.vertices[id_rot].position.x = orig_layer.vertices.at(id_rot).position.x - diff_x;
+            target_layer.vertices[id_rot].position.z = orig_layer.vertices.at(id_rot).position.z - diff_z;
+
+            // uvs are fixed for water type liquids
+            if (target_layer.liquid_type == 0 || target_layer.liquid_type == 1)
+            {
+              target_layer.vertices[id_rot].uv = orig_layer.vertices.at(id_rot).uv;
+            }
+          }
+        }
+      }
+
       if (cd.shadows)
       {
-        cd.shadows->data.fill(0);
+        cd.shadows->data.fill(std::uint64_t(0));
 
         for (int x = 0; x < 64; ++x)
         {

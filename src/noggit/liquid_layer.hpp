@@ -5,6 +5,7 @@
 #include <math/trig.hpp>
 #include <math/ray.hpp>
 #include <noggit/liquid_render.hpp>
+#include <noggit/map_chunk_headers.hpp>
 #include <noggit/MapHeaders.h>
 #include <noggit/Selection.h>
 #include <math/vector_2d.hpp>
@@ -22,6 +23,7 @@ public:
   liquid_layer(math::vector_3d const& base, float height, int liquid_id);
   liquid_layer(math::vector_3d const& base, mclq& liquid, int liquid_id);
   liquid_layer(MPQFile &f, std::size_t base_pos, math::vector_3d const& base, MH2O_Information const& info, std::uint64_t infomask);
+  liquid_layer(math::vector_3d const& base, noggit::liquid_layer_data const& data);
 
   liquid_layer(liquid_layer const& other);
   liquid_layer (liquid_layer&&);
@@ -31,6 +33,8 @@ public:
 
   void save(util::sExtendableArray& adt, int base_pos, int& info_pos, int& current_pos) const;
   mclq to_mclq(MH2O_Attributes& attributes) const;
+
+  void copy_data(noggit::chunk_data& data) const;
 
   void update_attributes(MH2O_Attributes& attributes);
   void update_indices();

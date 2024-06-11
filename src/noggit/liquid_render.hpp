@@ -3,6 +3,7 @@
 #pragma once
 
 
+#include <noggit/map_chunk_headers.hpp>
 #include <noggit/MPQ.h>
 #include <noggit/TextureManager.h>
 #include <math/vector_4d.hpp>
@@ -13,16 +14,6 @@
 #include <vector>
 #include <memory>
 
-
-struct liquid_vertex
-{
-  math::vector_3d position;
-  math::vector_2d uv;
-  float depth;
-
-  liquid_vertex() = default;
-  liquid_vertex(math::vector_3d const& pos, math::vector_2d const& uv, float depth) : position(pos), uv(uv), depth(depth) {}
-};
 
 struct liquid_layer_ubo_data
 {
