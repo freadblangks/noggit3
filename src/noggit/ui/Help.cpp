@@ -300,6 +300,15 @@ namespace noggit
       generate_hotkey_row({ font_noggit::shift, font_noggit::lmb }, "\a+\a - Clear Area", clearing_layout);
       generate_hotkey_row({ font_noggit::alt, font_noggit::lmb_drag }, "\a+\a - Change brush size", clearing_layout);
 
+      auto chunk_mover_widget(new QWidget(this));
+      auto chunk_mover_layout(new QFormLayout(chunk_mover_widget));
+
+      generate_hotkey_row({ font_noggit::shift, font_noggit::lmb }, "\a+\a - Select chunk", chunk_mover_layout);
+      generate_hotkey_row({ font_noggit::ctrl,  font_noggit::lmb }, "\a+\a - Deselect chunk", chunk_mover_layout);
+      generate_hotkey_row({ font_noggit::r }, "\a - Rotate selection", chunk_mover_layout);
+      generate_hotkey_row({ font_noggit::v }, "\a - Paste selection", chunk_mover_layout);
+      generate_hotkey_row({ font_noggit::space, font_noggit::mmb }, "\a+\a - Change height offset", chunk_mover_layout);
+
       layout->addWidget(tabs);
       tabs->addTab(base_widget, "Base");
       tabs->addTab(ground_widget, "Terrain");
@@ -309,6 +318,7 @@ namespace noggit
       tabs->addTab(shader_widget, "Shader");
       tabs->addTab(flag_widget, "Flags/Hole/Area");
       tabs->addTab(clearing_widget, "Clearing");
+      tabs->addTab(chunk_mover_widget, "Chunk Mover");
     }
 
 
