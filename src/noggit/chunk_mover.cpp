@@ -127,6 +127,25 @@ namespace noggit
     update_selection_infos();
   }
 
+  void chunk_mover::clear_selection()
+  {
+    for (auto const& it : _selected_chunks)
+    {
+      math::vector_3d pos = it.second.origin + math::vector_3d(5.f, 0.f, 5.f);
+
+      MapChunk* chunk = _world->get_chunk_at(pos);
+
+      if (chunk)
+      {
+        chunk->set_copied(false);
+      }
+    }
+
+    _selected_chunks.clear();
+    _selected_models.clear();
+    update_selection_infos();
+  }
+
   void chunk_mover::apply(chunk_override_params const& params)
   {
     if (_selection_size.first <= 0 || _last_cursor_chunk.first < 0)

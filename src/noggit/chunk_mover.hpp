@@ -63,6 +63,7 @@ namespace noggit
     void add_to_selection(std::vector<selection_type> selection);
     void remove_from_selection(selection_type selection, bool from_multi_select = false);
     void remove_from_selection(std::vector<selection_type> selection);
+    void clear_selection();
 
     void apply(chunk_override_params const& params);
 
