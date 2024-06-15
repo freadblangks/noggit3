@@ -824,7 +824,7 @@ void MapView::createGUI()
   connect ( _cursor_switcher.get(), &noggit::ui::widget::visibilityChanged
           , &_show_cursor_switcher_window, &noggit::bool_toggle_property::set
           );
-  ADD_TOGGLE (view_menu, "Texture palette", Qt::Key_X, _show_texture_palette_window);
+  ADD_TOGGLE_NS (view_menu, "Texture palette", _show_texture_palette_window);
   connect ( &_show_texture_palette_window, &noggit::bool_toggle_property::changed
           , TexturePalette, [this]
                             {
@@ -1236,14 +1236,22 @@ void MapView::createGUI()
             , [&] { return terrainMode == editing_mode::object; }
             );
 
-  addHotkey(Qt::Key_R
-	  , MOD_space
-	  , [&]
-  {
-	  texturingTool->toggle_brush_level_min_max();
-  }
-  , [&] { return terrainMode == editing_mode::paint; }
-  );
+  addHotkey( Qt::Key_R
+	         , MOD_space
+	         , [&]
+           {
+	           texturingTool->toggle_brush_level_min_max();
+           }
+           , [&] { return terrainMode == editing_mode::paint; }
+           );
+  addHotkey( Qt::Key_X
+	         , MOD_none
+	         , [&]
+           {
+             _show_texture_palette_window.toggle();
+           }
+           , [&] { return terrainMode == editing_mode::paint; }
+           );
 
   addHotkey ( Qt::Key_H
             , MOD_shift
