@@ -698,10 +698,11 @@ void MapChunk::prepare_draw ( const math::vector_3d& camera
                             , std::vector<int>& indices_count
                             )
 {
-  if (need_visibility_update)
+  if (need_visibility_update || _need_lod_update)
   {
     int old_lod = _lod_level;
     _lod_level = get_lod_level(camera, display);
+    _need_lod_update = false;
 
     if (old_lod != _lod_level)
     {
