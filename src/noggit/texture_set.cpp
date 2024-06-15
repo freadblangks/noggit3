@@ -1230,4 +1230,8 @@ void TextureSet::require_update()
 {
   _need_amap_update = true;
   _need_lod_texture_map_update = true;
+  // only used when first setting up the alphamap with pre computed value
+  // from the async loading, need to be cleared for adt using the 1x1 alphamap
+  // as they never have to setup the alphamap from the texture set
+  _first_amap_setup = false;
 }
