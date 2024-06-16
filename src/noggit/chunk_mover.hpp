@@ -84,6 +84,7 @@ namespace noggit
     float_property& height_offset_property() { return _height_ofs_property; }
 
     void rotate_90_deg();
+    void mirror(bool horizontal);
 
   private:
     void clear_selection_target_display();

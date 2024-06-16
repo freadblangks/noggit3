@@ -306,6 +306,8 @@ namespace noggit
       generate_hotkey_row({ font_noggit::shift, font_noggit::lmb }, "\a+\a - Select chunk", chunk_mover_layout);
       generate_hotkey_row({ font_noggit::ctrl,  font_noggit::lmb }, "\a+\a - Deselect chunk", chunk_mover_layout);
       generate_hotkey_row({ font_noggit::r }, "\a - Rotate selection", chunk_mover_layout);
+      generate_hotkey_row({ font_noggit::f }, "\a - Mirror selection (horizontal)", chunk_mover_layout);
+      generate_hotkey_row({ font_noggit::alt, font_noggit::f }, "\a+\a - Mirror selection (vertical)", chunk_mover_layout);
       generate_hotkey_row({ font_noggit::v }, "\a - Paste selection", chunk_mover_layout);
       generate_hotkey_row({ font_noggit::x }, "\a - Clear selection", chunk_mover_layout);
       generate_hotkey_row({ font_noggit::space, font_noggit::mmb }, "\a+\a - Change height offset", chunk_mover_layout);
