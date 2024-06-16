@@ -546,6 +546,7 @@ void MapView::createGUI()
                  opengl::context::scoped_setter const _ (::gl, context());
                  _world->reload_tile (_camera.position);
                  _rotation_editor_need_update = true;
+                 _chunk_mover.clear_selection();
                }
              );
 
