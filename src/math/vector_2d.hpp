@@ -97,4 +97,48 @@ namespace math
       return _data;
     }
   };
+
+  struct vector_2i
+  {
+    union
+    {
+      int _data[2];
+      struct
+      {
+        int x;
+        int y;
+      };
+    };
+
+    vector_2i() : x(0), y(0) {}
+    vector_2i(int x, int y) : x(x), y(y) {}
+
+    vector_2i yx() const { return { y, x }; }
+
+    vector_2i operator* (int factor) const
+    {
+      return { x * factor, y * factor };
+    }
+    vector_2i operator/ (int factor) const
+    {
+      return { x / factor, y / factor };
+    }
+    vector_2i operator+ (vector_2i const& other) const
+    {
+      return { x + other.x, y + other.y };
+    }
+    vector_2i operator- (vector_2i const& other) const
+    {
+      return { x - other.x, y - other.y };
+    }
+
+    inline operator int* ()
+    {
+      return _data;
+    }
+    inline operator int const* () const
+    {
+      return _data;
+    }
+  };
 }

@@ -29,9 +29,21 @@ namespace noggit
     float scale = 1.f;
   };
 
-
   class chunk_mover
   {
+    struct cm_selection_info
+    {
+      // both values are the position of the chunk on the map
+      // eg: adt index * 64 + chunk index for each axis
+      math::vector_2i start;
+      math::vector_2i size;
+
+      math::vector_2i center() const { return math::vector_2i(start.x + size.x / 2, start.y + size.y / 2); }
+
+      // <pos in grid, is selected>
+      std::unordered_map<int, bool> grid_data;
+    };
+
   public:
     static constexpr std::array<int, mapbufsize> make_chunk_vertex_rot_90_lookup()
     {
@@ -67,9 +79,6 @@ namespace noggit
 
     void apply(chunk_override_params const& params);
 
-    std::pair<int, int> selection_size() const { return _selection_size; }
-    std::pair<int, int> selection_center() const { return _selection_center; }
-
     void update_selection_target(math::vector_3d const& cursor_pos, bool force_update = false);
 
     float_property& height_offset_property() { return _height_ofs_property; }
@@ -87,23 +96,14 @@ namespace noggit
 
     float_property _height_ofs_property;
 
-    // in chunks
-    std::pair<int, int> _selection_size = { 0, 0 };
-    // both values are the position of the chunk on the map
-    // eg: adt index * 64 + chunk index for each axis
-    std::pair<int, int> _selection_start;
-    std::pair<int, int> _selection_center;
+    std::optional<math::vector_2i> _last_cursor_chunk;
 
-    std::pair<int, int> _last_cursor_chunk = { -1, -1 };
-    std::pair<int, int> _target_size;
-    std::pair<int, int> _target_start = { -1, -1 };
-    std::unordered_map<int, bool> _target_grid_data;
     // <original chunk id, <pos_x_in_target_zone, pos_z_in_target_zone>
     std::unordered_map<int, std::pair<int, int>> _target_lookup_table;
     std::unordered_map<int, chunk_data> _target_chunks;
 
-    // <pos in grid, is selected>
-    std::unordered_map<int, bool> _selection_grid_data;
+    std::optional<cm_selection_info> _selection_info;
+    std::optional<cm_selection_info> _target_info;
 
     std::unordered_map<int, selected_model_data> _selected_models;
     // <tile index * 4096 + chunk index, chunk data>
