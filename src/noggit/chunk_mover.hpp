@@ -77,7 +77,8 @@ namespace noggit
     void remove_from_selection(std::vector<selection_type> selection);
     void clear_selection();
 
-    void apply(chunk_override_params const& params);
+    void set_override_params(chunk_override_params const& params) { _override_params = params; }
+    void apply(bool preview_only);
 
     void update_selection_target(math::vector_3d const& cursor_pos, bool force_update = false);
 
@@ -86,8 +87,9 @@ namespace noggit
     void rotate_90_deg();
     void mirror(bool horizontal);
 
-  private:
     void clear_selection_target_display();
+
+  private:
     void update_selection_infos();
 
     void recalc_normals_around_selection();
@@ -96,6 +98,7 @@ namespace noggit
     World* _world;
 
     float_property _height_ofs_property;
+    std::optional<chunk_override_params> _override_params;
 
     std::optional<math::vector_2i> _last_cursor_chunk;
 

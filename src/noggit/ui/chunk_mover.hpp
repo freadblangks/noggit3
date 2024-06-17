@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <noggit/map_chunk_headers.hpp>
 #include <noggit/chunk_mover.hpp>
 #include <noggit/bool_toggle_property.hpp>
 
@@ -16,6 +17,8 @@ namespace noggit::ui
 
     void change_height_offset(float change);
     void paste_selection();
+
+    chunk_override_params override_params() const;
   private:
     noggit::chunk_mover* _chunk_mover;
 

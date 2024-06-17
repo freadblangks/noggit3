@@ -45,7 +45,8 @@ public:
 
   void copy_data(noggit::chunk_data& data) const;
   void override_data(noggit::chunk_data const& data, noggit::chunk_override_params const& params);
-
+  void set_preview_data(noggit::chunk_data const& data, noggit::chunk_override_params const& params);
+  void clear_preview();
 
   bool is_visible ( const float& cull_distance
                   , const math::frustum& frustum
@@ -81,7 +82,9 @@ public:
 
   float xbase, zbase;
 
-  int layer_count() const { return _layers.size(); }
+  int displayed_layer_count() const { return displayed_layers().size(); }
+  std::vector<liquid_layer>& displayed_layers() { return _preview_layers.empty() ? _layers : _preview_layers; }
+  std::vector<liquid_layer>const& displayed_layers() const { return _preview_layers.empty() ? _layers : _preview_layers; }
 
   void upload_data(int& index_in_tile, liquid_render& render);
   void update_data(liquid_render& render);
@@ -109,6 +112,7 @@ private:
   MH2O_Attributes attributes;
 
   std::vector<liquid_layer> _layers;
+  std::vector<liquid_layer> _preview_layers;
   int _layer_count = 0;
 
   liquid_tile* _liquid_tile;

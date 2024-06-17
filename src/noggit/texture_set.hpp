@@ -86,9 +86,11 @@ public:
   size_t nTextures;
   std::unique_ptr<tmp_edit_alpha_values> tmp_edit_values;
 
-  void update_alpha_shadow_map_if_needed(int chunk_x, int chunk_y, chunk_shadow* shadow);
+  void update_alpha_shadow_map_if_needed(int chunk_x, int chunk_y, chunk_shadow* shadow, noggit::chunk_data* preview_data);
 
   std::string const& texture(int id) const { return _textures[id]; }
+
+  void require_update();
 
 private:
   int get_texture_index_or_add (scoped_blp_texture_reference texture, float target);
@@ -111,8 +113,6 @@ private:
 
   std::vector<uint8_t> _lod_texture_map;
   bool _need_lod_texture_map_update = false;
-
-  void require_update();
 
   ENTRY_MCLY _layers_info[4];
 

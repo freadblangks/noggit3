@@ -177,6 +177,23 @@ namespace misc
   {
     return float_equals(v1.x._, v2.x._) && float_equals(v1.y._, v2.y._) && float_equals(v1.z._, v2.z._);
   }
+
+  math::vector_3d texture_anim_params(std::uint32_t flags)
+  {
+    if (!flags & FLAG_ANIMATE)
+    {
+      return { 1.f,0.f, 0.f };
+    }
+
+    static const float anim_dir_x[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
+    static const float anim_dir_y[8] = { 1, 1, 0, -1, -1, -1, 0, 1 };
+
+    float speed = static_cast<float>((flags >> 3) & 0x7) / 7.f;
+
+    const int dir_index = flags & 0x7;
+
+    return { -anim_dir_x[dir_index], anim_dir_y[dir_index], speed };
+  }
 }
 
 void SetChunkHeader(util::sExtendableArray& pArray, int pPosition, int pMagix, int pSize)

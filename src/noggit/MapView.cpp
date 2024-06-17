@@ -95,6 +95,8 @@ void MapView::set_editing_mode (editing_mode mode)
 
   terrainMode = mode;
   _toolbar->check_tool (mode);
+
+  _chunk_mover.clear_selection_target_display();
 }
 
 void MapView::setToolPropertyWidgetVisibility(editing_mode mode)
@@ -2498,7 +2500,7 @@ void MapView::tick (float dt)
             liquid_chunk* waterchunk = chunk->liquid_chunk();
             MH2O_Attributes attributes = waterchunk->attributes;
 
-            int layer_count = waterchunk->layer_count();
+            int layer_count = waterchunk->displayed_layer_count();
 
             if (layer_count > 0)
             {
@@ -2682,6 +2684,7 @@ void MapView::update_cursor_pos()
     if (terrainMode == editing_mode::chunk_mover)
     {
       _chunk_mover.update_selection_target(_cursor_pos);
+      _chunk_mover.set_override_params(_chunk_mover_ui->override_params());
     }
   }
 }

@@ -224,7 +224,7 @@ void liquid_tile::regen_buffer(liquid_render& render)
   {
     for (int x = 0; x < 16; ++x)
     {
-      total_layer_count += chunks[z][x]->layer_count();
+      total_layer_count += chunks[z][x]->displayed_layer_count();
     }
   }
 
@@ -300,7 +300,7 @@ void liquid_tile::recalc_extents()
     for (int x = 0; x < 16; ++x)
     {
       // only take into account chunks with liquids
-      if (chunks[z][x]->layer_count() > 0)
+      if (chunks[z][x]->displayed_layer_count() > 0)
       {
         _extents[0] = math::min(_extents[0], chunks[z][x]->min());
         _extents[1] = math::max(_extents[1], chunks[z][x]->max());

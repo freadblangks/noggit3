@@ -146,9 +146,9 @@ namespace noggit
     update_selection_infos();
   }
 
-  void chunk_mover::apply(chunk_override_params const& params)
+  void chunk_mover::apply(bool preview_only)
   {
-    if (!_selection_info || !_last_cursor_chunk)
+    if (!_selection_info || !_last_cursor_chunk || !_override_params)
     {
       return;
     }
@@ -191,21 +191,31 @@ namespace noggit
 
       if (chunk)
       {
-        chunk->override_data(cd, params);
-        chunk->mt->changed.store(true);
+        if (preview_only)
+        {
+          chunk->set_preview_data(cd, _override_params.value());
+        }
+        else
+        {
+          chunk->override_data(cd, _override_params.value());
+          chunk->mt->changed.store(true);
+        }
       }
     }
 
-    if (params.fix_gaps)
+    if (!preview_only)
     {
-      fix_gaps();
-    }
+      if (_override_params->fix_gaps)
+      {
+        fix_gaps();
+      }
 
-    recalc_normals_around_selection();
+      recalc_normals_around_selection();
 
-    for (auto& it : _selected_models)
-    {
-      it.second.position += offset;
+      for (auto& it : _selected_models)
+      {
+        it.second.position += offset;
+      }
     }
   }
 
@@ -257,6 +267,8 @@ namespace noggit
             }
           }
         }
+
+        apply(true);
       }
     }
   }

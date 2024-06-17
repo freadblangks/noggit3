@@ -95,10 +95,13 @@ private:
   bool _is_copied = false;
   bool _is_in_paste_zone = false;
 
+  std::unique_ptr<noggit::chunk_data> _preview_data;
+  std::unique_ptr<noggit::chunk_override_params> _preview_params;
 public:
   MapChunk(MapTile* mt, MPQFile* f, bool bigAlpha, tile_mode mode);
   noggit::chunk_data get_chunk_data();
   void override_data(noggit::chunk_data& data, noggit::chunk_override_params const& params);
+  void set_preview_data(noggit::chunk_data& data, noggit::chunk_override_params const& params);
   void set_copied(bool v);
   void set_is_in_paste_zone(bool v);
 

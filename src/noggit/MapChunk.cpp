@@ -301,6 +301,62 @@ void MapChunk::override_data(noggit::chunk_data& data, noggit::chunk_override_pa
 
   mt->chunk_height_changed();
 }
+void MapChunk::set_preview_data(noggit::chunk_data& data, noggit::chunk_override_params const& params)
+{
+  _preview_data = std::make_unique<noggit::chunk_data>(data);
+  _preview_params = std::make_unique<noggit::chunk_override_params>(params);
+
+  if (!params.height)
+  {
+    _preview_data->vertices = vertices;
+  }
+
+  if (!params.area_id)
+  {
+    _preview_data->area_id = _area_id;
+  }
+  if (!params.holes)
+  {
+    _preview_data->holes = _4x4_holes;
+  }
+
+  if (params.clear_shadows)
+  {
+    _preview_data->shadows.reset();
+  }
+  else if (!params.shadows)
+  {
+    if (_chunk_shadow)
+    {
+      _preview_data->shadows.emplace();
+      std::memcpy(_preview_data->shadows->data.data(), _chunk_shadow->data.data(), sizeof(chunk_shadow));
+    }
+    else
+    {
+      _preview_data->shadows.reset();
+    }
+  }
+
+  texture_set->require_update();
+
+  if (params.liquids && data.liquid_layer_count > 0)
+  {
+    liquid_chunk()->set_preview_data(data, params);
+  }
+
+  // force update
+  _need_indice_buffer_update = true;
+  _need_lod_update = true;
+  _need_vao_update = true;
+  _need_visibility_update = true;
+  _shader_data_need_update = true;
+
+  updateVerticesData();
+  texture_set_changed();
+  initStrip();
+
+  mt->chunk_height_changed();
+}
 
 void MapChunk::set_copied(bool v)
 {
@@ -311,6 +367,25 @@ void MapChunk::set_is_in_paste_zone(bool v)
 {
   _is_in_paste_zone = v;
   require_shader_data_update();
+
+  if (!v && _preview_data)
+  {
+    _preview_data.reset();
+    _preview_params.reset();
+
+    // force update
+    _need_indice_buffer_update = true;
+    _need_lod_update = true;
+    _need_vao_update = true;
+    _need_visibility_update = true;
+    _shader_data_need_update = true;
+
+    updateVerticesData();
+    texture_set_changed();
+    texture_set->require_update();
+    liquid_chunk()->clear_preview();
+    initStrip();
+  }
 }
 
 int MapChunk::indexLoD(int z, int x)
@@ -629,38 +704,77 @@ void MapChunk::update_shader_data ( bool selected_texture_changed
                                   )
 {
   chunk_shader_data csd;
+  int texture_count = 0;
 
-  int texture_count = texture_set->num();
-
-  if (texture_count)
+  if (_preview_data && _preview_params->textures)
   {
-    if (!mt->use_no_alpha_alphamap())
+    texture_count = _preview_data->texture_count;
+
+    if (texture_count)
     {
-      update_alpha_shadow_map();
+      if (!mt->use_no_alpha_alphamap())
+      {
+        update_alpha_shadow_map();
+      }
+
+      for (int i = 0; i < texture_count; ++i)
+      {
+        if (_texture_set_need_update)
+        {
+          std::pair<int, int> param = tileset_handler.get_texture_position(_preview_data->textures[i]);
+
+          csd.tex_array_index[i] = param.first;
+          csd.tex_index_in_array[i] = param.second;
+          csd.tex_animations[i] = math::vector_4d(misc::texture_anim_params(_preview_data->texture_flags[i].flags), 0.f);
+        }
+        else // no change, reuse the old values
+        {
+          csd.tex_array_index[i] = _shader_data.tex_array_index[i];
+          csd.tex_index_in_array[i] = _shader_data.tex_index_in_array[i];
+          csd.tex_animations[i] = _shader_data.tex_animations[i];
+        }
+      }
     }
 
-    for (int i = 0; i < texture_count; ++i)
-    {
-      if (_texture_set_need_update)
-      {
-        std::pair<int, int> param = tileset_handler.get_texture_position(texture_set->texture(i));
+    // normalize "bool" values
+    csd.is_textured = _preview_data->texture_count ? 1 : 0;
+    csd.has_shadow = _chunk_shadow ? 1 : 0;
+  }
+  else
+  {
+    texture_count = texture_set->num();
 
-        csd.tex_array_index[i] = param.first;
-        csd.tex_index_in_array[i] = param.second;
-        csd.tex_animations[i] = math::vector_4d(texture_set->anim_param(i), 0.f);
-      }
-      else // no change, reuse the old values
+    if (texture_count)
+    {
+      if (!mt->use_no_alpha_alphamap())
       {
-        csd.tex_array_index[i] = _shader_data.tex_array_index[i];
-        csd.tex_index_in_array[i] = _shader_data.tex_index_in_array[i];
-        csd.tex_animations[i] = _shader_data.tex_animations[i];
+        update_alpha_shadow_map();
+      }
+
+      for (int i = 0; i < texture_count; ++i)
+      {
+        if (_texture_set_need_update)
+        {
+          std::pair<int, int> param = tileset_handler.get_texture_position(texture_set->texture(i));
+
+          csd.tex_array_index[i] = param.first;
+          csd.tex_index_in_array[i] = param.second;
+          csd.tex_animations[i] = math::vector_4d(texture_set->anim_param(i), 0.f);
+        }
+        else // no change, reuse the old values
+        {
+          csd.tex_array_index[i] = _shader_data.tex_array_index[i];
+          csd.tex_index_in_array[i] = _shader_data.tex_index_in_array[i];
+          csd.tex_animations[i] = _shader_data.tex_animations[i];
+        }
       }
     }
+
+    // normalize "bool" values
+    csd.is_textured = texture_count ? 1 : 0;
+    csd.has_shadow = _chunk_shadow ? 1 : 0;
   }
 
-  // normalize "bool" values
-  csd.is_textured = texture_count ? 1 : 0;
-  csd.has_shadow = _chunk_shadow ? 1 : 0;
   csd.is_copied = _is_copied ? 1 : 0;
   csd.is_in_paste_zone = _is_in_paste_zone ? 1 : 0;
 
@@ -742,7 +856,7 @@ void MapChunk::prepare_draw ( const math::vector_3d& camera
 
   if (_need_vao_update)
   {
-    gl.bufferSubData(GL_ARRAY_BUFFER, vertex_offset() * sizeof(chunk_vertex),  mapbufsize * sizeof(chunk_vertex), vertices.data());
+    gl.bufferSubData(GL_ARRAY_BUFFER, vertex_offset() * sizeof(chunk_vertex),  mapbufsize * sizeof(chunk_vertex), _preview_data ? _preview_data->vertices.data() : vertices.data());
     _need_vao_update = false;
   }
 }
@@ -805,6 +919,12 @@ void MapChunk::updateVerticesData()
 
   for (int i(0); i < mapbufsize; ++i)
   {
+    if (_preview_data)
+    {
+      vmin.y = std::min(vmin.y, _preview_data->vertices[i].position.y);
+      vmax.y = std::max(vmax.y, _preview_data->vertices[i].position.y);
+    }
+
     vmin.y = std::min(vmin.y, vertices[i].position.y);
     vmax.y = std::max(vmax.y, vertices[i].position.y);
   }
@@ -1243,7 +1363,14 @@ void MapChunk::clear_shadows()
 
 bool MapChunk::isHole(int i, int j) const
 {
-  return (_4x4_holes & ((1 << ((j * 4) + i)))) != 0;
+  if (_preview_data)
+  {
+    return (_preview_data->holes & ((1 << ((j * 4) + i)))) != 0;
+  }
+  else
+  {
+    return (_4x4_holes & ((1 << ((j * 4) + i)))) != 0;
+  }
 }
 
 void MapChunk::setHole(math::vector_3d const& pos, bool big, bool add)
@@ -1575,9 +1702,9 @@ void MapChunk::save( util::sExtendableArray &lADTFile
   {
     auto liquids = liquid_chunk();
 
-    if (liquids && liquids->layer_count() > 0)
+    if (liquids && liquids->displayed_layer_count() > 0)
     {
-      int liquids_size = 8 + liquids->layer_count() * sizeof(mclq);
+      int liquids_size = 8 + liquids->displayed_layer_count() * sizeof(mclq);
 
       lMCNK_Size += liquids_size;
 
@@ -1757,5 +1884,29 @@ liquid_chunk* MapChunk::liquid_chunk() const
 
 void MapChunk::update_alpha_shadow_map()
 {
-  texture_set->update_alpha_shadow_map_if_needed(px, py, _chunk_shadow ? _chunk_shadow.get() : nullptr);
+  if (_preview_data)
+  {
+    chunk_shadow* shadow = nullptr;
+
+    if (!_preview_params->clear_shadows)
+    {
+      if (_preview_params->shadows)
+      {
+        if (_preview_data->shadows)
+        {
+          shadow = &_preview_data->shadows.value();
+        }
+      }
+      else if (_chunk_shadow)
+      {
+        shadow = _chunk_shadow.get();
+      }
+    }
+
+    texture_set->update_alpha_shadow_map_if_needed(px, py, shadow, _preview_params->alphamaps ? _preview_data.get() : nullptr);
+  }
+  else
+  {
+    texture_set->update_alpha_shadow_map_if_needed(px, py, _chunk_shadow ? _chunk_shadow.get() : nullptr, nullptr);
+  }
 }

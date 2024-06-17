@@ -61,6 +61,11 @@ namespace noggit::ui
 
   void chunk_mover_ui::paste_selection()
   {
+    _chunk_mover->apply(false);
+  }
+
+  chunk_override_params chunk_mover_ui::override_params() const
+  {
     chunk_override_params params;
     params.height = _override_height.get();
     params.textures = _override_textures.get();
@@ -73,6 +78,6 @@ namespace noggit::ui
     params.fix_gaps = _fix_gaps.get();
     params.clear_shadows = _clear_shadows.get();
 
-    _chunk_mover->apply(params);
+    return params;
   }
 }

@@ -218,7 +218,7 @@ void liquid_chunk::save_mclq(util::sExtendableArray& adt, int mcnk_pos, int& cur
 
 void liquid_chunk::copy_data(noggit::chunk_data& data) const
 {
-  data.liquid_layer_count = _layer_count;
+  data.liquid_layer_count = _layers.size();
   data.liquid_attributes = attributes;
 
   for (liquid_layer const& layer : _layers)
@@ -242,6 +242,33 @@ void liquid_chunk::override_data(noggit::chunk_data const& data, noggit::chunk_o
   update_layers();
   _liquid_tile->require_buffer_regen();
   _liquid_tile->set_has_water();
+}
+void liquid_chunk::set_preview_data(noggit::chunk_data const& data, noggit::chunk_override_params const& params)
+{
+  _preview_layers.clear();
+
+  _layer_count = data.liquid_layer_count;
+
+  for (noggit::liquid_layer_data const& layer_data : data.liquid_layers)
+  {
+    _preview_layers.emplace_back(math::vector_3d(data.origin.x, 0.f, data.origin.z), layer_data);
+  }
+
+  update_layers();
+  _liquid_tile->require_buffer_regen();
+  _liquid_tile->set_has_water();
+}
+
+void liquid_chunk::clear_preview()
+{
+  if (!_preview_layers.empty())
+  {
+    _preview_layers.clear();
+
+    update_layers();
+    _liquid_tile->require_buffer_regen();
+    _liquid_tile->set_has_water();
+  }
 }
 
 void liquid_chunk::autoGen(MapChunk *chunk, float factor)
@@ -319,14 +346,17 @@ void liquid_chunk::intersect(math::ray const& ray, selection_result* results)
 
 void liquid_chunk::update_layers()
 {
+  // only used for non preview operations
   _layer_count = _layers.size();
 
-  if (_layer_count > 0)
+  auto& layers(displayed_layers());
+
+  if (layers.size() > 0)
   {
     vmin.y = std::numeric_limits<float>().max();
     vmax.y = std::numeric_limits<float>().min();
 
-    for (liquid_layer& layer : _layers)
+    for (liquid_layer& layer : layers)
     {
       layer.update_indices();
       vmin.y = std::min(vmin.y, layer.min());
@@ -484,7 +514,7 @@ void liquid_chunk::copy_height_to_layer(liquid_layer& target, math::vector_3d co
 
 void liquid_chunk::upload_data(int& index_in_tile, liquid_render& render)
 {
-  for (liquid_layer& layer : _layers)
+  for (liquid_layer& layer : displayed_layers())
   {
     layer.upload_data(index_in_tile++, render);
   }
@@ -492,7 +522,7 @@ void liquid_chunk::upload_data(int& index_in_tile, liquid_render& render)
 
 void liquid_chunk::update_data(liquid_render& render)
 {
-  for (liquid_layer& layer : _layers)
+  for (liquid_layer& layer : displayed_layers())
   {
     layer.update_data(render);
   }
@@ -500,18 +530,19 @@ void liquid_chunk::update_data(liquid_render& render)
 
 void liquid_chunk::update_indices_info(std::vector<void*>& indices_offsets, std::vector<int>& indices_count)
 {
-  for (liquid_layer& layer : _layers)
+  for (liquid_layer& layer : displayed_layers())
   {
     layer.update_indices_info(indices_offsets, indices_count);
   }
 }
 void liquid_chunk::update_lod_level(math::vector_3d const& camera_pos, std::vector<void*>& indices_offsets, std::vector<int>& indices_count)
 {
-  if (hasData(0))
+  auto& layers(displayed_layers());
+  if (!layers.empty())
   {
-    int lod = _layers[0].get_lod_level(camera_pos);
+    int lod = layers[0].get_lod_level(camera_pos);
 
-    for (liquid_layer& layer : _layers)
+    for (liquid_layer& layer : layers)
     {
       layer.set_lod_level(lod, indices_offsets, indices_count);
     }

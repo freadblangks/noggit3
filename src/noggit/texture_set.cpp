@@ -120,7 +120,7 @@ void TextureSet::override_data(noggit::chunk_data& data, noggit::chunk_override_
 {
   if (params.alphamaps)
   {
-    tmp_edit_values.reset();
+    apply_alpha_changes();
   }
 
   int old_tex_count = nTextures;
@@ -360,21 +360,12 @@ bool TextureSet::canPaintTexture(std::string const& texture)
 
 math::vector_3d TextureSet::anim_param(int layer) const
 {
-  if (!is_animated(layer))
+  if (layer >= nTextures)
   {
     return { 1.f, 0.f, 0.f };
   }
 
-  static const float anim_dir_x[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
-  static const float anim_dir_y[8] = { 1, 1, 0, -1, -1, -1, 0, 1 };
-
-  uint32_t flags = _layers_info[layer].flags;
-
-  float speed = static_cast<float>((flags >> 3) & 0x7) / 7.f;
-
-  const int dir_index = flags & 0x7;
-
-  return { -anim_dir_x[dir_index], anim_dir_y[dir_index], speed };
+  return misc::texture_anim_params(_layers_info[layer].flags);
 }
 
 bool TextureSet::eraseUnusedTextures(float threshold)
@@ -1160,7 +1151,7 @@ void TextureSet::create_temporary_alphamaps_if_needed()
   }
 }
 
-void TextureSet::update_alpha_shadow_map_if_needed(int chunk_x, int chunk_y, chunk_shadow* shadow)
+void TextureSet::update_alpha_shadow_map_if_needed(int chunk_x, int chunk_y, chunk_shadow* shadow, noggit::chunk_data* preview_data)
 {
   if (_need_amap_update)
   {
@@ -1168,7 +1159,33 @@ void TextureSet::update_alpha_shadow_map_if_needed(int chunk_x, int chunk_y, chu
 
     bool use_shadow = (shadow != nullptr);
 
-    if (nTextures)
+    if (preview_data)
+    {
+      std::vector<uint8_t> amap(4 * 64 * 64);
+      uint8_t const* alpha_ptr[3];
+      int preview_alpha_count = preview_data->texture_count - 1;
+
+      for (int i = 0; i < preview_alpha_count; ++i)
+      {
+        alpha_ptr[i] = preview_data->alphamaps[i].getAlpha();
+      }
+
+      for (int i = 0; i < 64 * 64; ++i)
+      {
+        for (int alpha_id = 0; alpha_id < 3; ++alpha_id)
+        {
+          amap[i * 4 + alpha_id] = (alpha_id < preview_alpha_count)
+            ? *(alpha_ptr[alpha_id]++)
+            : 0
+            ;
+        }
+
+        amap[i * 4 + 3] = use_shadow ? ((shadow->data[i / 64] >> (i % 64)) & 1) * 255 : 0;
+      }
+
+      gl.texSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, chunk_x + 16 * chunk_y, 64, 64, 1, GL_RGBA, GL_UNSIGNED_BYTE, amap.data());
+    }
+    else if (nTextures)
     {
       if (_first_amap_setup)
       {
