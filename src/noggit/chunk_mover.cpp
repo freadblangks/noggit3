@@ -237,7 +237,6 @@ namespace noggit
       math::vector_2i const& size = _target_info.has_value() > 0 ? _target_info->size : _selection_info->size;
       std::unordered_map<int, bool> const& grid = _target_info.has_value() > 0 ? _target_info->grid_data : _selection_info->grid_data;
 
-
       if (_last_cursor_chunk != pos || force_update)
       {
         clear_selection_target_display();
@@ -262,13 +261,17 @@ namespace noggit
 
               if (chunk)
               {
-                chunk->set_is_in_paste_zone(true);
+                // do not show target area when selecting/deselecting chunks
+                chunk->set_is_in_paste_zone(_preview_enabled);
               }
             }
           }
         }
 
-        apply(true);
+        if (_preview_enabled)
+        {
+          apply(true);
+        }
       }
     }
   }
@@ -752,6 +755,15 @@ namespace noggit
     {
       update_selection_target(math::vector_3d(_last_cursor_chunk->x * CHUNKSIZE + 5.f, 0.f, _last_cursor_chunk->y * CHUNKSIZE + 5.f), true);
     }
+  }
+
+  void chunk_mover::disable_preview()
+  {
+    _preview_enabled = false;
+
+    clear_selection_target_display();
+    _target_info.reset();
+    _target_chunks.clear();
   }
 
   void chunk_mover::clear_selection_target_display()

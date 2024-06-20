@@ -87,6 +87,8 @@ namespace noggit
     void rotate_90_deg();
     void mirror(bool horizontal);
 
+    void disable_preview();
+    void enable_preview() { _preview_enabled = true; }
     void clear_selection_target_display();
 
   private:
@@ -97,6 +99,7 @@ namespace noggit
   private:
     World* _world;
 
+    bool _preview_enabled = true;
     float_property _height_ofs_property;
     std::optional<chunk_override_params> _override_params;
 

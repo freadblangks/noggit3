@@ -1869,6 +1869,20 @@ void MapView::tick (float dt)
     }
   }
 
+
+  if (terrainMode == editing_mode::chunk_mover)
+  {
+    // disable preview when selecting/deselecting chunks
+    if (_mod_shift_down || _mod_ctrl_down)
+    {
+      _chunk_mover.disable_preview();
+    }
+    else
+    {
+      _chunk_mover.enable_preview();
+    }
+  }
+
     math::degrees yaw (-_camera.yaw()._);
 
     math::vector_3d dir(1.0f, 0.0f, 0.0f);
