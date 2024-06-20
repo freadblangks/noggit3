@@ -105,6 +105,7 @@ public:
             , math::vector_3d const& cursor_pos
             , math::vector_4d const& cursor_color
             , int cursor_type
+            , bool square_brush
             , float brush_radius
             , bool show_liquid_cursor
             , bool show_unpaintable_chunks

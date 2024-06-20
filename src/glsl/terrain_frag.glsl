@@ -53,6 +53,7 @@ uniform float fog_start;
 uniform float fog_end;
 
 uniform bool draw_cursor_circle;
+uniform bool draw_cursor_square;
 uniform vec3 cursor_position;
 uniform float outer_cursor_radius;
 uniform float inner_cursor_ratio;
@@ -370,6 +371,17 @@ void main()
     float diff = length(vary_position.xz - cursor_position.xz);
     diff = min(abs(diff - outer_cursor_radius), abs(diff - outer_cursor_radius * inner_cursor_ratio));
     float alpha = smoothstep(0.0, length(fw.xz), diff);
+
+    out_color.rgb = mix(cursor_color.rgb, out_color.rgb, alpha);
+  }
+  if(draw_cursor_square)
+  {
+    // SDF box formula
+    vec2 p = abs(vary_position.xz - cursor_position.xz);
+    vec2 d = p - vec2(outer_cursor_radius, outer_cursor_radius);
+    float dist = length(max(d,0.0)) + min(max(d.x,d.y),0.0);
+    // abs(dist) to get only the border
+    float alpha = smoothstep(0., length(fw.xz), abs(dist));
 
     out_color.rgb = mix(cursor_color.rgb, out_color.rgb, alpha);
   }

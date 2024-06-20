@@ -2786,6 +2786,7 @@ void MapView::draw_map()
   }
 
   bool debug_cam = _debug_cam_mode.get();
+  bool use_square_brush = terrainMode == editing_mode::ground && terrainTool->_edit_type == eTerrainType_Quadra;
 
   math::frustum frustum(model_view(debug_cam).transposed() * projection().transposed());
 
@@ -2795,6 +2796,7 @@ void MapView::draw_map()
                , _cursor_pos
                , terrainMode == editing_mode::mccv ? shader_color : cursor_color
                , cursor_type.get()
+               , use_square_brush
                , radius
                , use_liquid_intersect
                , texturingTool->show_unpaintable_chunks() && terrainMode == editing_mode::paint

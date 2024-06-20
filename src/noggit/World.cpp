@@ -803,6 +803,7 @@ void World::draw ( math::matrix_4x4 const& model_view
                  , math::vector_3d const& cursor_pos
                  , math::vector_4d const& cursor_color
                  , int cursor_type
+                 , bool square_brush
                  , float brush_radius
                  , bool show_liquid_cursor
                  , bool show_unpaintable_chunks
@@ -1117,7 +1118,17 @@ void World::draw ( math::matrix_4x4 const& model_view
 
     if (cursor == cursor_mode::terrain)
     {
-      mcnk_shader.uniform ("draw_cursor_circle", 1);
+      if (square_brush)
+      {
+        mcnk_shader.uniform("draw_cursor_circle", 0);
+        mcnk_shader.uniform("draw_cursor_square", 1);
+      }
+      else
+      {
+        mcnk_shader.uniform("draw_cursor_circle", 1);
+        mcnk_shader.uniform("draw_cursor_square", 0);
+      }
+
       mcnk_shader.uniform ("cursor_position", cursor_pos);
       mcnk_shader.uniform ("outer_cursor_radius", brush_radius);
       mcnk_shader.uniform ("inner_cursor_ratio", inner_radius_ratio);
