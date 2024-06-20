@@ -4,6 +4,7 @@
 
 #include <math/frustum.hpp>
 #include <noggit/Brush.h> // brush
+#include <noggit/chunk_mover.hpp>
 #include <noggit/liquid_chunk.hpp>
 #include <noggit/DBC.h>
 #include <noggit/Log.h>
@@ -2965,4 +2966,39 @@ void World::update_models_by_filename()
   });
 
   need_model_updates = false;
+}
+
+void World::select_chunks_in_range(math::vector_3d const& pos, float radius, bool square_select, bool deselect, noggit::chunk_mover& chunk_mover)
+{
+  std::vector<selection_type> chunks;
+
+  if (square_select)
+  {
+    math::vector_3d bounds(radius, 0.f, radius);
+    for_all_chunks_between(pos - bounds, pos + bounds, [&](MapChunk* chunk)
+    {
+      // we only need the chunk's pointer here
+      chunks.push_back(selected_chunk_type(chunk, { 0,0,0 }, math::vector_3d()));
+      return true;
+    });
+  }
+  else
+  {
+    for_all_chunks_in_range(pos, radius, [&](MapChunk* chunk)
+    {
+      // we only need the chunk's pointer here
+      chunks.push_back(selected_chunk_type(chunk, { 0,0,0 }, math::vector_3d()));
+      return true;
+    });
+  }
+
+
+  if (deselect)
+  {
+    chunk_mover.remove_from_selection(chunks);
+  }
+  else
+  {
+    chunk_mover.add_to_selection(chunks);
+  }
 }

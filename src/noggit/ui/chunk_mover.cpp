@@ -3,6 +3,7 @@
 #include <noggit/ui/chunk_mover.hpp>
 #include <noggit/ui/checkbox.hpp>
 #include <noggit/ui/double_spinbox.hpp>
+#include <noggit/ui/slider_spinbox.hpp>
 
 #include <noggit/map_chunk_headers.hpp>
 
@@ -23,6 +24,8 @@ namespace noggit::ui
     , _override_holes(true)
     , _fix_gaps(true)
     , _clear_shadows(true)
+    , _radius(15.f)
+    , _square_brush(true)
   {
     auto layout(new QFormLayout(this));
 
@@ -42,10 +45,12 @@ namespace noggit::ui
     QGroupBox* param_group = new QGroupBox("Parameters", this);
     auto param_layout(new QFormLayout(param_group));
 
+    param_layout->addRow(new slider_spinbox("Radius", &_radius, 1.f, 500.f, 0, this));
+    param_layout->addRow(new checkbox("Square Brush", &_square_brush, param_group));
+
     auto spinbox(new double_spinbox(&chunk_mover->height_offset_property(), this));
     spinbox->setDecimals(3);
     spinbox->setRange(-20000.f, 20000.f);
-
     param_layout->addRow("Height Offset:", spinbox);
 
     param_layout->addRow(new checkbox("Fix Gaps", &_fix_gaps, param_group));

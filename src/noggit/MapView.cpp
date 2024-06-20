@@ -2066,32 +2066,15 @@ void MapView::tick (float dt)
 
     if (terrainMode == editing_mode::chunk_mover && leftMouse)
     {
-      selection_result results
-      ( _world->intersect
-        ( model_view().transposed()
-        , intersect_ray()
-        , false
-        , true
-        , _draw_terrain.get()
-        , _draw_wmo.get()
-        , _draw_models.get()
-        , _draw_hidden_models.get()
-        , false
-        )
-      );
+      bool square_brush = _chunk_mover_ui->use_square_brush();
 
-      if(!results.empty())
+      if (_mod_shift_down)
       {
-        auto& hit = results.front().second;
-
-        if (_mod_shift_down)
-        {
-          _chunk_mover.add_to_selection(hit);
-        }
-        if (_mod_ctrl_down)
-        {
-          _chunk_mover.remove_from_selection(hit);
-        }
+        _world->select_chunks_in_range(_cursor_pos, _chunk_mover_ui->radius(), square_brush, false, _chunk_mover);
+      }
+      if (_mod_ctrl_down)
+      {
+        _world->select_chunks_in_range(_cursor_pos, _chunk_mover_ui->radius(), square_brush, true, _chunk_mover);
       }
     }
 
@@ -2788,6 +2771,9 @@ void MapView::draw_map()
   case editing_mode::clearing:
     radius = _clearing_tool->radius();
     break;
+  case editing_mode::chunk_mover:
+    radius = _chunk_mover_ui->radius();
+    break;
   }
 
   bool use_liquid_intersect = terrainMode == editing_mode::water && guiWater->use_liquids_intersect();
@@ -2800,7 +2786,8 @@ void MapView::draw_map()
   }
 
   bool debug_cam = _debug_cam_mode.get();
-  bool use_square_brush = terrainMode == editing_mode::ground && terrainTool->_edit_type == eTerrainType_Quadra;
+  bool use_square_brush = (terrainMode == editing_mode::ground && terrainTool->_edit_type == eTerrainType_Quadra)
+                       || (terrainMode == editing_mode::chunk_mover && _chunk_mover_ui->use_square_brush());
 
   math::frustum frustum(model_view(debug_cam).transposed() * projection().transposed());
 
@@ -3170,6 +3157,9 @@ void MapView::mouseMoveEvent (QMouseEvent* event)
       break;
     case editing_mode::clearing:
       _clearing_tool->change_radius(relative_movement.dx() / XSENS);
+      break;
+    case editing_mode::chunk_mover:
+      _chunk_mover_ui->change_radius(relative_movement.dx() / XSENS);
       break;
     }
   }

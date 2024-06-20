@@ -2,9 +2,10 @@
 
 #pragma once
 
-#include <noggit/map_chunk_headers.hpp>
 #include <noggit/chunk_mover.hpp>
 #include <noggit/bool_toggle_property.hpp>
+#include <noggit/float_property.hpp>
+#include <noggit/map_chunk_headers.hpp>
 
 #include <QWidget>
 
@@ -19,6 +20,11 @@ namespace noggit::ui
     void paste_selection();
 
     chunk_override_params override_params() const;
+
+    float radius() const { return _radius.get(); }
+    bool use_square_brush() const { return _square_brush.get(); }
+
+    void change_radius(float v) { _radius.change(v); }
   private:
     noggit::chunk_mover* _chunk_mover;
 
@@ -30,6 +36,9 @@ namespace noggit::ui
     bool_toggle_property _override_area_id;
     bool_toggle_property _override_holes;
 
+
+    float_property _radius;
+    bool_toggle_property _square_brush;
     bool_toggle_property _fix_gaps;
     bool_toggle_property _clear_shadows;
   };

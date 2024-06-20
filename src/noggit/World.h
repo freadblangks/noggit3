@@ -31,6 +31,7 @@
 namespace noggit
 {
   struct object_paste_params;
+  class chunk_mover;
 }
 
 class Brush;
@@ -386,6 +387,8 @@ public:
   void recalc_norms (MapChunk*) const;
 
   bool need_model_updates = false;
+
+  void select_chunks_in_range(math::vector_3d const& pos, float radius, bool square_select, bool deselect, noggit::chunk_mover& chunk_mover);
 
 private:
   void clear_on_chunk( MapChunk* chunk, bool height, bool textures, bool duplicate_textures
