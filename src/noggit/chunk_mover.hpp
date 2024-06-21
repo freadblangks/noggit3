@@ -21,14 +21,6 @@ class MapTile;
 
 namespace noggit
 {
-  struct selected_model_data
-  {
-    std::string name;
-    math::vector_3d position;
-    math::degrees::vec3 rotation;
-    float scale = 1.f;
-  };
-
   class chunk_mover
   {
     struct cm_selection_info
@@ -112,7 +104,7 @@ namespace noggit
     std::optional<cm_selection_info> _selection_info;
     std::optional<cm_selection_info> _target_info;
 
-    std::unordered_map<int, selected_model_data> _selected_models;
+    std::unordered_map<int, model_placement_data> _selected_models;
     // <tile index * 4096 + chunk index, chunk data>
     std::unordered_map<int, chunk_data> _selected_chunks;
   };

@@ -6,6 +6,9 @@
 #include <noggit/WMOInstance.h>
 #include <noggit/World.h>
 
+#include <math/matrix_4x4.hpp>
+#include <math/trig.hpp>
+
 #include <algorithm>
 
 namespace noggit
@@ -22,38 +25,7 @@ namespace noggit
 
   void chunk_mover::add_to_selection(selection_type selection, bool from_multi_select)
   {
-    if (selection.which() == eEntry_WMO)
-    {
-      WMOInstance* wmo_instance = boost::get<selected_wmo_type>(selection);
-      std::uint32_t uid = wmo_instance->mUniqueID;
-
-      if (_selected_models.find(uid) == _selected_models.end())
-      {
-        noggit::selected_model_data smd;
-        smd.position = wmo_instance->pos;
-        smd.rotation = wmo_instance->dir;
-        smd.name = wmo_instance->wmo->filename;
-
-        _selected_models[uid] = smd;
-      }
-    }
-    else if (selection.which() == eEntry_Model)
-    {
-      ModelInstance* model_instance = boost::get<selected_model_type>(selection);
-      std::uint32_t uid = model_instance->uid;
-
-      if (_selected_models.find(uid) == _selected_models.end())
-      {
-        noggit::selected_model_data smd;
-        smd.position = model_instance->pos;
-        smd.rotation = model_instance->dir;
-        smd.scale = model_instance->scale;
-        smd.name = model_instance->model->filename;
-
-        _selected_models[uid] = smd;
-      }
-    }
-    else if (selection.which() == eEntry_MapChunk)
+    if (selection.which() == eEntry_MapChunk)
     {
       MapChunk* chunk = boost::get<selected_chunk_type>(selection).chunk;
       tile_index const& adt_index = chunk->mt->index;
@@ -63,6 +35,40 @@ namespace noggit
       if (_selected_chunks.find(id) == _selected_chunks.end())
       {
         _selected_chunks.emplace(id, chunk->get_chunk_data());
+
+        auto& models = _selected_chunks[id].models;
+        // to make the position relative to the chunk's center,
+        // this way it's easier to handle
+        math::vector_3d model_offset(chunk->vcenter.x, 0.f, chunk->vcenter.z);
+
+        for (selection_type model_selection : _world->get_models_on_chunk(chunk->vmin))
+        {
+          if (model_selection.which() == eEntry_WMO)
+          {
+            WMOInstance* wmo_instance = boost::get<selected_wmo_type>(model_selection);
+
+            noggit::model_placement_data smd;
+            smd.position = wmo_instance->pos - model_offset;
+            smd.rotation = wmo_instance->dir;
+            smd.name = wmo_instance->wmo->filename;
+            smd.wmo = true;
+
+            models.push_back(smd);
+          }
+          else if (model_selection.which() == eEntry_Model)
+          {
+            ModelInstance* model_instance = boost::get<selected_model_type>(model_selection);
+
+            noggit::model_placement_data smd;
+            smd.position = model_instance->pos - model_offset;
+            smd.rotation = model_instance->dir;
+            smd.scale = model_instance->scale;
+            smd.name = model_instance->model->filename;
+
+            models.push_back(smd);
+          }
+        }
+
         chunk->set_copied(true);
       }
     }
@@ -189,6 +195,7 @@ namespace noggit
 
       MapChunk* chunk = _world->get_chunk_at(cd.origin + chunk_center_ofs);
 
+
       if (chunk)
       {
         if (preview_only)
@@ -201,6 +208,17 @@ namespace noggit
           {
             _world->remove_models_on_chunk(chunk->vmin);
           }
+          if (_override_params->models)
+          {
+            math::vector_3d model_offset(chunk->vcenter.x, _height_ofs_property.get(), chunk->vcenter.z);
+
+            for (auto& model : cd.models)
+            {
+              model.position += model_offset;
+              _world->add_model(model);
+            }
+          }
+
           chunk->override_data(cd, _override_params.value());
           chunk->mt->changed.store(true);
         }
@@ -312,6 +330,8 @@ namespace noggit
     {
       rotated_grid[i] = false;
     }
+
+    static const math::matrix_4x4 model_rotation(math::matrix_4x4::rotation_yzx, math::degrees::vec3(math::degrees(0.f), math::degrees(90.f), math::degrees(0.f)));
 
     for (auto& it : _target_chunks)
     {
@@ -490,6 +510,12 @@ namespace noggit
           cd.disable_doodads_map[inv_x] |= (orig.disable_doodads_map[z] >> x & 0x1) << z;
           cd.low_quality_texture_map[inv_x] |= (orig.low_quality_texture_map[z] >> x & 0x3) << z;
         }
+      }
+
+      for (auto& model : cd.models)
+      {
+        model.position = model_rotation * model.position;
+        model.rotation.y += math::degrees(90.f);
       }
 
       it.second = cd;
@@ -747,6 +773,24 @@ namespace noggit
 
           cd.disable_doodads_map[nz] |= (orig.disable_doodads_map[z] >> x & 0x1) << nx;
           cd.low_quality_texture_map[nz] |= (orig.low_quality_texture_map[z] >> x & 0x3) << nx;
+        }
+      }
+
+      for (auto& model : cd.models)
+      {
+        // rotation mirroring isn't perfect as some models seem to be at 90°
+        // from each other when using the same rotation
+        // meaning the mirroring methods would have to be flipped for those
+        // but we can't check for that afaik
+        if (horizontal)
+        {
+          model.position.x = -model.position.x;
+          model.rotation.y = math::degrees(180.f) - model.rotation.y;
+        }
+        else
+        {
+          model.position.z = -model.position.z;
+          model.rotation.y = -model.rotation.y;
         }
       }
 

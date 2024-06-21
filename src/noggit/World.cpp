@@ -2364,26 +2364,29 @@ ModelInstance* World::addM2 ( std::string const& filename
   model_instance.scale = scale;
   model_instance.dir = rotation;
 
-  if (NoggitSettings.value("model/random_rotation", false).toBool())
+  if (paste_params)
   {
-    float min = paste_params->minRotation;
-    float max = paste_params->maxRotation;
-    model_instance.dir.y += math::degrees(misc::randfloat(min, max));
-  }
+    if (NoggitSettings.value("model/random_rotation", false).toBool())
+    {
+      float min = paste_params->minRotation;
+      float max = paste_params->maxRotation;
+      model_instance.dir.y += math::degrees(misc::randfloat(min, max));
+    }
 
-  if (NoggitSettings.value ("model/random_tilt", false).toBool ())
-  {
-    float min = paste_params->minTilt;
-    float max = paste_params->maxTilt;
-    model_instance.dir.x += math::degrees(misc::randfloat(min, max));
-    model_instance.dir.z += math::degrees(misc::randfloat(min, max));
-  }
+    if (NoggitSettings.value("model/random_tilt", false).toBool())
+    {
+      float min = paste_params->minTilt;
+      float max = paste_params->maxTilt;
+      model_instance.dir.x += math::degrees(misc::randfloat(min, max));
+      model_instance.dir.z += math::degrees(misc::randfloat(min, max));
+    }
 
-  if (NoggitSettings.value ("model/random_size", false).toBool ())
-  {
-    float min = paste_params->minScale;
-    float max = paste_params->maxScale;
-    model_instance.scale = misc::randfloat(min, max);
+    if (NoggitSettings.value("model/random_size", false).toBool())
+    {
+      float min = paste_params->minScale;
+      float max = paste_params->maxScale;
+      model_instance.scale = misc::randfloat(min, max);
+    }
   }
 
   // to ensure the tiles are updated correctly
@@ -2427,6 +2430,18 @@ WMOInstance* World::addWMO ( std::string const& filename
   need_model_updates = true;
 
   return wmo;
+}
+
+void World::add_model(noggit::model_placement_data const& data)
+{
+  if (data.wmo)
+  {
+    addWMO(data.name, data.position, data.rotation);
+  }
+  else
+  {
+    addM2(data.name, data.position, data.scale, data.rotation, nullptr);
+  }
 }
 
 std::uint32_t World::add_model_instance(ModelInstance model_instance, bool from_reloading)

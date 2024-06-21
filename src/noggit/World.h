@@ -5,6 +5,7 @@
 #include <math/frustum.hpp>
 #include <math/trig.hpp>
 #include <noggit/cursor_render.hpp>
+#include <noggit/map_chunk_headers.hpp>
 #include <noggit/Misc.h>
 #include <noggit/Model.h> // ModelManager
 #include <noggit/Selection.h>
@@ -291,6 +292,8 @@ public:
               , math::vector_3d newPos
               , math::degrees::vec3 rotation
               );
+
+  void add_model(noggit::model_placement_data const& data);
 
   // add a m2 instance to the world (needs to be positioned already), return the uid
   std::uint32_t add_model_instance(ModelInstance model_instance, bool from_reloading);

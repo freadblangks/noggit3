@@ -65,6 +65,15 @@ namespace noggit
     std::vector<liquid_vertex> vertices;
   };
 
+  struct model_placement_data
+  {
+    std::string name;
+    math::vector_3d position;
+    math::degrees::vec3 rotation;
+    float scale = 1.f;
+    bool wmo = false;
+  };
+
   class chunk_data
   {
   public:
@@ -96,6 +105,8 @@ namespace noggit
     MH2O_Attributes liquid_attributes;
     std::vector<liquid_layer_data> liquid_layers;
 
+    std::vector<model_placement_data> models;
+
     bool operator==(chunk_data const& other)
     {
       return world_id_x == other.world_id_x && world_id_z == other.world_id_z;
@@ -111,6 +122,7 @@ namespace noggit
     bool shadows;
     bool area_id;
     bool holes;
+    bool models;
 
     bool clear_shadows;
     bool clear_models;

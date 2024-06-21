@@ -35,6 +35,7 @@ namespace noggit::ui
     bool_toggle_property _override_shadows;
     bool_toggle_property _override_area_id;
     bool_toggle_property _override_holes;
+    bool_toggle_property _override_models;
 
 
     float_property _radius;

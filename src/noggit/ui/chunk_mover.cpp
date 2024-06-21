@@ -22,9 +22,10 @@ namespace noggit::ui
     , _override_shadows(false)
     , _override_area_id(true)
     , _override_holes(true)
+    , _override_models(true)
     , _fix_gaps(true)
     , _clear_shadows(true)
-    , _clear_models(false)
+    , _clear_models(true)
     , _radius(15.f)
     , _square_brush(true)
   {
@@ -40,6 +41,7 @@ namespace noggit::ui
     overrides_layout->addRow(new checkbox("Shadows", &_override_shadows, overrides_group));
     overrides_layout->addRow(new checkbox("Area ID", &_override_area_id, overrides_group));
     overrides_layout->addRow(new checkbox("Holes", &_override_holes, overrides_group));
+    overrides_layout->addRow(new checkbox("Models", &_override_models, overrides_group));
 
     layout->addRow(overrides_group);
 
@@ -81,6 +83,7 @@ namespace noggit::ui
     params.shadows = _override_shadows.get();
     params.area_id = _override_area_id.get();
     params.holes = _override_holes.get();
+    params.models = _override_models.get();
 
     params.fix_gaps = _fix_gaps.get();
     params.clear_shadows = _clear_shadows.get();
