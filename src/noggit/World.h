@@ -299,6 +299,13 @@ public:
 
   boost::optional<selection_type> get_model(std::uint32_t uid);
   void remove_models_if_needed(std::vector<uint32_t> const& uids);
+  void remove_models_on_chunk(math::vector_3d const& chunk_origin)
+  {
+    _model_instance_storage.delete_instances_on_chunk(chunk_origin);
+    need_model_updates = true;
+  }
+
+  std::vector<selection_type> get_models_on_chunk(math::vector_3d const& chunk_origin) { return _model_instance_storage.get_instances_on_chunk(chunk_origin); }
 
   void reload_tile(tile_index const& tile);
 

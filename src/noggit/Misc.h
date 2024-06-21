@@ -46,6 +46,12 @@ namespace misc
     return std::abs(a - b) < (std::max(1.f, std::max(a, b)) * std::numeric_limits<float>::epsilon());
   }
 
+  // check if value is inside [min,max[
+  inline bool float_in_between(float value, float min, float max)
+  {
+    return value >= min && value < max;
+  }
+
   bool vec3d_equals(math::vector_3d const& v1, math::vector_3d const& v2);
   bool deg_vec3d_equals(math::degrees::vec3 const& v1, math::degrees::vec3 const& v2);
 

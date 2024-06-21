@@ -105,6 +105,62 @@ namespace noggit
     return unsafe_add_wmo_instance_no_world_upd(std::move(instance));
   }
 
+  std::vector<selection_type> world_model_instances_storage::get_instances_on_chunk(math::vector_3d const& chunk_origin)
+  {
+    std::vector<selection_type> instances;
+
+    for (auto it = _m2s.begin(); it != _m2s.end(); ++it)
+    {
+      math::vector_3d const& inst_position = it->second.pos;
+      math::vector_3d pos_shifted = inst_position - chunk_origin;
+
+      if (misc::float_in_between(pos_shifted.x, 0.f, CHUNKSIZE) && misc::float_in_between(pos_shifted.z, 0.f, CHUNKSIZE))
+      {
+        instances.push_back(&it->second);
+      }
+    }
+    for (auto it = _wmos.begin(); it != _wmos.end(); ++it)
+    {
+      math::vector_3d const& inst_position = it->second.pos;
+      math::vector_3d pos_shifted = inst_position - chunk_origin;
+
+      if (misc::float_in_between(pos_shifted.x, 0.f, CHUNKSIZE) && misc::float_in_between(pos_shifted.z, 0.f, CHUNKSIZE))
+      {
+        instances.push_back(&it->second);
+      }
+    }
+
+    return instances;
+  }
+
+  void world_model_instances_storage::delete_instances_on_chunk(math::vector_3d const& chunk_origin)
+  {
+    std::vector<selection_type> instances_to_remove;
+
+    for (auto it = _m2s.begin(); it != _m2s.end(); ++it)
+    {
+      math::vector_3d const& inst_position = it->second.pos;
+      math::vector_3d pos_shifted = inst_position - chunk_origin;
+
+      if (misc::float_in_between(pos_shifted.x, 0.f, CHUNKSIZE) && misc::float_in_between(pos_shifted.z, 0.f, CHUNKSIZE))
+      {
+        instances_to_remove.push_back(&it->second);
+      }
+    }
+    for (auto it = _wmos.begin(); it != _wmos.end(); ++it)
+    {
+      math::vector_3d const& inst_position = it->second.pos;
+      math::vector_3d pos_shifted = inst_position - chunk_origin;
+
+      if (misc::float_in_between(pos_shifted.x, 0.f, CHUNKSIZE) && misc::float_in_between(pos_shifted.z, 0.f, CHUNKSIZE))
+      {
+        instances_to_remove.push_back(&it->second);
+      }
+    }
+
+    delete_instances(instances_to_remove);
+  }
+
   void world_model_instances_storage::delete_instances_from_chunks_in_range(math::vector_3d const& pos, float radius, bool m2s, bool wmos)
   {
     std::vector<selection_type> instances_to_remove;
@@ -155,7 +211,6 @@ namespace noggit
         }
       }
     }
-
 
     delete_instances(instances_to_remove);
   }

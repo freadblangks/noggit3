@@ -41,6 +41,9 @@ namespace noggit
     boost::optional<WMOInstance*> get_wmo_instance(std::uint32_t uid);
     boost::optional<selection_type> get_instance(std::uint32_t uid);
 
+    std::vector<selection_type> get_instances_on_chunk(math::vector_3d const& chunk_origin);
+    void delete_instances_on_chunk(math::vector_3d const& chunk_origin);
+
     void delete_instances_from_chunks_in_range(math::vector_3d const& pos, float radius, bool m2s, bool wmos);
     void delete_instances_from_tile(tile_index const& tile, bool m2s, bool wmos);
     void delete_instances(std::vector<selection_type> const& instances);
