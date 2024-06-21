@@ -113,6 +113,7 @@ namespace noggit
     bool holes;
 
     bool clear_shadows;
+    bool clear_models;
     bool fix_gaps;
   };
 }

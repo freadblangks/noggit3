@@ -24,6 +24,7 @@ namespace noggit::ui
     , _override_holes(true)
     , _fix_gaps(true)
     , _clear_shadows(true)
+    , _clear_models(false)
     , _radius(15.f)
     , _square_brush(true)
   {
@@ -55,6 +56,7 @@ namespace noggit::ui
 
     param_layout->addRow(new checkbox("Fix Gaps", &_fix_gaps, param_group));
     param_layout->addRow(new checkbox("Clear Shadows", &_clear_shadows, param_group));
+    param_layout->addRow(new checkbox("Clear Models", &_clear_models, param_group));
 
     layout->addRow(param_group);
   }
@@ -82,6 +84,7 @@ namespace noggit::ui
 
     params.fix_gaps = _fix_gaps.get();
     params.clear_shadows = _clear_shadows.get();
+    params.clear_models = _clear_models.get();
 
     return params;
   }

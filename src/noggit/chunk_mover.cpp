@@ -197,6 +197,10 @@ namespace noggit
         }
         else
         {
+          if (_override_params->clear_models)
+          {
+            _world->remove_models_on_chunk(chunk->vmin);
+          }
           chunk->override_data(cd, _override_params.value());
           chunk->mt->changed.store(true);
         }
