@@ -152,8 +152,8 @@ namespace noggit {
                                       )
     {
       auto brush = Brush();
-      brush.setHardness(hardness);
-      brush.setRadius(radius);
+      brush.set_inner_ratio(hardness);
+      brush.set_radius(radius);
       world()->paintTexture(pos
                            , &brush
                            , strength

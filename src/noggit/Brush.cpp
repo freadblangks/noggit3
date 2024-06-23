@@ -2,39 +2,41 @@
 
 #include <noggit/Brush.h>
 
-void Brush::init()
+Brush::Brush(float radius, float inner_ratio)
+  : _radius(radius)
+  , _inner_ratio(inner_ratio)
 {
-  radius = 15;
-  hardness = 0.5f;
-  iradius = hardness * radius;
-  oradius = radius - iradius;
+  update_values();
 }
 
-void Brush::setHardness(float H)
+void Brush::set_inner_ratio(float ratio)
 {
-  hardness = H;
-  iradius = hardness * radius;
-  oradius = radius - iradius;
+  _inner_ratio = ratio;
+  update_values();
 }
-void Brush::setRadius(float R)
+void Brush::set_radius(float radius)
 {
-  radius = R;
-  iradius = hardness * radius;
-  oradius = radius - iradius;
+  _radius = radius;
+  update_values();
 }
-float Brush::getHardness() const
+
+float Brush::value_at_dist(float dist) const
 {
-  return hardness;
-}
-float Brush::getRadius() const
-{
-  return radius;
-}
-float Brush::getValue(float dist) const
-{
-  if (dist > radius)
+  if (dist > _radius)
+  {
     return 0.0f;
-  if (dist < iradius)
+  }
+  if (dist < _inner_size)
+  {
     return 1.0f;
-  return(1.0f - (dist - iradius) / oradius);
+  }
+
+  // lerp from the start of the inner part to the radius
+  return 1.0f - ((dist - _inner_size) / _outer_size);
+}
+
+void Brush::update_values()
+{
+  _inner_size = _inner_ratio * _radius;
+  _outer_size = _radius - _inner_size;
 }

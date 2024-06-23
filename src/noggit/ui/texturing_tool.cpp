@@ -38,10 +38,6 @@ namespace noggit
     {
       auto layout (new QFormLayout (this));
 
-      _texture_brush.init();
-      _inner_brush.init();
-      _spray_brush.init();
-
       _current_texture = new current_texture(true, this);
       _current_texture->resize(QSize(225, 225));
       layout->addRow (_current_texture);
@@ -74,12 +70,12 @@ namespace noggit
       _radius_spin = new QDoubleSpinBox (tool_widget);
       _radius_spin->setRange (0.0f, 100.0f);
       _radius_spin->setDecimals (2);
-      _radius_spin->setValue (_texture_brush.getRadius());
+      _radius_spin->setValue (_texture_brush.get_radius());
       slider_layout_left->addRow ("Radius:", _radius_spin);
 
       _radius_slider = new QSlider (Qt::Orientation::Horizontal, tool_widget);
       _radius_slider->setRange (0, 100);
-      _radius_slider->setSliderPosition (_texture_brush.getRadius());
+      _radius_slider->setSliderPosition (_texture_brush.get_radius());
       slider_layout_left->addRow (_radius_slider);
 
       _pressure_spin = new QDoubleSpinBox (tool_widget);
@@ -370,22 +366,22 @@ namespace noggit
 
     void texturing_tool::update_brush_hardness()
     {
-      _texture_brush.setHardness(_hardness);
-      _inner_brush.setHardness(_hardness);
-      _spray_brush.setHardness(_hardness);
+      _texture_brush.set_inner_ratio(_hardness);
+      _inner_brush.set_inner_ratio(_hardness);
+      _spray_brush.set_inner_ratio(_hardness);
     }
 
     void texturing_tool::set_radius(float radius)
     {
-      _texture_brush.setRadius(radius);
-      _inner_brush.setRadius(radius * _hardness);
+      _texture_brush.set_radius(radius);
+      _inner_brush.set_radius(radius * _hardness);
     }
 
     void texturing_tool::update_spray_brush()
     {
       if (_texturing_mode == texturing_mode::paint)
       {
-        _spray_brush.setRadius(_spray_size * TEXDETAILSIZE / 2.0f);
+        _spray_brush.set_radius(_spray_size * TEXDETAILSIZE / 2.0f);
       }
     }
 
@@ -409,7 +405,7 @@ namespace noggit
     {
       if (_texturing_mode == texturing_mode::paint)
       {
-        _radius_spin->setValue(_texture_brush.getRadius() + change);
+        _radius_spin->setValue(_texture_brush.get_radius() + change);
       }
       else if (_texturing_mode == texturing_mode::swap)
       {
@@ -485,7 +481,7 @@ namespace noggit
       // show only a dot when using the anim / swap mode
       switch (_texturing_mode)
       {
-        case texturing_mode::paint: return _texture_brush.getRadius();
+        case texturing_mode::paint: return _texture_brush.get_radius();
         case texturing_mode::swap: return (_texture_switcher->brush_mode() ? _texture_switcher->radius() : 0.f);
         default: return 0.f;
       }
@@ -528,7 +524,7 @@ namespace noggit
       {
         if (_spray_mode_group->isChecked())
         {
-          world->sprayTexture(pos, &_spray_brush, alpha_target(), strength, _texture_brush.getRadius(), _spray_pressure, texture);
+          world->sprayTexture(pos, &_spray_brush, alpha_target(), strength, _texture_brush.get_radius(), _spray_pressure, texture);
 
           if (_inner_radius_cb->isChecked())
           {

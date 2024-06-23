@@ -503,7 +503,7 @@ bool TextureSet::paintTexture(float xbase, float zbase, float x, float z, Brush*
     return nTextures == 1;
   }
 
-  radius = brush->getRadius();
+  radius = brush->get_radius();
 
   if (misc::getShortestDist(x, z, xbase, zbase, CHUNKSIZE) > radius)
   {
@@ -535,7 +535,7 @@ bool TextureSet::paintTexture(float xbase, float zbase, float x, float z, Brush*
 
         double current_alpha = alpha_values[tex_layer];
         double sum_other_alphas = (total - current_alpha);
-        double alpha_change = (strength - current_alpha) * pressure * brush->getValue(dist);
+        double alpha_change = (strength - current_alpha) * pressure * brush->value_at_dist(dist);
 
         // alpha too low, set it to 0 directly
         if (alpha_change < 0. && current_alpha + alpha_change < 1.)

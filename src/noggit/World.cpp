@@ -2018,7 +2018,7 @@ void World::recalc_norms (MapChunk* chunk) const
 bool World::paintTexture(math::vector_3d const& pos, Brush* brush, float strength, float pressure, scoped_blp_texture_reference texture)
 {
   return for_all_chunks_in_range
-    ( pos, brush->getRadius()
+    ( pos, brush->get_radius()
     , [&] (MapChunk* chunk)
       {
         return chunk->paintTexture(pos, brush, strength, pressure, texture);
@@ -2029,7 +2029,7 @@ bool World::paintTexture(math::vector_3d const& pos, Brush* brush, float strengt
 bool World::sprayTexture(math::vector_3d const& pos, Brush *brush, float strength, float pressure, float spraySize, float sprayPressure, scoped_blp_texture_reference texture)
 {
   bool succ = false;
-  float inc = brush->getRadius() / 4.0f;
+  float inc = brush->get_radius() / 4.0f;
 
   for (float pz = pos.z - spraySize; pz < pos.z + spraySize; pz += inc)
   {
