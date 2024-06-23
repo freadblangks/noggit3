@@ -3,8 +3,9 @@
 #pragma once
 
 #include <math/vector_3d.hpp>
-#include <noggit/ui/CurrentTexture.h>
+#include <noggit/float_property.hpp>
 #include <noggit/TextureManager.h>
+#include <noggit/ui/CurrentTexture.h>
 
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QGroupBox>
@@ -34,10 +35,10 @@ namespace noggit
 
       float radius() const
       {
-        return _radius;
+        return _radius.get();
       }
 
-      void change_radius(float change);
+      void change_radius(float change) { _radius.change(change); }
 
       bool brush_mode() const
       {
@@ -55,7 +56,7 @@ namespace noggit
 
     private:
       boost::optional<scoped_blp_texture_reference> _texture_to_swap;
-      float _radius;
+      float_property _radius;
 
     private:
       current_texture* _texture_to_swap_display;

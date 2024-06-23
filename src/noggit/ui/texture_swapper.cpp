@@ -3,6 +3,7 @@
 #include <noggit/ui/texture_swapper.hpp>
 
 #include <math/vector_3d.hpp>
+#include <noggit/ui/slider_spinbox.hpp>
 #include <noggit/ui/TexturingGUI.h>
 #include <noggit/World.h>
 #include <noggit/tool_enums.hpp>
@@ -49,16 +50,7 @@ namespace noggit
       auto brush_layout (new QFormLayout(brush_content));
       _brush_mode_group->setLayout(brush_layout);
 
-      _radius_spin = new QDoubleSpinBox(brush_content);
-      _radius_spin->setRange (0.f, 100.f);
-      _radius_spin->setDecimals (2);
-      _radius_spin->setValue (_radius);
-      brush_layout->addRow ("Radius:", _radius_spin);
-
-      _radius_slider = new QSlider (Qt::Orientation::Horizontal, brush_content);
-      _radius_slider->setRange (0, 100);
-      _radius_slider->setSliderPosition (_radius);
-      brush_layout->addRow (_radius_slider);
+      brush_layout->addRow(new slider_spinbox("Radius", &_radius, 0.f, 100.f, 2, brush_content));
 
       connect(select, &QPushButton::clicked, [&]() {
         _texture_to_swap = selected_texture::get();
@@ -74,30 +66,6 @@ namespace noggit
           world->swapTexture (*camera_pos, _texture_to_swap.get());
         }
       });
-
-      connect ( _radius_spin, qOverload<double> (&QDoubleSpinBox::valueChanged)
-              , [&](double v)
-                {
-                  QSignalBlocker const blocker (_radius_slider);
-                  _radius = v;
-                  _radius_slider->setSliderPosition ((int)std::round (v));
-
-                }
-              );
-
-      connect ( _radius_slider, &QSlider::valueChanged
-              , [&](int v)
-                {
-                  QSignalBlocker const blocker (_radius_spin);
-                  _radius = v;
-                  _radius_spin->setValue(v);
-                }
-              );
-    }
-
-    void texture_swapper::change_radius(float change)
-    {
-      _radius_spin->setValue(_radius + change);
     }
 
     void texture_swapper::set_texture(std::string const& filename)
