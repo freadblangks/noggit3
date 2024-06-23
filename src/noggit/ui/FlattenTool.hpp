@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <noggit/float_property.hpp>
 #include <noggit/tool_enums.hpp>
 #include <math/vector_3d.hpp>
 
@@ -32,17 +33,17 @@ namespace noggit
       void toggleFlattenLock();
       void lockPos (math::vector_3d const& cursor_pos);
 
-      void changeRadius(float change);
-      void changeSpeed(float change);
+      void change_radius(float change) { _radius.change(change); }
+      void change_speed(float change) { _speed.change(change); }
       void changeOrientation(float change);
       void changeAngle(float change);
       void changeHeight(float change);
 
-      void setRadius(float radius);
-      void setSpeed(float speed);
+      void set_radius(float radius) { _radius.set(radius); }
+      void set_speed(float speed) { _speed.set(speed); }
       void setOrientation(float orientation);
 
-      float brushRadius() const { return _radius; }
+      float radius() const { return _radius.get(); }
       float angle() const { return _angle; }
       float orientation() const { return _orientation; }
       bool angled_mode() const { return _angle_group->isChecked(); }
@@ -53,8 +54,8 @@ namespace noggit
 
     private:
 
-      float _radius;
-      float _speed;
+      float_property _radius;
+      float_property _speed;
       float _angle;
       float _orientation;
 
@@ -65,10 +66,6 @@ namespace noggit
 
     private:
       QButtonGroup* _type_button_box;
-      QSlider* _radius_slider;
-      QSlider* _speed_slider;
-      QDoubleSpinBox* _radius_spin;
-      QDoubleSpinBox* _speed_spin;
 
       QGroupBox* _angle_group;
       QSlider* _angle_slider;

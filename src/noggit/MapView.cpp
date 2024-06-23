@@ -1318,7 +1318,7 @@ void MapView::createGUI()
 
   addHotkey (Qt::Key_Plus, MOD_alt, [this] { terrainTool->changeRadius(0.01f); }, [this] { return terrainMode == editing_mode::ground; });
 
-  addHotkey (Qt::Key_Plus, MOD_alt, [this] { flattenTool->changeRadius(0.01f); }, [this] { return terrainMode == editing_mode::flatten_blur; });
+  addHotkey (Qt::Key_Plus, MOD_alt, [this] { flattenTool->change_radius(0.01f); }, [this] { return terrainMode == editing_mode::flatten_blur; });
 
   addHotkey ( Qt::Key_Plus
             , MOD_alt
@@ -1333,7 +1333,7 @@ void MapView::createGUI()
 
   addHotkey (Qt::Key_Minus, MOD_alt, [this] { terrainTool->changeRadius(-0.01f); }, [this] { return terrainMode == editing_mode::ground; });
 
-  addHotkey (Qt::Key_Minus, MOD_alt, [this] { flattenTool->changeRadius(-0.01f); }, [this] { return terrainMode == editing_mode::flatten_blur; });
+  addHotkey (Qt::Key_Minus, MOD_alt, [this] { flattenTool->change_radius(-0.01f); }, [this] { return terrainMode == editing_mode::flatten_blur; });
 
   addHotkey ( Qt::Key_Minus
             , MOD_alt
@@ -1861,7 +1861,7 @@ void MapView::tick (float dt)
     case editing_mode::ground:
       terrainTool->setSpeed(_tablet_pressure * 10.0f);
     case editing_mode::flatten_blur:
-      flattenTool->setSpeed(_tablet_pressure * 10.0f);
+      flattenTool->set_speed(_tablet_pressure * 10.0f);
       break;
     case editing_mode::paint:
       texturingTool->set_pressure(_tablet_pressure);
@@ -2740,7 +2740,7 @@ void MapView::draw_map()
     inner_radius = terrainTool->innerRadius();
     break;
   case editing_mode::flatten_blur:
-    radius = flattenTool->brushRadius();
+    radius = flattenTool->radius();
     angle = flattenTool->angle();
     orientation = flattenTool->orientation();
     ref_pos = flattenTool->ref_pos();
@@ -3144,7 +3144,7 @@ void MapView::mouseMoveEvent (QMouseEvent* event)
       terrainTool->changeRadius(relative_movement.dx() / XSENS);
       break;
     case editing_mode::flatten_blur:
-      flattenTool->changeRadius(relative_movement.dx() / XSENS);
+      flattenTool->change_radius(relative_movement.dx() / XSENS);
       break;
     case editing_mode::paint:
       texturingTool->change_radius(relative_movement.dx() / XSENS);
@@ -3172,7 +3172,7 @@ void MapView::mouseMoveEvent (QMouseEvent* event)
       terrainTool->changeSpeed(relative_movement.dx() / 30.0f);
       break;
     case editing_mode::flatten_blur:
-      flattenTool->changeSpeed(relative_movement.dx() / 30.0f);
+      flattenTool->change_speed(relative_movement.dx() / 30.0f);
       break;
     case editing_mode::paint:
       texturingTool->change_pressure(relative_movement.dx() / 300.0f);

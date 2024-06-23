@@ -3,6 +3,7 @@
 #include <noggit/ui/FlattenTool.hpp>
 
 #include <noggit/World.h>
+#include <noggit/ui/slider_spinbox.hpp>
 #include <util/qt/overload.hpp>
 
 #include <QtWidgets/QFormLayout>
@@ -48,32 +49,9 @@ namespace noggit
 
       layout->addRow (flatten_type_group);
 
-      _radius_spin = new QDoubleSpinBox (this);
-      _radius_spin->setRange (0.0f, 1000.0f);
-      _radius_spin->setDecimals (2);
-      _radius_spin->setValue (_radius);
+      layout->addRow(new slider_spinbox("Radius", &_radius, 0.f, 1000.f, 2, this));
+      layout->addRow(new slider_spinbox("Speed", &_speed, 0.f, 10.f, 2, this));
 
-      layout->addRow ("Radius:", _radius_spin);
-
-      _radius_slider = new QSlider (Qt::Orientation::Horizontal, this);
-      _radius_slider->setRange (0, 1000);
-      _radius_slider->setSliderPosition (_radius);
-
-      layout->addRow (_radius_slider);
-
-      _speed_spin = new QDoubleSpinBox (this);
-      _speed_spin->setRange (0.0f, 10.0f);
-      _speed_spin->setDecimals (2);
-      _speed_spin->setValue (_speed);
-
-      layout->addRow ("Speed:", _speed_spin);
-
-      _speed_slider = new QSlider (Qt::Orientation::Horizontal, this);
-      _speed_slider->setRange (0, 10 * 100);
-      _speed_slider->setSingleStep (50);
-      _speed_slider->setSliderPosition (_speed * 100);
-
-      layout->addRow(_speed_slider);
 
       QGroupBox* flatten_blur_group = new QGroupBox("Flatten/Blur", this);
       auto flatten_blur_layout = new QGridLayout(flatten_blur_group);
@@ -143,42 +121,6 @@ namespace noggit
                 }
               );
 
-      connect ( _radius_spin, qOverload<double> (&QDoubleSpinBox::valueChanged)
-              , [&] (double v)
-                {
-                  _radius = v;
-                  QSignalBlocker const blocker(_radius_slider);
-                  _radius_slider->setSliderPosition ((int)std::round (v));
-                 }
-              );
-
-      connect ( _radius_slider, &QSlider::valueChanged
-              , [&] (int v)
-                {
-                  _radius = v;
-                   QSignalBlocker const blocker(_radius_spin);
-                   _radius_spin->setValue(v);
-                }
-              );
-
-      connect ( _speed_spin, qOverload<double> (&QDoubleSpinBox::valueChanged)
-                , [&] (double v)
-                  {
-                    _speed = v;
-                    QSignalBlocker const blocker(_speed_slider);
-                    _speed_slider->setSliderPosition ((int)std::round (v * 100.0f));
-                  }
-                );
-
-      connect ( _speed_slider, &QSlider::valueChanged
-                , [&] (int v)
-                  {
-                    _speed = v / 100.0f;
-                    QSignalBlocker const blocker(_speed_spin);
-                    _speed_spin->setValue (_speed);
-                  }
-                );
-
       connect( _lock_up_checkbox, &QCheckBox::stateChanged
                , [&] (int state)
                  {
@@ -232,8 +174,8 @@ namespace noggit
     void flatten_blur_tool::flatten (World* world, math::vector_3d const& cursor_pos, float dt)
     {
       world->flattenTerrain ( cursor_pos
-                            , 1.f - pow (0.5f, dt *_speed)
-                            , _radius
+                            , 1.f - pow (0.5f, dt *_speed.get())
+                            , _radius.get()
                             , _flatten_type
                             , _flatten_mode
                             , use_ref_pos() ? _lock_pos : cursor_pos
@@ -245,8 +187,8 @@ namespace noggit
     void flatten_blur_tool::blur (World* world, math::vector_3d const& cursor_pos, float dt)
     {
       world->blurTerrain ( cursor_pos
-                         , 1.f - pow (0.5f, dt * _speed)
-                         , _radius
+                         , 1.f - pow (0.5f, dt * _speed.get())
+                         , _radius.get()
                          , _flatten_type
                          , _flatten_mode
                          );
@@ -291,20 +233,6 @@ namespace noggit
       }
     }
 
-    void flatten_blur_tool::changeRadius(float change)
-    {
-      _radius_spin->setValue (_radius + change);
-    }
-
-    void flatten_blur_tool::changeSpeed(float change)
-    {
-      _speed_spin->setValue(_speed + change);
-    }
-
-    void flatten_blur_tool::setSpeed(float speed)
-    {
-      _speed_spin->setValue(speed);
-    }
 
     void flatten_blur_tool::changeOrientation(float change)
     {
@@ -336,11 +264,6 @@ namespace noggit
     void flatten_blur_tool::changeHeight(float change)
     {
       _lock_h->setValue(_lock_pos.y + change);
-    }
-
-    void flatten_blur_tool::setRadius(float radius)
-    {
-      _radius_spin->setValue(radius);
     }
 
     QSize flatten_blur_tool::sizeHint() const
