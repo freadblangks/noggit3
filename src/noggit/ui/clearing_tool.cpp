@@ -4,6 +4,7 @@
 #include <noggit/ui/clearing_tool.hpp>
 #include <noggit/ui/checkbox.hpp>
 #include <noggit/ui/font_awesome.hpp>
+#include <noggit/ui/slider_spinbox.hpp>
 #include <noggit/World.h>
 
 #include <util/qt/overload.hpp>
@@ -85,72 +86,12 @@ namespace noggit
       auto parameters_group(new QGroupBox("Parameters", this));
       auto parameters_layout(new QFormLayout(parameters_group));
 
-      _radius_spin = new QDoubleSpinBox (parameters_group);
-      _radius_spin->setRange (0.0f, 1000.0f);
-      _radius_spin->setDecimals(2);
-      _radius_spin->setValue (_radius);
-
-      parameters_layout->addRow("Radius:", _radius_spin);
-
-      _radius_slider = new QSlider (Qt::Orientation::Horizontal, parameters_group);
-      _radius_slider->setRange (0, 1000);
-      _radius_slider->setSliderPosition (_radius);
-
-      parameters_layout->addRow(_radius_slider);
-
-      _texture_threshold_spin = new QDoubleSpinBox(parameters_group);
-      _texture_threshold_spin->setRange(0., 255.);
-      _texture_threshold_spin->setValue(_texture_threshold);
-
-      parameters_layout->addRow("Texture Alpha Threshold:", _texture_threshold_spin);
-
-      _texture_threshold_slider = new QSlider(Qt::Orientation::Horizontal, parameters_group);
-      _texture_threshold_slider->setRange(0, 255);
-      _texture_threshold_slider->setSliderPosition(_texture_threshold);
-
-      parameters_layout->addRow(_texture_threshold_slider);
-
+      parameters_layout->addRow(new slider_spinbox("Radius", &_radius, 0.f, 1000.f, 2, parameters_group));
+      parameters_layout->addRow(new slider_spinbox("Texture Alpha Threshold", &_texture_threshold, 0.f, 255.f, 0, parameters_group));
 
       layout->addRow(parameters_group);
 
-
-
-      connect ( _radius_spin, qOverload<double> (&QDoubleSpinBox::valueChanged)
-              , [&] (double v)
-                {
-                  _radius = v;
-                  QSignalBlocker const blocker(_radius_slider);
-                  _radius_slider->setSliderPosition ((int)std::round (v));
-                }
-              );
-
-      connect ( _radius_slider, &QSlider::valueChanged
-              , [&] (int v)
-                {
-                  _radius = v;
-                  QSignalBlocker const blocker(_radius_spin);
-                  _radius_spin->setValue(v);
-                }
-              );
-
-      connect ( _texture_threshold_spin, qOverload<double> (&QDoubleSpinBox::valueChanged)
-              , [&] (double v)
-                {
-                  _texture_threshold = v;
-                  QSignalBlocker const blocker(_texture_threshold_slider);
-                  _texture_threshold_slider->setSliderPosition((int)std::round(v));
-                }
-              );
-      connect ( _texture_threshold_slider, &QSlider::valueChanged
-              , [&] (int v)
-                {
-                  _texture_threshold = v;
-                  QSignalBlocker const blocker(_texture_threshold_spin);
-                  _texture_threshold_spin->setValue(v);
-                }
-              );
       setMinimumWidth(sizeHint().width());
-
     }
 
     void clearing_tool::clear(World* world, math::vector_3d const& pos)
@@ -158,12 +99,12 @@ namespace noggit
       // Chunk
       if (_mode == 0)
       {
-        world->clear_on_chunks(pos, _radius
+        world->clear_on_chunks(pos, _radius.get()
           , _clear_height.get()
           , _clear_textures.get()
           , _clear_duplicate_textures.get()
           , _clear_textures_under_threshold.get()
-          , _texture_threshold
+          , _texture_threshold.get()
           , _clear_texture_flags.get()
           , _clear_liquids.get()
           , _clear_m2s.get()
@@ -177,12 +118,12 @@ namespace noggit
       // Adt
       else if (_mode == 1)
       {
-        world->clear_on_tiles(pos, _radius
+        world->clear_on_tiles(pos, _radius.get()
           , _clear_height.get()
           , _clear_textures.get()
           , _clear_duplicate_textures.get()
           , _clear_textures_under_threshold.get()
-          , _texture_threshold
+          , _texture_threshold.get()
           , _clear_texture_flags.get()
           , _clear_liquids.get()
           , _clear_m2s.get()
@@ -193,11 +134,6 @@ namespace noggit
           , _clear_holes.get()
           );
       }
-    }
-
-    void clearing_tool::change_radius(float change)
-    {
-      _radius_spin->setValue(_radius + change);
     }
 
     QSize clearing_tool::sizeHint() const

@@ -3,12 +3,10 @@
 #pragma once
 
 #include <noggit/bool_toggle_property.hpp>
+#include <noggit/float_property.hpp>
 #include <math/vector_3d.hpp>
 
-#include <QtWidgets/QDoubleSpinBox>
-#include <QtWidgets/QSlider>
 #include <QtWidgets/QWidget>
-
 
 class World;
 
@@ -23,15 +21,16 @@ namespace noggit
 
       void clear(World* world, math::vector_3d const& pos);
 
-      void change_radius(float change);
-      float radius() const { return _radius; }
+      void change_radius(float change) { _radius.change(change); }
+      float radius() const { return _radius.get(); }
 
       QSize sizeHint() const override;
 
     private:
-      float _radius;
-      float _texture_threshold;
       int _mode = 0;
+
+      float_property _radius;
+      float_property _texture_threshold;
 
       bool_toggle_property _clear_height;
       bool_toggle_property _clear_textures;
@@ -45,12 +44,6 @@ namespace noggit
       bool_toggle_property _clear_mccv;
       bool_toggle_property _clear_impassible_flag;
       bool_toggle_property _clear_holes;
-
-      QSlider* _radius_slider;
-      QDoubleSpinBox* _radius_spin;
-      QSlider* _texture_threshold_slider;
-      QDoubleSpinBox* _texture_threshold_spin;
-
     };
   }
 }
