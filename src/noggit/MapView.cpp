@@ -1316,7 +1316,7 @@ void MapView::createGUI()
             , [&] { return terrainMode == editing_mode::object; }
             );
 
-  addHotkey (Qt::Key_Plus, MOD_alt, [this] { terrainTool->changeRadius(0.01f); }, [this] { return terrainMode == editing_mode::ground; });
+  addHotkey (Qt::Key_Plus, MOD_alt, [this] { terrainTool->change_radius(0.01f); }, [this] { return terrainMode == editing_mode::ground; });
 
   addHotkey (Qt::Key_Plus, MOD_alt, [this] { flattenTool->change_radius(0.01f); }, [this] { return terrainMode == editing_mode::flatten_blur; });
 
@@ -1331,7 +1331,7 @@ void MapView::createGUI()
 
   addHotkey (Qt::Key_Plus, MOD_shift, [this] { _world->fogdistance += 60.0f; });
 
-  addHotkey (Qt::Key_Minus, MOD_alt, [this] { terrainTool->changeRadius(-0.01f); }, [this] { return terrainMode == editing_mode::ground; });
+  addHotkey (Qt::Key_Minus, MOD_alt, [this] { terrainTool->change_radius(-0.01f); }, [this] { return terrainMode == editing_mode::ground; });
 
   addHotkey (Qt::Key_Minus, MOD_alt, [this] { flattenTool->change_radius(-0.01f); }, [this] { return terrainMode == editing_mode::flatten_blur; });
 
@@ -1859,7 +1859,7 @@ void MapView::tick (float dt)
     switch (terrainMode)
     {
     case editing_mode::ground:
-      terrainTool->setSpeed(_tablet_pressure * 10.0f);
+      terrainTool->set_speed(_tablet_pressure * 10.0f);
     case editing_mode::flatten_blur:
       flattenTool->set_speed(_tablet_pressure * 10.0f);
       break;
@@ -2736,8 +2736,8 @@ void MapView::draw_map()
   switch (terrainMode)
   {
   case editing_mode::ground:
-    radius = terrainTool->brushRadius();
-    inner_radius = terrainTool->innerRadius();
+    radius = terrainTool->radius();
+    inner_radius = terrainTool->inner_radius_ratio();
     break;
   case editing_mode::flatten_blur:
     radius = flattenTool->radius();
@@ -3114,7 +3114,7 @@ void MapView::mouseMoveEvent (QMouseEvent* event)
   {
     if (terrainMode == editing_mode::ground)
     {
-      terrainTool->changeInnerRadius(relative_movement.dx() / 100.0f);
+      terrainTool->change_inner_radius(relative_movement.dx() / 100.0f);
     }
     if (terrainMode == editing_mode::paint)
     {
@@ -3141,7 +3141,7 @@ void MapView::mouseMoveEvent (QMouseEvent* event)
 	switch (terrainMode)
     {
     case editing_mode::ground:
-      terrainTool->changeRadius(relative_movement.dx() / XSENS);
+      terrainTool->change_radius(relative_movement.dx() / XSENS);
       break;
     case editing_mode::flatten_blur:
       flattenTool->change_radius(relative_movement.dx() / XSENS);
@@ -3169,7 +3169,7 @@ void MapView::mouseMoveEvent (QMouseEvent* event)
     switch (terrainMode)
     {
     case editing_mode::ground:
-      terrainTool->changeSpeed(relative_movement.dx() / 30.0f);
+      terrainTool->change_speed(relative_movement.dx() / 30.0f);
       break;
     case editing_mode::flatten_blur:
       flattenTool->change_speed(relative_movement.dx() / 30.0f);

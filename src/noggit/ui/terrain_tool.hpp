@@ -4,6 +4,7 @@
 
 #include <math/trig.hpp>
 #include <math/vector_3d.hpp>
+#include <noggit/float_property.hpp>
 #include <noggit/tool_enums.hpp>
 
 #include <QtWidgets/QButtonGroup>
@@ -30,14 +31,16 @@ namespace noggit
       void changeTerrain (World*, math::vector_3d const& pos, float dt);
 
       void nextType();
-      void changeRadius(float change);
-      void changeInnerRadius(float change);
-      void changeSpeed(float change);
+      void change_radius(float change) { _radius.change(change); }
+      void change_inner_radius(float change) { _inner_radius.change(change); }
+      void change_speed(float change) { _speed.change(change); }
 
-      void setRadius (float radius);
+      void set_radius(float set) { _radius.set(set); }
+      void set_speed(float set) { _speed.set(set); }
+
       void setOrientation (float orientation);
       void setAngle (float angle);
-      void setSpeed (float speed);
+
 
       // vertex edit only functions
       void moveVertices (World*, float dt);
@@ -47,8 +50,8 @@ namespace noggit
       void changeAngle (float change);
       void setOrientRelativeTo (World*, math::vector_3d const& pos);
 
-      float brushRadius() const { return _radius; }
-      float innerRadius() const { return _inner_radius;  }
+      float radius() const { return _radius.get(); }
+      float inner_radius_ratio() const { return _inner_radius.get();  }
 
       void storeCursorPos (math::vector_3d* cursor_pos) { _cursor_pos = cursor_pos; }
 
@@ -62,9 +65,9 @@ namespace noggit
     private:
       void updateVertexGroup();
 
-      float _radius;
-      float _speed;
-      float _inner_radius;
+      float_property _radius;
+      float_property _speed;
+      float_property _inner_radius;
       math::degrees _vertex_angle;
       math::degrees _vertex_orientation;
 
@@ -81,13 +84,6 @@ namespace noggit
 
       QCheckBox* _only_affect_ground_below_cursor;
       QCheckBox* _only_affect_ground_above_cursor;
-
-      QSlider* _radius_slider;
-      QSlider* _inner_radius_slider;
-      QSlider* _speed_slider;
-      QDoubleSpinBox* _radius_spin;
-      QDoubleSpinBox* _inner_radius_spin;
-      QDoubleSpinBox* _speed_spin;
 
       QSlider* _angle_slider;
       QDial* _orientation_dial;
