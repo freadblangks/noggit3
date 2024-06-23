@@ -35,7 +35,7 @@ namespace noggit::ui
     _slider->setSingleStep(std::max(1, _slider_shift / 2));
     layout->addRow(_slider);
 
-
+    layout->setContentsMargins(0, 0, 0, 0);
 
     connect ( _spin, qOverload<double> (&QDoubleSpinBox::valueChanged)
             , [&] (double v)
