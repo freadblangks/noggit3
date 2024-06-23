@@ -5,6 +5,7 @@
 #include <math/vector_3d.hpp>
 #include <noggit/bool_toggle_property.hpp>
 #include <noggit/Brush.h>
+#include <noggit/float_property.hpp>
 #include <noggit/TextureManager.h>
 #include <noggit/unsigned_int_property.hpp>
 
@@ -88,13 +89,14 @@ namespace noggit
       Brush _spray_brush;
 
       int _brush_level;
-      float _hardness;
-      float _pressure;
+      float_property _radius;
+      float_property _hardness;
+      float_property _pressure;
 
       bool _show_unpaintable_chunks;
 
-      float _spray_size;
-      float _spray_pressure;
+      float_property _spray_size;
+      float_property _spray_pressure;
 
       bool_toggle_property _anim_prop;
       unsigned_int_property _anim_speed_prop;
@@ -105,23 +107,13 @@ namespace noggit
 
     private:
       QSlider* _brush_level_slider;
-      QSlider* _hardness_slider;
-      QSlider* _radius_slider;
-      QSlider* _pressure_slider;
       QSpinBox* _brush_level_spin;
-      QDoubleSpinBox* _hardness_spin;
-      QDoubleSpinBox* _radius_spin;
-      QDoubleSpinBox* _pressure_spin;
 
       QCheckBox* _show_unpaintable_chunks_cb;
 
       QGroupBox* _spray_mode_group;
       QWidget* _spray_content;
       QCheckBox* _inner_radius_cb;
-      QSlider* _spray_size_slider;
-      QSlider* _spray_pressure_slider;
-      QDoubleSpinBox* _spray_size_spin;
-      QDoubleSpinBox* _spray_pressure_spin;
 
       QGroupBox* _anim_group;
 
