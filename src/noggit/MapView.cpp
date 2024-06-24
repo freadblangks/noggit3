@@ -573,8 +573,15 @@ void MapView::createGUI()
   edit_menu->addSeparator();
   ADD_ACTION (edit_menu, "Delete", Qt::Key_Delete, [this] { DeleteSelectedObject(); });
   ADD_ACTION (edit_menu, "Reset rotation", "Ctrl+R", [this] { ResetSelectedObjectRotation(); });
-  ADD_ACTION (edit_menu, "Set to ground", Qt::Key_PageDown, [this] { snap_selected_models_to_the_ground(); });
-
+  ADD_ACTION_NS (edit_menu, "Set to ground", [this] { snap_selected_models_to_the_ground(); });
+  addHotkey ( Qt::Key_PageDown
+            , MOD_none
+            , [this]
+              {
+                snap_selected_models_to_the_ground();
+              }
+            , [this] { return terrainMode == editing_mode::object; }
+            );
 
   edit_menu->addSeparator();
   edit_menu->addAction(createTextSeparator("Options"));
@@ -1056,6 +1063,17 @@ void MapView::createGUI()
                  _minimap->update();
                }
              );
+  ADD_ACTION ( view_menu
+             , "Reset camera roll"
+             , Qt::Key_End
+             , [this]
+               {
+                 _camera.roll(math::degrees(0.f));
+                 _camera_moved_since_last_draw = true;
+               }
+             );
+
+
 
   ADD_ACTION ( file_menu
              , "Write coordinates to port.txt"
@@ -1395,6 +1413,7 @@ void MapView::add_bookmark(noggit::bookmark const& b)
       _camera.position = b.pos;
       _camera.yaw(math::degrees(b.camera_yaw));
       _camera.pitch(math::degrees(b.camera_pitch));
+      _camera.roll(math::degrees(0.f));
       _camera_moved_since_last_draw = true;
     }
   );
@@ -1536,7 +1555,7 @@ MapView::MapView( math::degrees camera_yaw0
   setFocusPolicy (Qt::StrongFocus);
   setMouseTracking (true);
 
-  moving = strafing = updown = lookat = turn = 0.0f;
+  moving = strafing = updown = lookat = roll = turn = 0.0f;
 
   freelook = false;
 
@@ -2255,6 +2274,11 @@ void MapView::tick (float dt)
       _camera.add_to_pitch(math::degrees(lookat));
       _camera_moved_since_last_draw = true;
     }
+    if (roll)
+    {
+      _camera.add_to_roll(math::degrees(roll));
+      _camera_moved_since_last_draw = true;
+    }
     if (moving)
     {
       _camera.move_forward(moving, dt);
@@ -2895,6 +2919,15 @@ void MapView::keyPressEvent (QKeyEvent *event)
     turn = -0.75f;
   }
 
+  if (event->key() == Qt::Key_PageUp)
+  {
+    roll = 0.75f;
+  }
+  if (event->key() == Qt::Key_PageDown)
+  {
+    roll = -0.75f;
+  }
+
   if (event->key() == Qt::Key_D)
   {
     strafing = 1.0f;
@@ -2994,6 +3027,11 @@ void MapView::keyReleaseEvent (QKeyEvent* event)
     lookat = 0.0f;
   }
 
+  if (event->key() == Qt::Key_PageUp || event->key() == Qt::Key_PageDown)
+  {
+    roll = 0.0f;
+  }
+
   if (event->key() == Qt::Key_Right || event->key() == Qt::Key_Left)
   {
     turn  = 0.0f;
@@ -3053,6 +3091,7 @@ void MapView::focusOutEvent (QFocusEvent*)
   moving = 0.0f;
   lookat = 0.0f;
   turn = 0.0f;
+  roll = 0.0f;
   strafing = 0.0f;
   updown = 0.0f;
 

@@ -48,6 +48,9 @@ namespace noggit
       basic_controls_layout->addRow(label);
 
       generate_hotkey_row({font_noggit::rmb_drag},                                            "\a - Rotate camera", basic_controls_layout);
+      basic_controls_layout->addRow(new QLabel("Up/Down/Left/Right arrows - Rotate camera"));
+      generate_hotkey_row({ font_noggit::page_up, font_noggit::page_down }, "\a,\a - Roll camera", basic_controls_layout);
+      basic_controls_layout->addRow(new QLabel("End - Reset camera roll"));
       generate_hotkey_row({font_noggit::lmb},                                                 "\a - Select chunk or object", basic_controls_layout);
       generate_hotkey_row({font_noggit::i},                                                   "\a - Invert mouse up and down", basic_controls_layout);
       generate_hotkey_row({font_noggit::q, font_noggit::e},                                   "\a,\a - Move up and down", basic_controls_layout);

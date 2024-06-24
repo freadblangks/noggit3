@@ -51,6 +51,21 @@ namespace noggit
     pitch (math::degrees (_pitch._ - value._));
   }
 
+  math::degrees camera::roll() const
+  {
+    return _roll;
+  }
+
+  math::degrees camera::roll(math::degrees value)
+  {
+    return _roll = math::degrees(value._);;
+  }
+
+  void camera::add_to_roll(math::degrees value)
+  {
+    roll(math::degrees(_roll._ - value._));
+  }
+
   math::radians camera::fov() const
   {
     return _fov;
@@ -82,6 +97,11 @@ namespace noggit
            ).normalize();
   }
 
+  math::vector_3d camera::right() const
+  {
+    return -(up() % direction()).normalized();
+  }
+
   math::matrix_4x4 camera::look_at_matrix() const
   {
     return math::look_at(position, look_at(), up());
@@ -94,16 +114,11 @@ namespace noggit
 
   void camera::move_horizontal (float sign, float dt)
   {
-    math::vector_3d const up (0.0f, 1.0f, 0.0f);
-    math::vector_3d const right ( (direction() % up).normalize());
-
-    position += right * sign * move_speed * dt;
+    position += right() * sign * move_speed * dt;
   }
 
   void camera::move_vertical (float sign, float dt)
   {
-    math::vector_3d const up (0.0f, 1.0f, 0.0f);
-
-    position += up * sign * move_speed * dt;
+    position += up() * sign * move_speed * dt;
   }
 }

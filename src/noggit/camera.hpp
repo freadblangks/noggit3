@@ -23,11 +23,16 @@ namespace noggit
     math::degrees pitch (math::degrees);
     void add_to_pitch (math::degrees);
 
+    math::degrees roll() const;
+    math::degrees roll(math::degrees);
+    void add_to_roll(math::degrees);
+
     math::radians fov() const;
 
     math::vector_3d look_at() const;
     math::vector_3d direction() const;
     math::vector_3d up() const;
+    math::vector_3d right() const;
 
     math::matrix_4x4 look_at_matrix() const;
 
