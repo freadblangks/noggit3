@@ -40,24 +40,14 @@ namespace noggit::ui
     connect ( _spin, qOverload<double> (&QDoubleSpinBox::valueChanged)
             , [&] (double v)
               {
-                QSignalBlocker const blocker(_slider);
-                QSignalBlocker const blocker2(_prop);
-
                 _prop->set(v);
-                _slider->setSliderPosition (static_cast<int>(std::roundf(v * _slider_shift)));
               }
             );
 
     connect ( _slider, &QSlider::valueChanged
             , [&] (int v)
               {
-                QSignalBlocker const blocker(_spin);
-                QSignalBlocker const blocker2(_prop);
-
-                float f = static_cast<float>(v) / _slider_shift;
-
-                _prop->set(f);
-                _spin->setValue(f);
+                _prop->set(static_cast<float>(v) / _slider_shift);
               }
             );
 
