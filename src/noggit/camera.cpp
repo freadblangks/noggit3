@@ -28,15 +28,7 @@ namespace noggit
 
   math::degrees camera::yaw (math::degrees value)
   {
-    _yaw = value;
-
-    //! [-180, 180)
-    while (_yaw._ >= 180.0f)
-      _yaw._ -= 360.0f;
-    while (_yaw._ < -180.0f)
-      _yaw._ += 360.0f;
-
-    return _yaw;
+    return _yaw = math::degrees(value._);
   }
 
   void camera::add_to_yaw (math::degrees value)
@@ -51,9 +43,7 @@ namespace noggit
 
   math::degrees camera::pitch (math::degrees value)
   {
-    _pitch._ = std::max (-80.f, std::min (80.f, value._));
-
-    return _pitch;
+    return _pitch = math::degrees(value._);;
   }
 
   void camera::add_to_pitch (math::degrees value)
@@ -73,7 +63,7 @@ namespace noggit
 
   math::vector_3d camera::direction() const
   {
-    math::vector_3d const forward (1.0f, 0.0f, 0.0f);
+    static math::vector_3d const forward (1.0f, 0.0f, 0.0f);
 
     return ( math::matrix_4x4 ( math::matrix_4x4::rotation_yzx
                               , math::degrees::vec3 (_roll, _yaw, _pitch)
@@ -81,10 +71,20 @@ namespace noggit
            * forward
            ).normalize();
   }
+  math::vector_3d camera::up() const
+  {
+    static math::vector_3d const up (0.0f, 1.0f, 0.0f);
+
+    return ( math::matrix_4x4 ( math::matrix_4x4::rotation_yzx
+                              , math::degrees::vec3 (_roll, _yaw, _pitch)
+                              )
+           * up
+           ).normalize();
+  }
 
   math::matrix_4x4 camera::look_at_matrix() const
   {
-    return math::look_at(position, look_at(), {0.f, 1.f, 0.f});
+    return math::look_at(position, look_at(), up());
   }
 
   void camera::move_forward (float sign, float dt)

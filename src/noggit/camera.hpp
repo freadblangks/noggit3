@@ -27,6 +27,7 @@ namespace noggit
 
     math::vector_3d look_at() const;
     math::vector_3d direction() const;
+    math::vector_3d up() const;
 
     math::matrix_4x4 look_at_matrix() const;
 
